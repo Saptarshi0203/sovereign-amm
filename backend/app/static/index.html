@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sovereign-AMM Tracer Bullet</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: monospace; 
+            background: #0d1117; 
+            color: #c9d1d9; 
+            margin: 40px; 
+        }
+        h2 { color: #58a6ff; }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            background: #161b22;
+            padding: 20px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+        }
+        canvas { 
+            background: #0d1117; 
+            border: 1px solid #30363d; 
+            border-radius: 4px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            padding: 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            text-align: center;
+        }
+        .val { font-size: 1.5em; font-weight: bold; }
+        .bid { color: #3fb950; }
+        .ask { color: #f85149; }
+        .status { margin-bottom: 20px; font-weight: bold; }
+        .online { color: #3fb950; }
+        .offline { color: #f85149; }
+    </style>
+</head>
+<body>
+    <h2>Sovereign-AMM Phase 1B Tracer</h2>
+    <div id="connection-status" class="status offline">🔴 Disconnected</div>
+    
+    <div class="container">
+        <div class="panel">
+            <div class="stats">
+                <div class="stat-box bid">
+                    <div>Best Bid</div>
+                    <div id="val-bid" class="val">--</div>
+                </div>
+                <div class="stat-box ask">
+                    <div>Best Ask</div>
+                    <div id="val-ask" class="val">--</div>
+                </div>
+            </div>
+            <canvas id="priceChart" width="800" height="400"></canvas>
+        </div>
+    </div>
+    
+    <script>
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Micro Price (INR/kWh)',
+                    data: [],
+                    borderColor: '#58a6ff',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: false,
+                animation: false,
+                scales: {
+                    x: { display: false },
+                    y: { 
+                        min: 3, 
+                        max: 8 
+                    }
+                }
+            }
+        });
+
+        const statusEl = document.getElementById('connection-status');
+        const bidEl = document.getElementById('val-bid');
+        const askEl = document.getElementById('val-ask');
+        
+        function connect() {
+            const ws = new WebSocket(`ws://${location.host}/ws/stream`);
+            
+            ws.onopen = () => {
+                statusEl.textContent = '🟢 Connected (10 Hz)';
+                statusEl.className = 'status online';
+            };
+            
+            ws.onclose = () => {
+                statusEl.textContent = '🔴 Disconnected - Reconnecting...';
+                statusEl.className = 'status offline';
+                setTimeout(connect, 1000);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                bidEl.textContent = data.best_bid ? data.best_bid.toFixed(2) : '--';
+                askEl.textContent = data.best_ask ? data.best_ask.toFixed(2) : '--';
+                
+                if (data.micro_price !== null) {
+                    const chartData = priceChart.data;
+                    chartData.labels.push(data.tick);
+                    chartData.datasets[0].data.push(data.micro_price);
+                    
+                    if (chartData.labels.length > 200) {
+                        chartData.labels.shift();
+                        chartData.datasets[0].data.shift();
+                    }
+                    priceChart.update();
+                }
+            };
+        }
+        
+        connect();
+    </script>
+</body>
+</html>

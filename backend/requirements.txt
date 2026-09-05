@@ -1,0 +1,8 @@
+fastapi>=0.100.0
+uvicorn>=0.23.0
+numpy>=1.26.0
+pydantic>=2.0.0
+websockets>=11.0.3
+chromadb>=0.4.0
+PyJWT>=2.8.0
+passlib[argon2]>=1.7.4

@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Body styles moved to layout.tsx */
+}
+
+@layer components {
+  .panel {
+    @apply bg-panel border border-border p-4 flex flex-col rounded-2xl shadow-panel backdrop-blur-xl relative overflow-hidden;
+    /* Strict tabular lining for numbers to prevent layout shift */
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  
+  .panel-title {
+    @apply text-xs font-bold text-textMuted uppercase tracking-widest mb-4 border-b border-border pb-2;
+  }
+}

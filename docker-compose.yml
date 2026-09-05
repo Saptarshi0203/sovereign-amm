@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - REDIS_HOST=redis_cache
+      - REDIS_PORT=6379
+      - JWT_SECRET_KEY=sovereign-amm-super-secret-key-for-hackathon
+    depends_on:
+      - chromadb
+      - redis_cache
+    volumes:
+      - ./backend:/app
+      - ./engine:/app/engine
+      - ./simulation:/app/simulation
+      - ./rag_sidecar:/app/rag_sidecar
+    networks:
+      - sovereign_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/stream
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - sovereign_net
+
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./chroma_db:/chroma/chroma
+    networks:
+      - sovereign_net
+
+  redis_cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - sovereign_net
+
+networks:
+  sovereign_net:
+    driver: bridge

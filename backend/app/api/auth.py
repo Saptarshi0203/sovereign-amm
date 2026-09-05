@@ -1,0 +1,86 @@
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+import uuid
+
+from backend.app.core.auth import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    get_current_user
+)
+from backend.app.db.store import store
+
+router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+    consumer_no: str
+    connection_type: str
+    sanctioned_load_kw: float
+    solar_kwp: float
+    inverter_rating_kw: float
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+def signup(req: SignupRequest):
+    if store.get_user(req.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    user_id = f"user-{uuid.uuid4().hex[:8]}"
+    
+    new_user = {
+        "id": user_id,
+        "email": req.email,
+        "password_hash": get_password_hash(req.password),
+        "role": "market_participant",
+        "status": "pending",
+        "consumer_no": req.consumer_no,
+        "connection_type": req.connection_type,
+        "sanctioned_load_kw": req.sanctioned_load_kw,
+        "solar_kwp": req.solar_kwp,
+        "inverter_rating_kw": req.inverter_rating_kw,
+        "assigned_bus_id": None,
+        "bank_account_masked": "XXXXXX4821" # Mocked for settlement feature
+    }
+    
+    store.add_user(new_user)
+    return {"message": "Signup successful. Waiting for admin approval."}
+
+@router.post("/login")
+def login(req: LoginRequest, response: Response):
+    user = store.get_user(req.email)
+    if not user or not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+        
+    if user["status"] != "approved":
+        raise HTTPException(status_code=403, detail=f"Account is {user['status']}")
+        
+    access_token = create_access_token(data={"sub": user["email"]})
+    
+    # Set httpOnly cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False, # Set to False for local dev without HTTPS
+        max_age=60 * 24 * 7 * 60 # 1 week in seconds
+    )
+    
+    return {"message": "Login successful"}
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"message": "Logged out"}
+
+@router.get("/me")
+def get_me(current_user: Dict[str, Any] = Depends(get_current_user)):
+    user_copy = current_user.copy()
+    user_copy.pop("password_hash", None)
+    return user_copy
