@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import uuid
+import os
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 from backend.app.core.auth import (
     get_password_hash,
@@ -25,6 +28,9 @@ class SignupRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+class GoogleLoginRequest(BaseModel):
+    token: str
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(req: SignupRequest):
@@ -62,13 +68,16 @@ def login(req: LoginRequest, response: Response):
         
     access_token = create_access_token(data={"sub": user["email"]})
     
-    # Set httpOnly cookie
+    import os
+    is_prod = os.getenv("ENVIRONMENT", "development").lower() == "production"
+    
+    # Set httpOnly cookie with strict security controls
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
-        secure=False, # Set to False for local dev without HTTPS
+        samesite="strict" if is_prod else "lax",
+        secure=is_prod,
         max_age=60 * 24 * 7 * 60 # 1 week in seconds
     )
     
@@ -78,6 +87,57 @@ def login(req: LoginRequest, response: Response):
 def logout(response: Response):
     response.delete_cookie("access_token")
     return {"message": "Logged out"}
+
+@router.post("/google")
+def google_login(req: GoogleLoginRequest, response: Response):
+    try:
+        # Verify the token
+        client_id = os.getenv("GOOGLE_CLIENT_ID")
+        idinfo = id_token.verify_oauth2_token(req.token, google_requests.Request(), client_id)
+        email = idinfo.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Token has no email")
+            
+        user = store.get_user(email)
+        if not user:
+            user_id = f"user-{uuid.uuid4().hex[:8]}"
+            user = {
+                "id": user_id,
+                "email": email,
+                "password_hash": get_password_hash(uuid.uuid4().hex),
+                "role": "market_participant",
+                "status": "approved",
+                "consumer_no": "GOOGLE-AUTH",
+                "connection_type": "residential",
+                "sanctioned_load_kw": 5.0,
+                "solar_kwp": 0.0,
+                "inverter_rating_kw": 0.0,
+                "assigned_bus_id": None,
+                "bank_account_masked": "XXXXXX0000",
+                "grid_id": "default_grid"
+            }
+            store.add_user(user)
+            
+        # Create token with grid_id
+        access_token = create_access_token(data={
+            "sub": user["email"],
+            "grid_id": user.get("grid_id", "default_grid")
+        })
+        
+        is_prod = os.getenv("ENVIRONMENT", "development").lower() == "production"
+        
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            samesite="strict" if is_prod else "lax",
+            secure=is_prod,
+            max_age=60 * 24 * 7 * 60
+        )
+        
+        return {"message": "Login successful", "access_token": access_token}
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
 
 @router.get("/me")
 def get_me(current_user: Dict[str, Any] = Depends(get_current_user)):
