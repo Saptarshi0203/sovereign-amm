@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -12,15 +12,14 @@ services:
       - CHROMA_PORT=8000
       - REDIS_HOST=redis_cache
       - REDIS_PORT=6379
-      - JWT_SECRET_KEY=sovereign-amm-super-secret-key-for-hackathon
+      - JWT_SECRET=sovereign-amm-super-secret-key-for-hackathon
+      - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - PUBLIC_DEMO=true
     depends_on:
       - chromadb
       - redis_cache
     volumes:
-      - ./backend:/app
-      - ./engine:/app/engine
-      - ./simulation:/app/simulation
-      - ./rag_sidecar:/app/rag_sidecar
+      - ./backend/app/db:/app/backend/app/db
     networks:
       - sovereign_net
 
@@ -32,7 +31,9 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/stream
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000
+      - NEXT_PUBLIC_GRID_ID=demo
+      - NEXT_PUBLIC_AUTO_DEMO=true
     volumes:
       - ./frontend:/app
       - /app/node_modules

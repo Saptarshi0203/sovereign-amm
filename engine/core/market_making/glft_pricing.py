@@ -1,4 +1,5 @@
 import math
+import time
 from dataclasses import dataclass
 from typing import Optional
 from engine.types import BatteryState, Quote
@@ -26,7 +27,8 @@ def quote(state: BatteryState, mid: float, params: GLFTParams, c_deg: float = 0.
     - q: Normalized inventory in [-1, 1]
     - Q_max: Maximum battery capacity (micro-kWh)
     
-    Returns a Quote object with prices in micro-INR and volumes in micro-kWh.
+    Units: ``mid`` and ``c_deg`` are in INR/kWh (floats). The returned Quote
+    carries prices in micro-INR and volumes in micro-kWh.
     """
     # 1. Inventory normalization
     soc = state.soc
@@ -86,9 +88,6 @@ def quote(state: BatteryState, mid: float, params: GLFTParams, c_deg: float = 0.
     if soc <= params.soc_floor_units:
         ask_volume = 0
         
-    if math.isinf(bid_price) or math.isinf(ask_price):
-        print(f"DEBUG glft_pricing: mid={mid}, base={base}, spread={spread}, delta_bid={delta_bid}, delta_ask={delta_ask}, q={q}, power_term={power_term}, exponent={exponent}, base_term={base_term}", flush=True)
-        
     # Convert to micro-INR
     try:
         bid_micro = int(bid_price * 1_000_000)
@@ -112,5 +111,29 @@ def quote(state: BatteryState, mid: float, params: GLFTParams, c_deg: float = 0.
         ask_price=ask_micro if ask_volume > 0 else 0,
         bid_volume=bid_volume,
         ask_volume=ask_volume,
-        timestamp=int(math.floor(time.time() * 1000)) if 'time' in globals() else 0
+        timestamp=int(time.time() * 1000)
     )
+
+
+def quote_breakdown(state: BatteryState, mid: float, params: GLFTParams, c_deg: float = 0.0) -> dict:
+    """
+    Decompose the GLFT quote into its additive components (all in INR/kWh).
+
+    Returns: {q, base, spread, delta_bid, delta_ask, c_deg, bid, ask}
+    """
+    q_max = params.q_max_units
+    q = 2.0 * (state.soc - q_max / 2.0) / q_max if q_max > 0 else 0.0
+    k, gamma, sigma, A = params.k, params.gamma, params.sigma, params.A
+    base = (1.0 / k) * math.log(1.0 + k / gamma)
+    try:
+        power_term = math.pow(1.0 + gamma / k, 1.0 + k / gamma)
+    except OverflowError:
+        power_term = math.e
+    spread = math.sqrt((sigma ** 2 * gamma) / (2.0 * k * A) * power_term)
+    delta_bid = base + ((2.0 * q + 1.0) / 2.0) * spread
+    delta_ask = base - ((2.0 * q - 1.0) / 2.0) * spread
+    return {
+        "q": q, "base": base, "spread": spread,
+        "delta_bid": delta_bid, "delta_ask": delta_ask, "c_deg": c_deg,
+        "bid": mid - delta_bid, "ask": mid + delta_ask + c_deg,
+    }

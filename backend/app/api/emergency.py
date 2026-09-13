@@ -1,44 +1,30 @@
-import time
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any
 
-from backend.app.core.auth import require_role
-from engine.types import EmergencyOverrideEngaged, EmergencyOverrideReleased
-
-# Avoid circular imports, we'll import global state dynamically or depend on dependency injection in a real app,
-# but for this script we can import from main or pass it.
-# We will use main's event_log and state.
-from backend.app.main import event_log, state
+from backend.app.api.deps import auth_scope
+from backend.app.core.config import settings
+from backend.app.engine_facade import engine_facade
 
 router = APIRouter(prefix="/api/emergency", tags=["emergency"])
+
 
 class EmergencyToggleRequest(BaseModel):
     active: bool
     reason: str = ""
+    grid_id: str = settings.DEMO_GRID_ID
+
+
+@router.get("/status")
+def emergency_status(grid_id: str = settings.DEMO_GRID_ID):
+    rt = engine_facade.get_runtime(grid_id)
+    return {"active": rt.state.emergency_active, "reason": rt.state.emergency_reason, "operator": rt.state.emergency_operator}
+
 
 @router.post("/toggle")
-def toggle_emergency(req: EmergencyToggleRequest, operator: Dict[str, Any] = Depends(require_role(["grid_operator", "battery_operator"]))):
-    now = int(time.time() * 1000)
-    
-    if req.active:
-        if not req.reason:
-            raise HTTPException(status_code=400, detail="Reason is required to engage emergency override")
-        
-        event = EmergencyOverrideEngaged(
-            sequence_number=event_log.next_seq(),
-            operator_id=operator["email"],
-            reason=req.reason,
-            timestamp=now
-        )
-    else:
-        event = EmergencyOverrideReleased(
-            sequence_number=event_log.next_seq(),
-            operator_id=operator["email"],
-            timestamp=now
-        )
-        
-    event_log.append(event)
-    state.apply(event)
-    
+async def toggle_emergency(req: EmergencyToggleRequest, user: Dict[str, Any] = Depends(auth_scope)):
+    if req.active and not req.reason:
+        raise HTTPException(status_code=400, detail="Reason is required to engage emergency override")
+    await engine_facade.set_emergency(req.grid_id, req.active, operator=user.get("sub", "operator"), reason=req.reason)
     return {"message": "Emergency override engaged" if req.active else "Emergency override released"}

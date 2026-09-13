@@ -5,60 +5,59 @@ import { Panel } from '@/components/ui/Panel';
 import { LockOverlay } from '@/components/layout/LockOverlay';
 import { TickerTape } from '@/components/landing/TickerTape';
 import { StatTile } from '@/components/ui/StatTile';
+import { FeedStatus } from '@/components/ui/FeedStatus';
+import { PnlPanel } from '@/components/panels/PnlPanel';
+import { FillsTable } from '@/components/panels/FillsTable';
+import { DataInjector } from '@/components/panels/DataInjector';
 import { formatPrice, formatOBI } from '@/lib/utils';
 import { useTickFlash } from '@/lib/hooks/useTickFlash';
 
-const DepthChart = dynamic(() => import('@/components/charts/DepthChart').then(m => m.DepthChart), { ssr: false });
-const PriceStateChart = dynamic(() => import('@/components/charts/PriceStateChart').then(m => m.PriceStateChart), { ssr: false });
-const BatteryGauge = dynamic(() => import('@/components/charts/BatteryGauge').then(m => m.BatteryGauge), { ssr: false });
-const ObiGauge = dynamic(() => import('@/components/charts/ObiGauge').then(m => m.ObiGauge), { ssr: false });
-
-function PnlPanel() {
-  return (
-    <div className="flex flex-col gap-2 p-4 h-40">
-      <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">P&L Summary</p>
-      <p className="text-2xl font-bold font-mono text-emerald-400">+₹12,847</p>
-      <p className="text-xs text-slate-500 font-mono">Unrealised: +₹3,201</p>
-    </div>
-  );
-}
-
-function FillsTable() {
-  return (
-    <div className="p-4 h-40">
-      <p className="text-xs uppercase tracking-widest text-slate-400 font-mono mb-2">Recent Fills</p>
-      <div className="text-xs font-mono text-slate-400 space-y-1">
-        <div className="flex justify-between"><span className="text-emerald-400">BUY</span><span>₹4.8530</span><span>3.2 kWh</span></div>
-        <div className="flex justify-between"><span className="text-rose-500">SELL</span><span>₹4.8620</span><span>1.8 kWh</span></div>
-        <div className="flex justify-between"><span className="text-emerald-400">BUY</span><span>₹4.8490</span><span>5.1 kWh</span></div>
-      </div>
-    </div>
-  );
-}
+const DepthChart = dynamic(() => import('@/components/charts/DepthChart').then((m) => m.DepthChart), { ssr: false });
+const PriceStateChart = dynamic(() => import('@/components/charts/PriceStateChart').then((m) => m.PriceStateChart), { ssr: false });
+const BatteryGauge = dynamic(() => import('@/components/charts/BatteryGauge').then((m) => m.BatteryGauge), { ssr: false });
+const ObiGauge = dynamic(() => import('@/components/charts/ObiGauge').then((m) => m.ObiGauge), { ssr: false });
 
 export default function DashboardPage() {
-  const { microPrice, bestBid, bestAsk, obi } = useStore((s) => ({
-    microPrice: s.microPrice,
-    bestBid: s.bestBid,
-    bestAsk: s.bestAsk,
-    obi: s.obi,
-  }));
+  const microPrice = useStore((s) => s.microPrice);
+  const bestBid = useStore((s) => s.bestBid);
+  const bestAsk = useStore((s) => s.bestAsk);
+  const obi = useStore((s) => s.obi);
+  const ammBid = useStore((s) => s.ammBid);
+  const ammAsk = useStore((s) => s.ammAsk);
+  const narration = useStore((s) => s.narration);
+  const scenario = useStore((s) => s.scenario);
   const microFlash = useTickFlash(microPrice);
+  const spreadFlash = useTickFlash(bestAsk.px - bestBid.px);
 
   return (
     <>
       <TickerTape />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Trading Dashboard</h1>
-          <p className="text-xs text-slate-500 font-mono">MICROGRID-KWH · SPOT · 10 Hz</p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Trading Dashboard</h1>
+            <p className="text-xs text-slate-500 font-mono">MICROGRID-KWH · SPOT · 10 Hz</p>
+          </div>
+          <FeedStatus />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {narration && scenario !== 'normal' && (
+          <p className="text-xs font-mono text-amber-300 border border-amber-800/50 bg-amber-900/10 rounded-lg px-3 py-2">
+            SCENARIO · {scenario.replace('_', ' ').toUpperCase()} — {narration}
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatTile label="MICRO PRICE" value={formatPrice(microPrice, 4)} flashClass={microFlash} />
-          <StatTile label="BEST BID" value={formatPrice(bestBid.px, 3)} />
-          <StatTile label="BEST ASK" value={formatPrice(bestAsk.px, 3)} />
-          <StatTile label="OBI" value={formatOBI(obi)} />
+          <StatTile label="BEST BID" value={formatPrice(bestBid.px, 3)} unit={`${bestBid.sz.toFixed(1)} kWh`} />
+          <StatTile label="BEST ASK" value={formatPrice(bestAsk.px, 3)} unit={`${bestAsk.sz.toFixed(1)} kWh`} />
+          <StatTile label="SPREAD" value={formatPrice(Math.max(0, bestAsk.px - bestBid.px), 4)} flashClass={spreadFlash} />
+          <StatTile label="OBI" value={formatOBI(obi)} flashClass={obi >= 0 ? 'text-emerald-400' : 'text-rose-500'} />
+          <StatTile
+            label="AMM QUOTE"
+            value={ammBid !== null && ammAsk !== null ? `${ammBid.toFixed(3)} / ${ammAsk.toFixed(3)}` : ammBid !== null ? `${ammBid.toFixed(3)} / —` : ammAsk !== null ? `— / ${ammAsk.toFixed(3)}` : '— / —'}
+            className="[&>div>span]:text-base"
+          />
         </div>
 
         <div className="grid md:grid-cols-[1fr_2fr] gap-4">
@@ -67,33 +66,35 @@ export default function DashboardPage() {
             <DepthChart />
           </Panel>
           <Panel className="p-4">
-            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">Price & SoC</h2>
+            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">Price &amp; SoC</h2>
             <PriceStateChart />
           </Panel>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Panel className="p-4"><BatteryGauge /></Panel>
-          <Panel className="p-4"><ObiGauge /></Panel>
+          <Panel className="p-4">
+            <BatteryGauge />
+          </Panel>
+          <Panel className="p-4">
+            <ObiGauge />
+          </Panel>
           <Panel>
-            <LockOverlay
-              title="Your Terminal, Live."
-              body="Sign in to view live PnL, fills, and inventory positions."
-              ctaLabel="Sign In"
-            >
+            <LockOverlay title="Your Terminal, Live." body="Sign in to view live PnL, fills, and inventory positions." ctaLabel="Sign In">
               <PnlPanel />
             </LockOverlay>
           </Panel>
           <Panel>
-            <LockOverlay
-              title="Your Terminal, Live."
-              body="Sign in to view live fills and inventory positions."
-              ctaLabel="Sign In"
-            >
+            <LockOverlay title="Your Terminal, Live." body="Sign in to view live fills and inventory positions." ctaLabel="Sign In">
               <FillsTable />
             </LockOverlay>
           </Panel>
         </div>
+
+        <Panel>
+          <LockOverlay title="Inject Custom Data" body="Sign in to push custom datasets into the engine." ctaLabel="Sign In">
+            <DataInjector />
+          </LockOverlay>
+        </Panel>
       </main>
     </>
   );

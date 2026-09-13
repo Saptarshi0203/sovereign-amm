@@ -1,0 +1,177 @@
+'use client';
+
+/**
+ * @file LiveDataProvider.tsx
+ * @description Mounts once at the root. Owns the two engine WebSockets
+ * (10 Hz order book, 1 Hz grid), the REST history hydration, and the session
+ * bootstrap. Everything it receives is written to the central Zustand store;
+ * no component talks to the network directly for market data.
+ *
+ * Leak safety: every socket, timer and abort controller is torn down in the
+ * effect cleanup, and a generation counter discards late callbacks from a
+ * previous connection attempt.
+ */
+
+import React, { useEffect, useRef } from 'react';
+import { useStore } from '@/lib/store';
+import { isGridSnapshot, isOrderbookSnapshot } from '@/lib/live/snapshots';
+import { GRID_ID, WS_BASE, bootstrapSession, fetchHistory } from '@/lib/live/session';
+
+/** Reconnect delay for attempt n: 1 s, 2 s, 4 s … capped at 15 s. */
+export function backoffMs(attempt: number): number {
+  return Math.min(1000 * 2 ** attempt, 15_000);
+}
+
+/** Consider the 10 Hz feed dead if no frame arrives within this window. */
+const STALE_MS = 3000;
+
+type FeedName = 'orderbook' | 'grid';
+
+function useEngineSocket(feed: FeedName, path: string) {
+  const token = useStore((s) => s.jwtToken);
+  const sessionReady = useStore((s) => s.sessionReady);
+
+  useEffect(() => {
+    if (!sessionReady || typeof window === 'undefined') return;
+
+    let ws: WebSocket | null = null;
+    let closed = false;
+    let attempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let staleTimer: ReturnType<typeof setInterval> | null = null;
+    let lastFrame = 0;
+    const generation = { id: 0 };
+
+    const { applyOrderbookSnapshot, applyGridSnapshot, setFeedConnected } = useStore.getState();
+
+    const connect = () => {
+      if (closed) return;
+      const gen = ++generation.id;
+      const url = token ? `${WS_BASE}${path}?token=${encodeURIComponent(token)}` : `${WS_BASE}${path}`;
+      try {
+        ws = new WebSocket(url);
+      } catch {
+        scheduleReconnect();
+        return;
+      }
+      const socket = ws;
+
+      socket.onopen = () => {
+        if (gen !== generation.id) return;
+        attempt = 0;
+        lastFrame = Date.now();
+        setFeedConnected(feed, true);
+      };
+
+      socket.onmessage = (event: MessageEvent) => {
+        if (gen !== generation.id) return;
+        lastFrame = Date.now();
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(event.data as string);
+        } catch {
+          return;
+        }
+        if (feed === 'orderbook' && isOrderbookSnapshot(parsed)) applyOrderbookSnapshot(parsed);
+        else if (feed === 'grid' && isGridSnapshot(parsed)) applyGridSnapshot(parsed);
+      };
+
+      socket.onerror = () => {
+        /* onclose follows; reconnection handled there */
+      };
+
+      socket.onclose = () => {
+        if (gen !== generation.id) return;
+        setFeedConnected(feed, false);
+        scheduleReconnect();
+      };
+    };
+
+    const scheduleReconnect = () => {
+      if (closed) return;
+      const delay = backoffMs(attempt++);
+      reconnectTimer = setTimeout(connect, delay);
+    };
+
+    connect();
+
+    if (feed === 'orderbook') {
+      staleTimer = setInterval(() => {
+        if (!closed && lastFrame && Date.now() - lastFrame > STALE_MS && useStore.getState().orderbookConnected) {
+          setFeedConnected('orderbook', false);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      closed = true;
+      generation.id++;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (staleTimer) clearInterval(staleTimer);
+      if (ws) {
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000, 'unmount');
+        ws = null;
+      }
+      setFeedConnected(feed, false);
+    };
+  }, [feed, path, token, sessionReady]);
+}
+
+function useHistoryHydration() {
+  const sessionReady = useStore((s) => s.sessionReady);
+  const range = useStore((s) => s.historyRange);
+  const dataVersion = useStore((s) => s.dataVersion);
+  const live = useStore((s) => s.dataSource === 'live');
+  const lastKey = useRef<string>('');
+
+  useEffect(() => {
+    if (!sessionReady) return;
+    const key = `${range}:${dataVersion}:${live}`;
+    if (key === lastKey.current) return;
+    lastKey.current = key;
+
+    let cancelled = false;
+    const { setHistory, setHistoryLoading } = useStore.getState();
+    setHistoryLoading(true);
+    // Small debounce so a burst of data_version bumps only triggers one fetch.
+    const timer = setTimeout(async () => {
+      try {
+        const rows = await fetchHistory(range);
+        if (!cancelled) setHistory(rows);
+      } catch {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [sessionReady, range, dataVersion, live]);
+}
+
+function useSessionBootstrap() {
+  useEffect(() => {
+    let cancelled = false;
+    bootstrapSession().finally(() => {
+      if (!cancelled) useStore.getState().setSessionReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+}
+
+export function LiveDataProvider({ children }: { children: React.ReactNode }): React.ReactElement {
+  useSessionBootstrap();
+  useEngineSocket('orderbook', `/ws/orderbook/${GRID_ID}`);
+  useEngineSocket('grid', `/ws/grid/${GRID_ID}`);
+  useHistoryHydration();
+  return <>{children}</>;
+}
+
+export default LiveDataProvider;

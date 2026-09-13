@@ -1,8 +1,8 @@
 import heapq
 import uuid
 import time
-from collections import defaultdict
-from typing import List, Dict, Set, Optional, Callable
+from collections import defaultdict, deque
+from typing import List, Dict, Set, Optional, Callable, Deque, Tuple
 
 from engine.types import (
     Order, Side, OrderType, Event, 
@@ -31,6 +31,9 @@ class LimitOrderBook:
         self.bid_levels: Dict[int, int] = defaultdict(int)
         self.ask_levels: Dict[int, int] = defaultdict(int)
         self.trade_screener = trade_screener
+
+        # Rolling tape of the most recent fills (projection of TradeExecuted events).
+        self.recent_fills: Deque[Fill] = deque(maxlen=200)
 
     def _clean_heap(self, heap: List[tuple], is_bid: bool):
         """Lazily removes cancelled or fully filled orders from the top of the heap."""
@@ -66,6 +69,51 @@ class LimitOrderBook:
             
         return (bid * v_ask + ask * v_bid) / (v_bid + v_ask)
 
+    def get_bids_depth(self, depth: int = 12) -> List[Tuple[int, int]]:
+        """
+        Top-``depth`` bid levels as (price, cumulative_qty), best bid first.
+
+        cumulative_qty[i] = sum of resting volume at levels 0..i (micro-kWh),
+        i.e. the standard L2 depth-chart staircase.
+        """
+        levels = sorted(((p, v) for p, v in self.bid_levels.items() if v > 0), key=lambda x: -x[0])[:depth]
+        out: List[Tuple[int, int]] = []
+        cum = 0
+        for p, v in levels:
+            cum += v
+            out.append((p, cum))
+        return out
+
+    def get_asks_depth(self, depth: int = 12) -> List[Tuple[int, int]]:
+        """Top-``depth`` ask levels as (price, cumulative_qty), best ask first."""
+        levels = sorted(((p, v) for p, v in self.ask_levels.items() if v > 0), key=lambda x: x[0])[:depth]
+        out: List[Tuple[int, int]] = []
+        cum = 0
+        for p, v in levels:
+            cum += v
+            out.append((p, cum))
+        return out
+
+    def resting_order_ids(self) -> List[str]:
+        """Order IDs that still have remaining volume in the book."""
+        return [oid for oid, rem in self.remaining_volume.items() if rem > 0 and oid not in self.cancelled_ids]
+
+    def purge_dead_orders(self) -> None:
+        """
+        Drop bookkeeping for orders that are fully filled or cancelled so the
+        projection's memory footprint stays bounded under continuous flow.
+        Heaps are cleaned lazily by ``_clean_heap``; this rebuilds them.
+        """
+        dead = [oid for oid, rem in self.remaining_volume.items() if rem <= 0]
+        for oid in dead:
+            self.orders.pop(oid, None)
+            self.remaining_volume.pop(oid, None)
+            self.cancelled_ids.discard(oid)
+        self.bids = [t for t in self.bids if self.remaining_volume.get(t[2], 0) > 0]
+        self.asks = [t for t in self.asks if self.remaining_volume.get(t[2], 0) > 0]
+        heapq.heapify(self.bids)
+        heapq.heapify(self.asks)
+
     def process_order(self, order: Order, next_seq: Callable[[], int]) -> List[Event]:
         """
         Matches an incoming order against the book.
@@ -76,6 +124,10 @@ class LimitOrderBook:
         
         is_bid = (order.side == Side.BID)
         target_heap = self.asks if is_bid else self.bids
+        # Makers that failed PTDF screening against *this* taker are parked and
+        # restored afterwards: the grid constraint is pairwise, so they remain
+        # valid liquidity for other counterparties.
+        parked: List[tuple] = []
         
         while rem_vol > 0:
             self._clean_heap(target_heap, not is_bid)
@@ -106,8 +158,7 @@ class LimitOrderBook:
                         reason="PTDF congestion: line limit exceeded"
                     )
                     events.append(reject_event)
-                    # Pop the congested maker off the heap so we don't loop forever
-                    heapq.heappop(target_heap)
+                    parked.append(heapq.heappop(target_heap))
                     continue
             
             fill = Fill(
@@ -124,6 +175,9 @@ class LimitOrderBook:
             self.apply(event)
             rem_vol -= fill_vol
             
+        for entry in parked:
+            heapq.heappush(target_heap, entry)
+
         if rem_vol > 0 and order.type == OrderType.LIMIT:
             rem_order = Order(
                 order_id=order.order_id,
@@ -188,6 +242,7 @@ class LimitOrderBook:
     def _apply_trade_executed(self, event: TradeExecuted):
         fill = event.fill
         maker_id = fill.maker_order_id
+        self.recent_fills.append(fill)
         
         if maker_id in self.orders:
             maker_order = self.orders[maker_id]

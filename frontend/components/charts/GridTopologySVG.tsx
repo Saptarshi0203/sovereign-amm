@@ -42,8 +42,10 @@ interface GridTopologySVGProps {
  *
  * - 9 edges rendered as animated dashed lines; dash-offset animation
  *   direction follows power-flow sign (positive = from→to, negative = to→from).
- * - Animation speed scales with |flowMW| so heavily loaded lines animate faster.
- * - Critical lines pulse using Tailwind's `animate-pulse`.
+ * - Animation speed scales with line loading so congested lines animate faster.
+ * - Colour encodes loading: emerald nominal, amber > 80 %, pulsing red > 95 %.
+ * - Flows come from the engine's 1 Hz PTDF stream (f = PTDF · p_inj) or the
+ *   in-browser DC power-flow fallback.
  * - When `interactive` is true, hovering a node reveals an inline SVG tooltip
  *   displaying LMP, injection (MW), and bus label.
  */
@@ -60,6 +62,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
 
   const isLight = mounted && theme === 'light';
 
+  // Nominal lines are emerald; > 80 % loading turns amber, > 95 % pulses red.
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'amber':
@@ -68,7 +71,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
         return '#e11d48';
       case 'normal':
       default:
-        return isLight ? '#0284c7' : '#334155'; // sky-600 vs slate-700
+        return isLight ? '#059669' : '#10b981';
     }
   };
 
@@ -92,8 +95,9 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
           if (!from || !to) return null;
 
           const color = getStatusColor(line.status);
-          // Faster animation for higher flow magnitude, clamped to [0.6s, 2s]
-          const dur = `${Math.max(0.6, 2 - Math.abs(line.flowMW) * 0.1)}s`;
+          // Faster animation for higher loading, clamped to [0.5s, 2.2s]
+          const dur = `${Math.max(0.5, 2.2 - (line.utilizationPct / 100) * 1.7)}s`;
+          const width = line.status === 'critical' ? 3.5 : line.status === 'amber' ? 2.75 : 2;
 
           return (
             <g key={line.id}>
@@ -114,9 +118,9 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                 x2={to.x}
                 y2={to.y}
                 stroke={color}
-                strokeWidth={line.status === 'critical' ? 3 : 2}
+                strokeWidth={width}
                 strokeDasharray="6 4"
-                className={line.status === 'critical' ? 'animate-pulse' : ''}
+                className={line.status === 'critical' ? 'animate-pulse' : line.status === 'amber' ? 'animate-[pulse_2.5s_ease-in-out_infinite]' : ''}
               >
                 <animate
                   attributeName="strokeDashoffset"
@@ -134,7 +138,8 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                 fontFamily="monospace"
                 fontSize="8"
                 fill={color}
-                opacity={isLight ? 1 : 0.8}
+                opacity={isLight ? 1 : 0.9}
+                fontWeight={line.status === 'normal' ? 400 : 700}
               >
                 {line.utilizationPct}%
               </text>
@@ -189,7 +194,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
             if (!bus) return null;
 
             // Clamp tooltip so it never exits the 600×400 viewBox
-            const tx = Math.min(tooltip.x + 12, 470);
+            const tx = Math.min(tooltip.x + 12, 445);
             const ty = Math.max(tooltip.y - 65, 5);
 
             return (
@@ -197,7 +202,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                 <rect
                   x={tx}
                   y={ty}
-                  width={125}
+                  width={150}
                   height={58}
                   rx={4}
                   fill={tooltipBg}
@@ -237,9 +242,10 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                   y={ty + 53}
                   fontFamily="monospace"
                   fontSize="9"
-                  fill={tooltipTextSecondary}
+                  fill={bus.status === 'BLOCKED' ? '#e11d48' : bus.status === 'CONSTRAINED' ? '#f59e0b' : tooltipTextSecondary}
                 >
-                  {bus.label}
+                  {bus.label.length > 20 ? `${bus.label.slice(0, 19)}…` : bus.label}
+                  {bus.status && bus.status !== 'OK' ? ` · ${bus.status}` : ''}
                 </text>
               </g>
             );

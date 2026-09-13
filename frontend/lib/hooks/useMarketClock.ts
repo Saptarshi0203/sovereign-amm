@@ -44,8 +44,13 @@ import { useStore } from '@/lib/store';
  */
 export function useMarketClock(): void {
   const tickMarket = useStore((s) => s.tickMarket);
+  const live = useStore((s) => s.dataSource === 'live');
 
   useEffect(() => {
+    // The engine feed drives the store while live; the local clock only runs
+    // as a fallback so the site stays fully animated without a backend.
+    if (live) return;
+
     // Respect the OS-level reduced-motion accessibility preference.
     // When enabled, skip the animation-driving interval entirely.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -58,5 +63,5 @@ export function useMarketClock(): void {
     // Cleanup: clear the interval when the component unmounts or
     // `tickMarket` reference changes (stable in practice).
     return () => clearInterval(id);
-  }, [tickMarket]);
+  }, [tickMarket, live]);
 }

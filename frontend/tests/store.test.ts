@@ -102,10 +102,10 @@ describe('Property 9: Judge parameter controls', () => {
     getState().resetJudge();
   });
 
-  it('resetJudge() restores volatility to 0.06', () => {
+  it('resetJudge() restores volatility to the engine default (0.5)', () => {
     useStore.setState({ volatility: 0.99 });
     getState().resetJudge();
-    expect(getState().volatility).toBe(0.06);
+    expect(getState().volatility).toBe(0.5);
   });
 
   it('resetJudge() restores riskAversion to 1.5', () => {
@@ -140,7 +140,7 @@ describe('Property 9: Judge parameter controls', () => {
     getState().setJudge({ riskAversion: 3.0 });
     const s = getState();
     expect(s.riskAversion).toBe(3.0);
-    expect(s.volatility).toBe(0.06);
+    expect(s.volatility).toBe(0.5);
   });
 
   it('setJudge with multiple keys updates all listed keys atomically', () => {

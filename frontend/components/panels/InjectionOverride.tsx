@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/lib/store';
+import { postGridReset, postInjection } from '@/lib/live/session';
 
 // ---------------------------------------------------------------------------
 // InjectionOverride
@@ -23,6 +24,8 @@ export function InjectionOverride() {
   const buses          = useStore((s) => s.buses);
   const applyInjection = useStore((s) => s.applyInjection);
   const resetGrid      = useStore((s) => s.resetGrid);
+  const live           = useStore((s) => s.dataSource === 'live');
+  const [error, setError] = useState<string | null>(null);
 
   const [selectedBus, setSelectedBus] = useState<string>('BUS-05');
   const [mw, setMw]                   = useState<number>(0);
@@ -38,19 +41,29 @@ export function InjectionOverride() {
     [],
   );
 
+  // Live: the engine applies the injection through its event log and the
+  // PTDF flows arrive on the next 1 Hz grid frame. Offline: local DC power flow.
   const inject = () => {
     if (decayRef.current) clearTimeout(decayRef.current);
-    applyInjection(selectedBus, mw);
+    setError(null);
+    if (live) {
+      postInjection(selectedBus, mw).catch((e: unknown) => setError(e instanceof Error ? e.message : 'Injection failed'));
+    } else {
+      applyInjection(selectedBus, mw);
+    }
     setActive(true);
     decayRef.current = setTimeout(() => {
-      resetGrid();
+      if (live) postInjection(selectedBus, 0).catch(() => undefined);
+      else resetGrid();
       setActive(false);
     }, 8000);
   };
 
   const reset = () => {
     if (decayRef.current) clearTimeout(decayRef.current);
-    resetGrid();
+    setError(null);
+    if (live) postGridReset().catch((e: unknown) => setError(e instanceof Error ? e.message : 'Reset failed'));
+    else resetGrid();
     setActive(false);
   };
 
@@ -112,6 +125,8 @@ export function InjectionOverride() {
           RESET GRID
         </button>
       </div>
+
+      {error && <p className="text-xs text-rose-400 font-mono">{error}</p>}
 
       {/* Active indicator */}
       {active && (

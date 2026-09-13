@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/navigation/Navbar";
 import { Footer } from "@/components/footer/Footer";
 import { MarketClockProvider } from "@/components/providers/MarketClockProvider";
+import { LiveDataProvider } from "@/components/providers/LiveDataProvider";
 import { AuthDrawer } from "@/components/layout/AuthDrawer";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -40,6 +41,7 @@ export default function RootLayout({
 
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+            <LiveDataProvider>
             <MarketClockProvider>
               <Navbar />
 
@@ -50,6 +52,7 @@ export default function RootLayout({
               <Footer />
               <AuthDrawer />
             </MarketClockProvider>
+            </LiveDataProvider>
           </ThemeProvider>
         </GoogleOAuthProvider>
       </body>

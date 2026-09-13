@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { API_BASE } from '@/lib/live/session';
 
 interface Message {
   role: "user" | "assistant";
@@ -31,7 +32,7 @@ export function RagCopilot() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/ask", {
+      const res = await fetch(`${API_BASE}/api/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),

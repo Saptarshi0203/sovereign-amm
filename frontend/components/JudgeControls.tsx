@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { API_BASE } from '@/lib/live/session';
 
 export function JudgeControls() {
   const [sunlight, setSunlight] = useState(1.0);
@@ -9,7 +10,7 @@ export function JudgeControls() {
   const [gamma, setGamma] = useState(0.1);
 
   const updateBackend = useCallback((payload: any) => {
-    fetch("http://localhost:8000/api/control", {
+    fetch(`${API_BASE}/api/control`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)

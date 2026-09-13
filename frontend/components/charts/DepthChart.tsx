@@ -35,13 +35,16 @@ interface DepthRow {
  *
  * Bids extend left (negative x, emerald) and asks extend right (positive x,
  * rose). The zero reference line marks the mid. Data is sourced directly from
- * the live Zustand `book` slice so the chart has real data on first paint.
+ * the live Zustand `book` slice (10 Hz engine feed, or the in-browser
+ * simulation when offline). The AMM's own bid/ask levels are marked.
  *
  * Rendering is deliberately non-animated (`isAnimationActive={false}`) to
  * keep the 10 Hz tick rate responsive.
  */
 export function DepthChart() {
   const book = useStore((s) => s.book);
+  const ammBid = useStore((s) => s.ammBid);
+  const ammAsk = useStore((s) => s.ammAsk);
 
   const chartData = useMemo<DepthRow[]>(() => {
     const rows: DepthRow[] = [];
@@ -68,6 +71,9 @@ export function DepthChart() {
     return rows.sort((a, b) => b.priceNum - a.priceNum);
   }, [book]);
 
+  const ammBidLabel = ammBid !== null ? formatPrice(ammBid, 3) : null;
+  const ammAskLabel = ammAsk !== null ? formatPrice(ammAsk, 3) : null;
+
   return (
     <ResponsiveContainer width="100%" height={320}>
       <BarChart
@@ -92,6 +98,12 @@ export function DepthChart() {
           axisLine={{ stroke: '#334155' }}
         />
         <ReferenceLine x={0} stroke="#475569" strokeWidth={1} />
+        {ammBidLabel && chartData.some((r) => r.price === ammBidLabel) && (
+          <ReferenceLine y={ammBidLabel} stroke="#10b981" strokeDasharray="2 2" label={{ value: 'AMM', fill: '#10b981', fontSize: 9, position: 'left' }} />
+        )}
+        {ammAskLabel && chartData.some((r) => r.price === ammAskLabel) && (
+          <ReferenceLine y={ammAskLabel} stroke="#e11d48" strokeDasharray="2 2" label={{ value: 'AMM', fill: '#e11d48', fontSize: 9, position: 'right' }} />
+        )}
         <Tooltip
           cursor={{ fill: 'rgba(100,116,139,0.1)' }}
           contentStyle={{

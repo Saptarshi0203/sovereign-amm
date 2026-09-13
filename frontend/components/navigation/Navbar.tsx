@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 
-import { useStore } from '@/lib/store';
 import { AuthButtons } from './AuthButtons';
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -25,16 +24,14 @@ const navigationTabs = [
  *
  * - Logo "SOVEREIGN-AMM" links to "/"
  * - Desktop tabs with active-state highlighting via usePathname()
- * - Auth buttons (Sign In / Sign Up Now) when not in demo mode; DEMO MODE
- *   label when demoUser === true (opens the AuthDrawer, no route navigation)
+ * - AuthButtons: DEMO MODE badge + Sign In under a guest session, Sign Out
+ *   for a real session (Google OAuth / password)
  * - Mobile hamburger below 768 px that toggles MobileMenu
  *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 2.9, 10.12
  */
 export function Navbar() {
   const pathname = usePathname();
-  const demoUser = useStore((s) => s.demoUser);
-  const openAuth = useStore((s) => s.openAuth);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -87,12 +84,8 @@ export function Navbar() {
             <ThemeToggle />
           </div>
 
-          {/* Auth / user section — always shown */}
-          {demoUser ? (
-            <span className="text-sm text-emerald-600 dark:text-emerald-400 font-mono">DEMO MODE</span>
-          ) : (
-            <AuthButtons />
-          )}
+          {/* Auth / user section — demo badge, sign in, or signed-in user */}
+          <AuthButtons />
 
           {/* Hamburger — visible only on mobile */}
           <button

@@ -4,6 +4,9 @@ import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { Panel } from '@/components/ui/Panel';
 import { LockOverlay } from '@/components/layout/LockOverlay';
+import { FeedStatus } from '@/components/ui/FeedStatus';
+import { PnlMetrics, RiskParams } from '@/components/panels/BatteryMetrics';
+import { putParameters } from '@/lib/live/session';
 
 const BatteryGauge = dynamic(
   () => import('@/components/charts/BatteryGauge').then((m) => m.BatteryGauge),
@@ -18,45 +21,39 @@ const InventoryBoundaryChart = dynamic(
   { ssr: false },
 );
 
-function PnlMetrics() {
-  return (
-    <div className="p-4 h-32">
-      <p className="text-xs uppercase tracking-widest text-slate-400 font-mono mb-2">PnL Metrics</p>
-      <div className="grid grid-cols-2 gap-3 font-mono text-sm">
-        <div><p className="text-xs text-slate-500">Daily PnL</p><p className="text-emerald-400 font-bold">+₹4,218</p></div>
-        <div><p className="text-xs text-slate-500">Throughput</p><p className="text-white font-bold">142.6 kWh</p></div>
-        <div><p className="text-xs text-slate-500">Avg Spread</p><p className="text-sky-400 font-bold">₹0.0102</p></div>
-        <div><p className="text-xs text-slate-500">C_deg</p><p className="text-amber-400 font-bold">₹0.0043/kWh</p></div>
-      </div>
-    </div>
-  );
-}
-
-function RiskParams() {
-  return (
-    <div className="p-4 h-32">
-      <p className="text-xs uppercase tracking-widest text-slate-400 font-mono mb-2">Risk Parameters</p>
-      <div className="grid grid-cols-2 gap-3 font-mono text-sm">
-        <div><p className="text-xs text-slate-500">σ</p><p className="text-white font-bold">0.0600</p></div>
-        <div><p className="text-xs text-slate-500">γ</p><p className="text-white font-bold">1.50</p></div>
-        <div><p className="text-xs text-slate-500">SoC floor</p><p className="text-rose-400 font-bold">10.0%</p></div>
-        <div><p className="text-xs text-slate-500">SoC ceiling</p><p className="text-emerald-400 font-bold">95.0%</p></div>
-      </div>
-    </div>
-  );
-}
-
 export default function BatteryPage() {
   const openAuth = useStore((s) => s.openAuth);
+  const isUnlocked = useStore((s) => s.isUnlocked);
+  const live = useStore((s) => s.dataSource === 'live');
+  const risk = useStore((s) => s.risk);
+  const setJudge = useStore((s) => s.setJudge);
   const hasPromptedRef = useRef(false);
   const [simCapacity, setSimCapacity] = useState(100);
+  const [gammaDraft, setGammaDraft] = useState<number | null>(null);
+  const [sigmaDraft, setSigmaDraft] = useState<number | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSimSlider = useCallback(() => {
-    if (!hasPromptedRef.current) {
+    if (!isUnlocked && !hasPromptedRef.current) {
       hasPromptedRef.current = true;
       openAuth('signup');
     }
-  }, [openAuth]);
+  }, [openAuth, isUnlocked]);
+
+  // Debounced parameter push: live → PUT /grid/{id}/parameters (engine re-quotes
+  // on the next tick); offline → the local judge slice.
+  const pushParams = useCallback(
+    (patch: { gamma?: number; sigma?: number }) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        if (live) putParameters(patch).catch(() => undefined);
+        else setJudge({ ...(patch.gamma !== undefined ? { riskAversion: patch.gamma } : {}), ...(patch.sigma !== undefined ? { volatility: patch.sigma } : {}) });
+      }, 350);
+    },
+    [live, setJudge],
+  );
+  const gammaValue = gammaDraft ?? risk.gamma;
+  const sigmaValue = sigmaDraft ?? risk.sigma;
 
   return (
     <>
@@ -76,6 +73,9 @@ export default function BatteryPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+        <div className="flex justify-end">
+          <FeedStatus />
+        </div>
         <div className="grid md:grid-cols-2 gap-4">
           <Panel className="p-4">
             <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3 font-mono">
@@ -118,11 +118,59 @@ export default function BatteryPage() {
 
         <Panel className="p-5">
           <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-1 font-mono">
-            Simulate Your Battery
+            Tune the Market Maker
           </h2>
           <p className="text-xs text-slate-500 mb-4">
-            Adjust parameters to preview market-making performance.
+            Risk aversion γ and volatility σ feed the GLFT spread live — the boundaries above and the AMM quotes on the dashboard re-price on the next tick.
           </p>
+          <div className="grid sm:grid-cols-2 gap-4 mb-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between text-xs font-mono text-slate-400">
+                <span>γ risk aversion</span>
+                <span>{gammaValue.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={0.1}
+                max={5}
+                step={0.05}
+                value={gammaValue}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setGammaDraft(v);
+                  pushParams({ gamma: v });
+                  handleSimSlider();
+                }}
+                onMouseUp={() => setTimeout(() => setGammaDraft(null), 1500)}
+                onTouchEnd={() => setTimeout(() => setGammaDraft(null), 1500)}
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500"
+                aria-label="Risk aversion gamma"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between text-xs font-mono text-slate-400">
+                <span>σ volatility</span>
+                <span>{sigmaValue.toFixed(3)}</span>
+              </div>
+              <input
+                type="range"
+                min={0.05}
+                max={2}
+                step={0.01}
+                value={sigmaValue}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setSigmaDraft(v);
+                  pushParams({ sigma: v });
+                  handleSimSlider();
+                }}
+                onMouseUp={() => setTimeout(() => setSigmaDraft(null), 1500)}
+                onTouchEnd={() => setTimeout(() => setSigmaDraft(null), 1500)}
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-sky-500"
+                aria-label="Volatility sigma"
+              />
+            </div>
+          </div>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-xs font-mono text-slate-400">
               <span>Capacity (kWh)</span>
@@ -143,7 +191,7 @@ export default function BatteryPage() {
             />
           </div>
           <p className="text-xs text-slate-600 mt-2 font-mono">
-            Deploy Your Virtual Market Maker — sign in to run full simulations.
+            {live ? 'Parameters are pushed to the engine via PUT /grid/demo/parameters.' : 'Engine offline — parameters drive the in-browser simulation.'}
           </p>
         </Panel>
       </main>

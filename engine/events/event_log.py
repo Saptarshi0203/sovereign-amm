@@ -14,14 +14,23 @@ class EngineState:
     The deterministic projection of all events in the log.
     Holds the order book and battery state.
     """
-    def __init__(self, trade_screener=None):
+    def __init__(self, trade_screener=None, capacity_units: int = 100_000_000,
+                 rainflow_params: RainflowParams | None = None):
         self.lob = LimitOrderBook(trade_screener=trade_screener)
-        self.battery = BatteryState(soc=50_000_000, capacity=100_000_000, timestamp=0)
+        initial_soc = capacity_units // 2
+        self.battery = BatteryState(soc=initial_soc, capacity=capacity_units, timestamp=0)
         
-        # Initialize rainflow cycle counter
-        rf_params = RainflowParams(c_battery_capex=1_000_000.0, n0=3000.0, beta=1.5, e_nominal=100.0, eta_roundtrip=0.9)
-        self.rainflow = RainflowStream(rf_params, q_max=100_000_000)
-        self.rainflow.append(50_000_000) # Initial point
+        # Initialize rainflow cycle counter.
+        # Default: LFP-class pack — 8,000 INR/kWh capex, N0 = 6,000 cycles at 100 % DoD,
+        # Woehler exponent beta = 1.5; E_nominal in kWh.
+        rf_params = rainflow_params or RainflowParams(
+            c_battery_capex=8_000.0 * (capacity_units / 1_000_000.0),
+            n0=6000.0, beta=1.5,
+            e_nominal=capacity_units / 1_000_000.0,
+            eta_roundtrip=0.9,
+        )
+        self.rainflow = RainflowStream(rf_params, q_max=capacity_units)
+        self.rainflow.append(initial_soc) # Initial point
         
         # Emergency Override State
         self.emergency_active = False

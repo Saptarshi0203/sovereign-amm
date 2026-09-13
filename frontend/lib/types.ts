@@ -137,6 +137,14 @@ export interface Bus {
   injectionMW: number;
   /** Asset class of the bus. */
   type: 'solar' | 'load' | 'storage' | 'slack';
+  /** Live congestion status from the PTDF engine (OK / CONSTRAINED / BLOCKED). */
+  status?: 'OK' | 'CONSTRAINED' | 'BLOCKED';
+  /** LMP decomposition — energy component (₹/kWh). */
+  energy?: number;
+  /** LMP decomposition — marginal loss component (₹/kWh). */
+  loss?: number;
+  /** LMP decomposition — congestion (shadow cost) component (₹/kWh). */
+  congestion?: number;
 }
 
 /**
@@ -178,6 +186,8 @@ export interface Line {
   status: 'normal' | 'amber' | 'critical';
   /** PTDF row vector for this line; one entry per bus (7 elements). */
   ptdfRow: number[];
+  /** Shadow price μ_l of the thermal constraint (₹/kWh), 0 when slack. */
+  shadowPrice?: number;
 }
 
 /**
@@ -317,6 +327,74 @@ export interface RagResult {
 // Store / UI types
 // (used by lib/store.ts and AuthDrawer)
 // ---------------------------------------------------------------------------
+
+/**
+ * A single execution from the live time-and-sales feed (AMM-centric view).
+ */
+export interface Fill {
+  /** Unix millisecond timestamp. */
+  ts: number;
+  /** Aggressor side. */
+  side: 'buy' | 'sell';
+  /** Execution price in ₹/kWh. */
+  px: number;
+  /** Executed size in kWh. */
+  sz: number;
+  /** Buyer trader id (e.g. `residential_a`). */
+  buyer?: string;
+  /** Seller trader id. */
+  seller?: string;
+  /** AMM participation: `'BID'` (battery bought), `'ASK'` (battery sold) or null. */
+  amm?: 'BID' | 'ASK' | null;
+}
+
+/** AMM profit & loss summary (₹). */
+export interface PnLSummary {
+  realized: number;
+  unrealized: number;
+  wearCost: number;
+  net: number;
+  throughputKwh: number;
+  positionKwh: number;
+  fills: number;
+  avgSpread: number;
+}
+
+/** GLFT risk parameters exposed by the engine. */
+export interface RiskParams {
+  sigma: number;
+  gamma: number;
+  k: number;
+  A: number;
+  socFloorPct: number;
+  socCeilingPct: number;
+  orderSizeKwh: number;
+}
+
+/** GLFT quote decomposition at the current inventory (₹/kWh). */
+export interface GlftBreakdown {
+  q: number;
+  base: number;
+  spread: number;
+  deltaBid: number;
+  deltaAsk: number;
+  cDeg: number;
+  bid: number;
+  ask: number;
+}
+
+/** Feed provenance for the dashboards. */
+export type DataSource = 'live' | 'simulated';
+
+/** Authenticated principal (real account or guest demo session). */
+export interface AuthUser {
+  id?: string;
+  email: string;
+  role: string;
+  name?: string;
+  picture?: string;
+  demo?: boolean;
+}
 
 /**
  * The two possible modes for the AuthDrawer slide-in panel.

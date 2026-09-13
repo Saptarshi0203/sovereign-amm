@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { WS_BASE } from '@/lib/live/session';
 
 export default function SystemHealth() {
   const [tick, setTick] = useState(0);
@@ -10,7 +11,7 @@ export default function SystemHealth() {
     let ws: WebSocket;
     
     const connect = () => {
-      ws = new WebSocket("ws://127.0.0.1:8000/ws/stream");
+      ws = new WebSocket(`${WS_BASE}/ws/stream`);
       
       ws.onopen = () => setWsStatus("connected");
       ws.onclose = () => setWsStatus("disconnected");

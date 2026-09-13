@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { WS_BASE } from '@/lib/live/session';
 
 export default function EmergencyBanner() {
   const [emergency, setEmergency] = useState({ active: false, reason: "", operator: "" });
@@ -9,7 +10,7 @@ export default function EmergencyBanner() {
     // We connect to the global WebSocket to listen for emergency state
     // In a real app we might use Zustand or Context for the WS, 
     // but here we just open a connection and listen for the specific fields.
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws/stream");
+    const ws = new WebSocket(`${WS_BASE}/ws/stream`);
 
     ws.onmessage = (event) => {
       try {

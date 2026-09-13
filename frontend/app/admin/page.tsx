@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_BASE } from '@/lib/live/session';
 import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
@@ -11,7 +12,7 @@ export default function AdminPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/admin/users", {
+      const res = await fetch(`${API_BASE}/api/admin/users`, {
         headers: { "Content-Type": "application/json" },
       });
       if (res.status === 401 || res.status === 403) {
@@ -38,7 +39,7 @@ export default function AdminPage() {
     if (!busIdStr) return;
     const busId = parseInt(busIdStr, 10);
     
-    await fetch(`http://127.0.0.1:8000/api/admin/users/${userId}/approve`, {
+    await fetch(`${API_BASE}/api/admin/users/${userId}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ assigned_bus_id: busId })
@@ -48,14 +49,14 @@ export default function AdminPage() {
 
   const handleReject = async (userId: string) => {
     if (!confirm("Reject this user?")) return;
-    await fetch(`http://127.0.0.1:8000/api/admin/users/${userId}/reject`, {
+    await fetch(`${API_BASE}/api/admin/users/${userId}/reject`, {
       method: "POST",
     });
     fetchUsers();
   };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    await fetch(`http://127.0.0.1:8000/api/admin/users/${userId}/role`, {
+    await fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: newRole })

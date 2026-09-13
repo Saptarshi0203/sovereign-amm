@@ -9,8 +9,22 @@ interface LockOverlayProps {
   children: React.ReactNode;
 }
 
+/**
+ * Gates premium panels behind a session. Any session — a Guest Demo Session
+ * (auto-started for presentations) or a real sign-in — renders the children
+ * directly with no blur, no overlay and full pointer events. Until the session
+ * bootstrap has run we render the children un-gated as well, so SSR/hydration
+ * never paints a lock that immediately disappears.
+ */
 export function LockOverlay({ title, body, ctaLabel, children }: LockOverlayProps) {
   const openAuth = useStore((s) => s.openAuth);
+  const isUnlocked = useStore((s) => s.isUnlocked);
+  const sessionReady = useStore((s) => s.sessionReady);
+
+  if (isUnlocked || !sessionReady) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="relative">
       {/* Children render at z-0 — animations continue underneath */}
@@ -23,7 +37,7 @@ export function LockOverlay({ title, body, ctaLabel, children }: LockOverlayProp
         <p className="text-white font-semibold text-lg mb-1 text-center px-4">{title}</p>
         <p className="text-slate-400 text-sm mb-5 text-center max-w-xs px-4">{body}</p>
         <button
-          onClick={() => openAuth('signup')}
+          onClick={() => openAuth('signin')}
           className="inline-flex items-center justify-center px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
         >
           {ctaLabel}

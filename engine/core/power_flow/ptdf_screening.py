@@ -172,25 +172,36 @@ def screen_trade(
 
 def create_7bus_topology(safety_margin: float = 0.9) -> GridTopology:
     """
-    Creates standard 7-bus radial microgrid topology:
+    Creates the standard 7-bus meshed campus microgrid topology (9 lines):
+
     BUS-01 (idx 0): Grid Slack
-    BUS-02 (idx 1): Solar Farm Alpha
-    BUS-03 (idx 2): Solar Farm Beta
-    BUS-04 (idx 3): Household Complex A
+    BUS-02 (idx 1): Solar Farm Alpha / Residential A
+    BUS-03 (idx 2): Commercial Hub
+    BUS-04 (idx 3): Solar Farm
     BUS-05 (idx 4): Central Battery AMM
-    BUS-06 (idx 5): Household Complex B
-    BUS-07 (idx 6): Commercial Aggregator
+    BUS-06 (idx 5): EV Plaza
+    BUS-07 (idx 6): Industrial Feeder / Hub
+
+    Lines (index -> branch):
+        LINE-01: BUS-01 - BUS-02     LINE-06: BUS-07 - BUS-04
+        LINE-02: BUS-01 - BUS-03     LINE-07: BUS-07 - BUS-06
+        LINE-03: BUS-02 - BUS-04     LINE-08: BUS-05 - BUS-04
+        LINE-04: BUS-03 - BUS-06     LINE-09: BUS-05 - BUS-06
+        LINE-05: BUS-01 - BUS-07
     """
     branches = (
-        (0, 1, 10.0), # BUS-01 ↔ BUS-02
-        (1, 2, 10.0), # BUS-02 ↔ BUS-03
-        (1, 3, 8.0),  # BUS-02 ↔ BUS-04
-        (0, 4, 12.0), # BUS-01 ↔ BUS-05 (Battery)
-        (4, 5, 8.0),  # BUS-05 ↔ BUS-06
-        (4, 6, 8.0),  # BUS-05 ↔ BUS-07
+        (0, 1, 10.0),  # LINE-01
+        (0, 2, 10.0),  # LINE-02
+        (1, 3, 8.0),   # LINE-03
+        (2, 5, 8.0),   # LINE-04
+        (0, 6, 12.0),  # LINE-05
+        (6, 3, 8.0),   # LINE-06
+        (6, 5, 8.0),   # LINE-07
+        (4, 3, 10.0),  # LINE-08
+        (4, 5, 10.0),  # LINE-09
     )
-    # Line limits in MW or kW (e.g., 10.0 MW each)
-    f_max = np.array([10.0, 10.0, 8.0, 12.0, 8.0, 8.0], dtype=np.float64)
+    # Thermal limits per line (MW).
+    f_max = np.array([5.0, 5.0, 3.0, 3.0, 4.0, 3.5, 3.5, 4.0, 4.0], dtype=np.float64)
     return GridTopology(
         n_buses=7,
         branches=branches,
@@ -198,3 +209,8 @@ def create_7bus_topology(safety_margin: float = 0.9) -> GridTopology:
         slack_bus=0,
         safety_margin=safety_margin,
     )
+
+
+BUS_NAMES_7: Tuple[str, ...] = (
+    "BUS-01", "BUS-02", "BUS-03", "BUS-04", "BUS-05", "BUS-06", "BUS-07",
+)

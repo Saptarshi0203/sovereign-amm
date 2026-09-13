@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_BASE, WS_BASE } from '@/lib/live/session';
 
 export default function DemoPage() {
   const [scenarios, setScenarios] = useState<any>({});
@@ -8,14 +9,14 @@ export default function DemoPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/demo/scenarios")
+    fetch(`${API_BASE}/api/demo/scenarios`)
       .then(res => res.json())
       .then(data => {
         setScenarios(data);
         setLoading(false);
       });
 
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws/stream");
+    const ws = new WebSocket(`${WS_BASE}/ws/stream`);
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -29,7 +30,7 @@ export default function DemoPage() {
   }, []);
 
   const triggerScenario = async (id: string) => {
-    await fetch(`http://127.0.0.1:8000/api/demo/trigger/${id}`, {
+    await fetch(`${API_BASE}/api/demo/trigger/${id}`, {
       method: "POST"
     });
   };

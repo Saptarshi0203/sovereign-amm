@@ -64,13 +64,50 @@ class RainflowStream:
             else:
                 break
 
+    def histogram(self, bins: int = 5, include_residual: bool = True) -> List[float]:
+        """
+        Weighted cycle counts bucketed by depth-of-discharge.
+
+        Bucket i covers d in [i/bins, (i+1)/bins) where d = range / q_max.
+        Full cycles weigh 1.0, half cycles 0.5 (standard rainflow weighting).
+        With ``include_residual`` the still-open reversals on the stack are
+        counted as half cycles (ASTM E1049 residue treatment), so the deep,
+        slow excursions currently in progress are visible alongside closed
+        micro-cycles.
+        """
+        counts = [0.0] * bins
+        if self.q_max <= 0:
+            return counts
+
+        def add(rng: float, weight: float) -> None:
+            d = min(1.0, max(0.0, rng / self.q_max))
+            idx = min(bins - 1, int(d * bins))
+            counts[idx] += weight
+
+        for rng, weight in self.cycles:
+            add(rng, weight)
+        if include_residual:
+            for i in range(1, len(self.Z)):
+                add(abs(self.Z[i] - self.Z[i - 1]), 0.5)
+        return counts
+
+    def total_cycles(self) -> float:
+        """Sum of weighted cycles extracted so far."""
+        return sum(w for _, w in self.cycles)
+
     def marginal_cost(self) -> float:
         """
-        Compute marginal cost per kWh for the next discharge.
-        Uses the current unclosed depth from the last reversal.
+        Marginal wear cost per kWh for the next unit of throughput:
+
+            C_deg(d) = C_capex / (2 · N(d) · E_nom · η),   N(d) = N0 · d^(−β)
+
+        d is the depth of the dominant *open* excursion on the rainflow stack
+        (the largest residual range). Closed micro-cycles have already been
+        popped and charged, so the residual stack holds exactly the in-progress
+        cycles whose eventual closure the next unit of throughput deepens.
         """
         if len(self.Z) >= 2:
-            current_depth = abs(self.Z[-1] - self.Z[-2]) / self.q_max
+            current_depth = max(abs(self.Z[i] - self.Z[i - 1]) for i in range(1, len(self.Z))) / self.q_max
         elif len(self.Z) == 1:
             current_depth = abs(self.q_max - self.Z[0]) / self.q_max
         else:

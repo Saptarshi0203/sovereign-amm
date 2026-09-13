@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { GoogleLogin } from '@react-oauth/google';
+import { loginWithGoogle, loginWithPassword, startDemoSession, apiFetch } from '@/lib/live/session';
 
 export function AuthDrawer(): React.ReactElement {
   const authDrawerOpen = useStore((s) => s.authDrawerOpen);
@@ -143,31 +144,28 @@ export function AuthDrawer(): React.ReactElement {
             <GoogleLogin
               onSuccess={async (credentialResponse) => {
                 try {
-                  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                  const res = await fetch(`${apiUrl}/api/auth/google`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: credentialResponse.credential }),
-                  });
-                  if (!res.ok) throw new Error('Google auth failed on backend');
-                  const data = await res.json();
-                  
-                  if (data.access_token) {
-                    useStore.getState().setJwtToken(data.access_token);
-                    localStorage.setItem('authToken', data.access_token);
-                  }
-                  useStore.setState({ demoUser: false });
+                  if (!credentialResponse.credential) throw new Error('No credential returned by Google');
+                  await loginWithGoogle(credentialResponse.credential);
                   closeAuth();
                 } catch (err) {
-                  console.error(err);
+                  console.error('[auth] Google sign-in failed:', err);
                 }
               }}
               onError={() => console.error('Google Login Failed')}
-              useOneTap
               theme="filled_black"
               shape="rectangular"
               text="continue_with"
             />
+            <button
+              type="button"
+              onClick={async () => {
+                await startDemoSession();
+                closeAuth();
+              }}
+              className="mt-3 text-xs text-slate-400 hover:text-emerald-400 underline underline-offset-2"
+            >
+              Continue as guest (Demo Mode)
+            </button>
           </div>
         </div>
 
@@ -180,15 +178,33 @@ export function AuthDrawer(): React.ReactElement {
 function SignInForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    useStore.setState({ demoUser: true });
-    onSuccess();
+    setBusy(true);
+    setError(null);
+    try {
+      await loginWithPassword(email, password);
+      onSuccess();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Sign in failed';
+      if (/fetch|network|Failed/i.test(msg)) {
+        // Backend unreachable — keep the presentation moving on a guest session.
+        await startDemoSession();
+        onSuccess();
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {error && <p className="text-xs text-rose-400 font-mono">{error}</p>}
       <div className="flex flex-col gap-1.5">
         <label
           className="text-xs text-slate-400 uppercase tracking-wider"
@@ -227,9 +243,10 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <button
         type="submit"
-        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg transition-colors mt-2"
+        disabled={busy}
+        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors mt-2"
       >
-        Sign In
+        {busy ? 'Signing in…' : 'Sign In'}
       </button>
     </form>
   );
@@ -241,14 +258,27 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [status, setStatus] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    useStore.setState({ demoUser: true });
-    onSuccess();
+    try {
+      await apiFetch('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, consumer_no: name }),
+        headers: { Authorization: '' },
+      });
+      setStatus('Account created — pending admin approval. Continuing in Demo Mode.');
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Signup failed — continuing in Demo Mode.');
+    }
+    await startDemoSession();
+    setTimeout(onSuccess, 900);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {status && <p className="text-xs text-emerald-400 font-mono">{status}</p>}
       <div className="flex flex-col gap-1.5">
         <label
           className="text-xs text-slate-400 uppercase tracking-wider"

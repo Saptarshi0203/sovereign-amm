@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_BASE } from '@/lib/live/session';
 import { useRouter } from "next/navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
@@ -18,9 +19,9 @@ export default function AccountPage() {
     const fetchData = async () => {
       try {
         const [resOverview, resTrades, resSettlement] = await Promise.all([
-          fetch("http://127.0.0.1:8000/api/account/overview"),
-          fetch("http://127.0.0.1:8000/api/account/trades"),
-          fetch("http://127.0.0.1:8000/api/account/settlement")
+          fetch(`${API_BASE}/api/account/overview`),
+          fetch(`${API_BASE}/api/account/trades`),
+          fetch(`${API_BASE}/api/account/settlement`)
         ]);
 
         if (resOverview.status === 401 || resOverview.status === 403) {
@@ -41,7 +42,7 @@ export default function AccountPage() {
   }, [router]);
 
   const downloadNeft = () => {
-    window.open("http://127.0.0.1:8000/api/account/settlement/export-neft", "_blank");
+    window.open(`${API_BASE}/api/account/settlement/export-neft`, "_blank");
   };
 
   if (loading) return <div className="p-8 text-textMuted">Loading account data...</div>;

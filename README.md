@@ -127,20 +127,39 @@ The system exposes a comprehensive suite of real-time operator interfaces and ob
 
 <h2 id="quickstart">Quickstart</h2>
 
-Get the engine running in local development mode:
+Local development (Python ≥ 3.11, Node 20):
 
 ```bash
-# 1. Setup python environment and install dependencies
+# 1. Install engine, API and frontend dependencies
 make install
 
-# 2. Run the deterministic test suite
-make test
+# 2. Seed 24 h of history (86,400 ticks) into backend/app/db/sovereign.db
+make seed
 
-# 3. Start the services (Backend, Frontend, Chroma)
-make dev
+# 3. Start the FastAPI engine on :8000 (10 Hz tick loop starts automatically)
+make backend
 
-# 4. Run the seeded demo scenario in a separate terminal
-make demo
+# 4. In another terminal, start the Next.js dashboard on :3000
+make frontend
+
+# 5. Run the test suites
+make test            # 44 pytest cases: engine math + API/WebSocket/DuckDB layer
+make test-frontend   # 953 vitest cases
+cd frontend && npm run build
 ```
+
+Or everything at once with Docker: `make dev` (`docker compose up --build`).
+
+### Live data path
+
+| Stream / endpoint | Rate | Feeds |
+|---|---|---|
+| `ws://…/ws/orderbook/demo` | 10 Hz | L2 depth (12 × 12), micro-price, OBI, tape, AMM quotes, SoC, PnL |
+| `ws://…/ws/grid/demo` | 1 Hz | 9 line flows (`f = PTDF · p`), LMP decomposition, 9 × 7 PTDF, rainflow histogram, GLFT risk params |
+| `GET /history/demo?window=24H` | REST | DuckDB 1-minute columnar rollups over the 86,400-point history (1H/4H return raw ticks) |
+| `POST /api/control/inject` · `POST /api/control/inject/csv` | REST | Custom datasets (ticks / orders / bus injections / SoC / parameters) — every connected dashboard re-hydrates |
+| `POST /api/auth/demo` | REST | Guest Demo Session token (auto-started by the frontend; Google OAuth / password sign-in still available) |
+
+The frontend keeps every widget on a single Zustand store (`frontend/lib/store.ts`). When the backend is unreachable the dashboards fall back to the seeded in-browser simulation and show a `SIMULATED` pill instead of `LIVE · 10 Hz`.
 
 > **Note**: The engine strictly enforces pure math in `engine/core`. No floating point operations for ledger accounting, and no network/I/O calls within the matching logic.
