@@ -20,8 +20,11 @@ export const GRID_ID = process.env.NEXT_PUBLIC_GRID_ID || 'demo';
 export const API_BASE: string = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 export const WS_BASE: string = (() => {
+  // Only the origin matters — stream paths (/ws/orderbook/…) are appended by
+  // the provider, so a legacy value like wss://host/ws/stream still works.
   const explicit = process.env.NEXT_PUBLIC_WS_URL;
-  if (explicit) return explicit.replace(/\/(ws)?\/?$/, '');
+  const origin = explicit?.match(/^(wss?:\/\/[^/]+)/)?.[1];
+  if (origin) return origin;
   return API_BASE.replace(/^http/, 'ws');
 })();
 
