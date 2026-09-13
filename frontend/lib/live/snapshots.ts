@@ -5,7 +5,7 @@
  * human units (₹/kWh, kWh, %, MW). No React, no I/O — fully unit-testable.
  */
 
-import type { Bus, Fill, GlftBreakdown, Level, Line, PnLSummary, RiskParams, TimeseriesPoint } from '@/lib/types';
+import type { Bus, Fill, GlftBreakdown, Level, Line, PlaybackStatus, PnLSummary, RiskParams, TimeseriesPoint } from '@/lib/types';
 
 /** 1 engine unit = 1e-6 kWh or 1e-6 INR. */
 export const MICRO = 1_000_000;
@@ -63,6 +63,8 @@ export interface OrderbookSnapshot {
   amm_bid: number | null;
   amm_ask: number | null;
   emergency: boolean;
+  grid_frequency_hz?: number;
+  synced_time?: string | null;
   pnl: WirePnL;
   data_version: number;
   warming_up?: boolean;
@@ -139,6 +141,8 @@ export interface GridSnapshot {
   scenario: string;
   narration: string;
   manual_injections: Record<string, number>;
+  playback?: PlaybackStatus;
+  grid_frequency_hz?: number;
   data_version: number;
   history_points: number | null;
 }

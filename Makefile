@@ -1,4 +1,4 @@
-.PHONY: install test test-frontend lint seed backend frontend dev demo
+.PHONY: install test test-frontend lint seed dataset backend frontend dev demo
 
 PY ?= python
 
@@ -7,7 +7,7 @@ install:
 	pip install -r backend/requirements.txt
 	cd frontend && npm install
 
-# Engine + API tests (44). Uses an isolated temp DB for the API layer.
+# Engine + API tests (58). Uses an isolated temp DB for the API layer.
 test:
 	pytest tests/
 
@@ -21,6 +21,10 @@ lint:
 # 86,400 historical ticks (24 h @ 1 s) into backend/app/db/sovereign.db
 seed:
 	$(PY) simulation/seed_history.py
+
+# 24 h playback dataset (8,640 rows @ 10 s) → simulation/data/sample_24h_microgrid.csv
+dataset:
+	$(PY) simulation/generators/generate_demo_csv.py
 
 # FastAPI + 10 Hz engine on :8000 (run from the repo root — packages are backend.*, engine.*, simulation.*)
 backend:

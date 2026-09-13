@@ -14,6 +14,9 @@ from backend.app.api.emergency import router as emergency_router
 from backend.app.api.grid_control import router as grid_control_router
 from backend.app.api.history import router as history_router
 from backend.app.api.orderbook import ACTIVE_STREAMS, router as orderbook_router
+from backend.app.api.simulation import ensure_sample_dataset, router as simulation_router
+from backend.app.api.trading import router as trading_router
+from backend.app.playback import dataset_store
 from backend.app.core.config import settings
 from backend.app.db.storage import storage
 from backend.app.engine_facade import engine_facade
@@ -22,8 +25,16 @@ from backend.app.engine_facade import engine_facade
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await storage.init_db()
+    dataset_store.init()
     # One deterministic 10 Hz engine loop for the public demo grid.
     engine_facade.start(settings.DEMO_GRID_ID)
+    # Clock-synced playback: activate the last uploaded run, or the built-in 24 h sample.
+    if settings.AUTO_SAMPLE_DATASET:
+        try:
+            pb = ensure_sample_dataset()
+            print(f"[MAIN] playback dataset '{pb['name']}' ({pb['rows']} rows) synced to {pb['synced_time']} {pb['tz_label']}")
+        except Exception as e:  # never block startup on dataset issues
+            print(f"[MAIN] dataset playback unavailable: {e}")
     print(f"[MAIN] engine started for grid '{settings.DEMO_GRID_ID}' | history points: {storage.tick_count(settings.DEMO_GRID_ID)}")
     yield
     await engine_facade.stop_all()
@@ -63,6 +74,8 @@ app.include_router(demo_router)
 app.include_router(emergency_router)
 app.include_router(account_router)
 app.include_router(admin_router)
+app.include_router(simulation_router)
+app.include_router(trading_router)
 
 
 @app.get("/", include_in_schema=False)

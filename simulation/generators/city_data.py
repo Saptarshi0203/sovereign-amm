@@ -59,6 +59,19 @@ class CitySimulator:
         self.base_price_inr = 5.0
         self.last_ref_price = self.base_price_inr
 
+        # Clock-synced dataset playback: when set, the dataset row replaces the
+        # internal diurnal shapes (demand / solar levels, reference price and
+        # time-of-day). Keys: demand_mw, solar_mw, micro_price, t_sec.
+        self.profile: dict | None = None
+        # MW level that corresponds to the simulator's nominal (multiplier 1.0) flow.
+        self.nominal_mw = 3.0
+
+    def set_profile(self, demand_mw: float, solar_mw: float, micro_price: float, t_sec: int) -> None:
+        self.profile = {"demand_mw": demand_mw, "solar_mw": solar_mw, "micro_price": micro_price, "t_sec": t_sec}
+
+    def clear_profile(self) -> None:
+        self.profile = None
+
     # ── helpers ────────────────────────────────────────────────────────────
 
     def _order(self, trader: str, side: Side, price_inr: float, volume_kwh: float, now_ms: int) -> Order:
@@ -86,22 +99,40 @@ class CitySimulator:
     # ── main step ──────────────────────────────────────────────────────────
 
     def step(self, tick: int) -> List[Order]:
-        t_hours = ((tick % self.ticks_per_day) / self.ticks_per_day * 24.0 + self.hour_offset) % 24.0
+        profile = self.profile
+        if profile is not None:
+            t_hours = (profile["t_sec"] / 3600.0) % 24.0
+        else:
+            t_hours = ((tick % self.ticks_per_day) / self.ticks_per_day * 24.0 + self.hour_offset) % 24.0
         lm = self.load_multiplier
         sm = self.sunlight_multiplier
 
         orders: List[Order] = []
         now_ms = int(time.time() * 1000)
 
-        # Diurnal demand / supply shapes (normalised 0..1)
-        morning = exp(-0.5 * ((t_hours - 8.0) / 1.5) ** 2)
-        evening = exp(-0.5 * ((t_hours - 19.0) / 2.0) ** 2)
-        solar_shape = max(0.0, sin(pi * (t_hours - 6.0) / 12.0)) if 6.0 <= t_hours <= 18.0 else 0.0
-
-        # Reference price: scarcity premium in the evening, discount at solar noon,
-        # plus slow AR(1) noise so the chart is not a pure sinusoid.
         self.price_noise = self.ar_alpha * self.price_noise + self.rng.normal(0, 0.01)
-        ref = self.base_price_inr + 0.55 * evening + 0.25 * morning - 0.45 * solar_shape * sm + self.price_noise
+        if profile is not None:
+            # Dataset playback: levels come straight from the active CSV row.
+            load_level = profile["demand_mw"] / self.nominal_mw
+            solar_level = profile["solar_mw"] / self.nominal_mw
+            morning = 0.0
+            evening = 0.0
+            solar_shape = solar_level
+            res_shape = 4.0 * load_level
+            com_shape = 3.0 * load_level
+            ind_shape = 3.0 * load_level
+            ref = profile["micro_price"] + self.price_noise
+        else:
+            # Diurnal demand / supply shapes (normalised 0..1)
+            morning = exp(-0.5 * ((t_hours - 8.0) / 1.5) ** 2)
+            evening = exp(-0.5 * ((t_hours - 19.0) / 2.0) ** 2)
+            solar_shape = max(0.0, sin(pi * (t_hours - 6.0) / 12.0)) if 6.0 <= t_hours <= 18.0 else 0.0
+            res_shape = 3.0 * morning + 5.0 * evening
+            com_shape = 4.0 if 9.0 <= t_hours <= 17.0 else 0.0
+            ind_shape = 3.0
+            # Reference price: scarcity premium in the evening, discount at solar noon,
+            # plus slow AR(1) noise so the chart is not a pure sinusoid.
+            ref = self.base_price_inr + 0.55 * evening + 0.25 * morning - 0.45 * solar_shape * sm + self.price_noise
         ref = max(2.0, min(9.0, ref))
         self.last_ref_price = ref
 
@@ -117,7 +148,7 @@ class CitySimulator:
         # BUS-02: Residential complex — morning & evening peaks
         # -------------------------------------------------------------
         self.residential_noise = self.ar_alpha * self.residential_noise + self.rng.normal(0, 0.1)
-        res_demand = max(0.0, (1.0 + 3.0 * morning + 5.0 * evening + self.residential_noise) * lm)
+        res_demand = max(0.0, (1.0 + res_shape + self.residential_noise) * lm)
         if res_demand > 0.1:
             self._ladder(orders, "residential_a", Side.BID, ref, [0.35, 0.50, 0.65], res_demand * 0.6, now_ms)
             if self.rng.random() < 0.55:
@@ -127,10 +158,7 @@ class CitySimulator:
         # BUS-03: Commercial hub — business-hours plateau
         # -------------------------------------------------------------
         self.commercial_noise = self.ar_alpha * self.commercial_noise + self.rng.normal(0, 0.1)
-        com_demand = max(0.0, 1.0 + self.commercial_noise)
-        if 9.0 <= t_hours <= 17.0:
-            com_demand += 4.0
-        com_demand *= lm
+        com_demand = max(0.0, 1.0 + com_shape + self.commercial_noise) * lm
         if com_demand > 0.1:
             self._ladder(orders, "commercial_hub", Side.BID, ref, [0.40, 0.58], com_demand * 0.6, now_ms)
             if self.rng.random() < 0.4:
@@ -168,7 +196,7 @@ class CitySimulator:
         # -------------------------------------------------------------
         self.industrial_noise = self.ar_alpha * self.industrial_noise + self.rng.normal(0, 0.2)
         self.wind_noise = self.ar_alpha * self.wind_noise + self.rng.normal(0, 0.3)
-        ind_demand = max(0.0, 3.0 + self.industrial_noise) * lm
+        ind_demand = max(0.0, ind_shape + self.industrial_noise) * lm
         wind_generation = max(0.0, 4.0 + self.wind_noise) * sm
         net_industrial = ind_demand - wind_generation
         if net_industrial > 0.1:

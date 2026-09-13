@@ -219,3 +219,118 @@ export async function injectCsv(file: File, kind: 'ticks' | 'orders', replaceHis
 export function historyExportUrl(): string {
   return `${API_BASE}/history/export/${GRID_ID}`;
 }
+
+// ── Clock-synced dataset playback ──────────────────────────────────────────
+
+import type { DatasetRow, PlaybackStatus, Portfolio, UserOrder } from '@/lib/types';
+
+export interface RunMeta {
+  run_id: string;
+  name: string;
+  rows: number;
+  step_s: number;
+  uploaded_at: number;
+  active: number;
+}
+
+export async function fetchPlaybackStatus(): Promise<PlaybackStatus> {
+  return apiFetch('/api/simulation/status');
+}
+
+export async function fetchRuns(): Promise<RunMeta[]> {
+  return apiFetch('/api/simulation/runs');
+}
+
+export async function activateRun(runId: string): Promise<PlaybackStatus> {
+  return apiFetch(`/api/simulation/activate/${encodeURIComponent(runId)}`, { method: 'POST' });
+}
+
+export async function deactivatePlayback(): Promise<PlaybackStatus> {
+  return apiFetch('/api/simulation/deactivate', { method: 'POST' });
+}
+
+export async function regenerateSample(): Promise<PlaybackStatus> {
+  return apiFetch('/api/simulation/generate-sample', { method: 'POST' });
+}
+
+export async function fetchDayProfile(maxPoints = 288): Promise<{ run_id: string | null; name: string; points: DatasetRow[] }> {
+  return apiFetch(`/api/simulation/profile?max_points=${maxPoints}`);
+}
+
+export function sampleCsvUrl(): string {
+  return `${API_BASE}/api/simulation/sample-csv`;
+}
+
+export interface UploadResult {
+  run_id: string;
+  name: string;
+  rows: number;
+  rows_skipped: number;
+  activated: boolean;
+  playback: PlaybackStatus;
+}
+
+/** Upload a 24 h dataset with progress reporting (XHR exposes upload progress; fetch does not). */
+export function uploadDatasetCsv(file: File, name: string, onProgress: (pct: number) => void): Promise<UploadResult> {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('name', name || file.name.replace(/\.csv$/i, ''));
+    form.append('activate', 'true');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}/api/simulation/upload-csv`);
+    xhr.withCredentials = true;
+    const token = useStore.getState().jwtToken;
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      try {
+        const body = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status >= 200 && xhr.status < 300) resolve(body as UploadResult);
+        else reject(new Error(typeof body.detail === 'string' ? body.detail : `HTTP ${xhr.status}`));
+      } catch {
+        reject(new Error(`HTTP ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Upload failed — backend unreachable'));
+    xhr.send(form);
+  });
+}
+
+// ── Household trading terminal ─────────────────────────────────────────────
+
+export interface OrderPayload {
+  side: 'BUY' | 'SELL';
+  type: 'MARKET' | 'LIMIT' | 'AUTO_CHARGE';
+  qty_kwh: number;
+  limit_price?: number;
+  trigger_price?: number;
+}
+
+export interface OrderResult {
+  rejected: boolean;
+  order: UserOrder;
+  filled_kwh?: number;
+  avg_price?: number;
+  fills?: number;
+  ptdf_rejections?: number;
+  portfolio: Portfolio;
+}
+
+export async function fetchPortfolio(): Promise<Portfolio> {
+  return apiFetch('/api/trading/portfolio');
+}
+
+export async function placeOrder(payload: OrderPayload): Promise<OrderResult> {
+  return apiFetch('/api/trading/orders', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function cancelOrder(orderId: string): Promise<{ cancelled: boolean; order: UserOrder }> {
+  return apiFetch(`/api/trading/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE' });
+}
+
+export async function resetPortfolio(): Promise<Portfolio> {
+  return apiFetch('/api/trading/reset', { method: 'POST' });
+}

@@ -8,12 +8,15 @@ import { Menu, X } from 'lucide-react';
 import { AuthButtons } from './AuthButtons';
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { DatasetDrawerButton } from '../layout/DatasetDrawer';
 
 /** All top-level navigation destinations. */
 const navigationTabs = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Grid', href: '/grid' },
   { label: 'Battery', href: '/battery' },
+  { label: 'Trade', href: '/trade' },
+  { label: 'Control', href: '/control' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
@@ -43,10 +46,10 @@ export function Navbar() {
         aria-label="Main navigation"
       >
         {/* ── Left: Logo ──────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6 min-w-0">
           <Link
             href="/"
-            className="text-lg font-bold tracking-widest text-slate-900 dark:text-white uppercase font-display"
+            className="text-lg font-bold tracking-widest text-slate-900 dark:text-white uppercase font-display whitespace-nowrap"
             aria-label="Sovereign-AMM home"
           >
             SOVEREIGN-AMM
@@ -79,6 +82,11 @@ export function Navbar() {
 
         {/* ── Right: Auth area + hamburger ────────────────────────────────── */}
         <div className="flex items-center gap-3">
+          {/* Dataset upload drawer (control room) */}
+          <div className="hidden md:block">
+            <DatasetDrawerButton />
+          </div>
+
           {/* Desktop theme toggle */}
           <div className="hidden md:block">
             <ThemeToggle />

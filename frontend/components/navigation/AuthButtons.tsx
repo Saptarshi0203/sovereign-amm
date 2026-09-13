@@ -38,7 +38,7 @@ export function AuthButtons() {
     <div className="flex items-center gap-3">
       {demoUser && (
         <span
-          className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-700/40 rounded-md px-2 py-1"
+          className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-700/40 rounded-md px-2 py-1 whitespace-nowrap"
           title="Guest Demo Session — all panels unlocked"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -47,7 +47,7 @@ export function AuthButtons() {
       )}
       <button
         onClick={() => openAuth('signin')}
-        className="px-4 py-2 text-sm font-medium text-slate-300 border border-slate-600 rounded-md hover:bg-slate-800 hover:text-white transition-colors"
+        className="px-3 py-2 text-sm font-medium text-slate-300 border border-slate-600 rounded-md hover:bg-slate-800 hover:text-white transition-colors whitespace-nowrap"
       >
         Sign In
       </button>

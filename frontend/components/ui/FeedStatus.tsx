@@ -1,6 +1,7 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { ClockSyncBadge } from './ClockSyncBadge';
 
 /**
  * Small provenance pill: LIVE (engine WebSocket streaming) or SIMULATED
@@ -26,6 +27,7 @@ export function FeedStatus({ className = '' }: { className?: string }) {
       <span className="text-slate-500">
         GRID {gridConnected ? '1 Hz' : '—'} · TICK {tick.toLocaleString()}
       </span>
+      <ClockSyncBadge />
       {emergency && (
         <span className="inline-flex items-center rounded-md border border-rose-700/60 text-rose-400 px-2 py-1 animate-pulse">
           EMERGENCY OVERRIDE

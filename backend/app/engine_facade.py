@@ -25,7 +25,10 @@ from typing import Any, AsyncGenerator, Deque, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from backend.app.core.config import settings
 from backend.app.db.storage import storage
+from backend.app.playback import DatasetRow, PlaybackController
+from backend.app.trading import USER_PREFIX, is_user_trader, trading_book, user_trader_id
 from engine.core.market_making.glft_pricing import GLFTParams, quote, quote_breakdown
 from engine.core.power_flow.ptdf_screening import (
     BUS_NAMES_7,
@@ -82,10 +85,28 @@ FLOW_EWMA_ALPHA = 0.08
 #: Sim convention: 1 kWh traded per tick adds this many MW to the bus EWMA
 #: (steady state = FLOW_MW_PER_KWH_TICK / FLOW_EWMA_ALPHA ≈ 1.9 MW per kWh/tick).
 FLOW_MW_PER_KWH_TICK = 0.15
+#: Feeder rating: traded-flow injection at any single bus is capped here (MW).
+MAX_BUS_FLOW_MW = 4.0
 #: Incremental transfer used when PTDF-screening a single fill (MW per kWh).
 SCREEN_MW_PER_KWH = 0.1
 #: EWMA weight of the newest micro-price sample in the GLFT reference price.
 REF_PRICE_ALPHA = 0.35
+
+
+#: Households trading through the terminal sit on the residential bus.
+USER_BUS = 1
+#: Fraction of dataset MW applied as nodal injections in the PTDF model.
+DATASET_INJ_SCALE = 0.4
+#: Share of the demand profile drawn at each load bus (BUS-02, 03, 06, 07).
+DATASET_LOAD_SPLIT = {1: 0.45, 2: 0.25, 5: 0.15, 6: 0.15}
+#: Fraction of the (dataset − engine) SoC gap closed by each hub dispatch event.
+SOC_SYNC_GAIN = 0.35
+
+
+def trader_bus(trader_id: str) -> int:
+    if is_user_trader(trader_id):
+        return USER_BUS
+    return TRADER_BUS.get(trader_id, 0)
 
 
 def bus_index(bus_id: str) -> int:
@@ -166,6 +187,11 @@ class GridRuntime:
     scenario: str = "normal"
     narration: str = ""
     injected_orders: Deque[Order] = field(default_factory=deque)
+    playback: PlaybackController = field(default_factory=PlaybackController)
+    dataset_row: Optional[DatasetRow] = None
+    dataset_inj: np.ndarray = field(default_factory=lambda: np.zeros(7))
+    grid_frequency_hz: float = 50.0
+    user_orders: Dict[str, str] = field(default_factory=dict)  # engine order_id -> user order_id
 
 
 class EngineFacade:
@@ -191,8 +217,8 @@ class EngineFacade:
         def ptdf_screener(maker_order: Order, taker_order: Order, fill_volume: int) -> bool:
             seller = maker_order if maker_order.side == Side.ASK else taker_order
             buyer = taker_order if maker_order.side == Side.ASK else maker_order
-            seller_bus = TRADER_BUS.get(seller.trader_id, 0)
-            buyer_bus = TRADER_BUS.get(buyer.trader_id, 0)
+            seller_bus = trader_bus(seller.trader_id)
+            buyer_bus = trader_bus(buyer.trader_id)
             d_p = (fill_volume / MICRO) * SCREEN_MW_PER_KWH
             return screen_trade(pf_state, seller_bus, buyer_bus, d_p)
 
@@ -307,8 +333,8 @@ class EngineFacade:
 
         # PTDF injection accounting: seller injects, buyer withdraws (kWh this tick).
         kwh = fill.volume / MICRO
-        s_bus = TRADER_BUS.get(seller_trader, 0)
-        b_bus = TRADER_BUS.get(buyer_trader, 0)
+        s_bus = trader_bus(seller_trader)
+        b_bus = trader_bus(buyer_trader)
         rt.bus_flow_ewma[s_bus] += kwh * FLOW_MW_PER_KWH_TICK
         rt.bus_flow_ewma[b_bus] -= kwh * FLOW_MW_PER_KWH_TICK
 
@@ -326,6 +352,14 @@ class EngineFacade:
             soc_evt = SoCChanged(rt.log.next_seq(), new_soc)
             rt.log.append(soc_evt)
             rt.state.apply(soc_evt)
+
+        # Household trading terminal attribution.
+        for oid, trader, side in ((fill.maker_order_id, maker_trader, maker_side), (fill.taker_order_id, taker_trader, taker_side)):
+            if is_user_trader(trader):
+                user_order_id = rt.user_orders.get(oid)
+                if user_order_id:
+                    counterparty = seller_trader if side == Side.BID else buyer_trader
+                    trading_book.on_fill(user_order_id, "BUY" if side == Side.BID else "SELL", fill.price, fill.volume, counterparty, fill.timestamp)
 
         rt.tape.appendleft(
             {
@@ -381,7 +415,7 @@ class EngineFacade:
         # 1. Expire stale resting simulator orders (bounded book).
         if rt.tick % 5 == 0:
             for oid in lob.resting_order_ids():
-                if oid.startswith("AMM_"):
+                if oid.startswith("AMM_") or oid.startswith(USER_PREFIX):
                     continue
                 if rt.tick - rt.order_birth.get(oid, rt.tick) > ORDER_TTL_TICKS:
                     evt = lob.cancel_order(oid, log.next_seq)
@@ -392,9 +426,19 @@ class EngineFacade:
                 alive = set(lob.orders.keys())
                 rt.order_traders = {k: v for k, v in rt.order_traders.items() if k in alive}
                 rt.order_birth = {k: v for k, v in rt.order_birth.items() if k in alive}
+                rt.user_orders = {k: v for k, v in rt.user_orders.items() if k in alive}
+
+        # 1b. Wall-clock synchronised dataset playback.
+        self._playback_step(rt)
+
+        # 1c. Household auto-charge triggers (fire when the ask drops below the trigger).
+        self._check_auto_triggers(rt)
 
         # 2. Decay bus flow EWMA toward zero, then let this tick's fills add to it.
+        #    Clamped to the feeder rating so a burst of fills cannot imply an
+        #    unphysical multi-line overload that blocks the whole market.
         rt.bus_flow_ewma *= 1.0 - FLOW_EWMA_ALPHA
+        np.clip(rt.bus_flow_ewma, -MAX_BUS_FLOW_MW, MAX_BUS_FLOW_MW, out=rt.bus_flow_ewma)
 
         # 3. Injected (custom dataset) orders take priority, then simulator flow.
         if not emergency:
@@ -445,7 +489,7 @@ class EngineFacade:
             )
 
         # 6. PTDF injections: manual overrides + traded-flow EWMA.
-        p_inj = rt.bus_flow_ewma.copy()
+        p_inj = rt.bus_flow_ewma + rt.dataset_inj
         for b, mw in rt.manual_injections.items():
             p_inj[b] += mw
         rt.pf_state.p_inj = p_inj
@@ -501,6 +545,8 @@ class EngineFacade:
             "amm_bid": q_quote.bid_price if q_quote.bid_volume > 0 else None,
             "amm_ask": q_quote.ask_price if q_quote.ask_volume > 0 else None,
             "emergency": rt.state.emergency_active,
+            "grid_frequency_hz": rt.grid_frequency_hz,
+            "synced_time": rt.playback.synced_clock() if rt.playback.active else None,
             "pnl": {
                 "realized": pnl.realized_micro / MICRO,
                 "unrealized": unreal / MICRO,
@@ -632,9 +678,146 @@ class EngineFacade:
             "scenario": rt.scenario,
             "narration": rt.narration,
             "manual_injections": {BUS_NAMES_7[b]: mw for b, mw in rt.manual_injections.items()},
+            "playback": rt.playback.status(),
+            "grid_frequency_hz": rt.grid_frequency_hz,
             "data_version": storage.data_version + rt.data_version,
             "history_points": storage.tick_count(rt.grid_id) if rt.tick % 30 == 0 else None,
         }
+
+    # ── dataset playback ───────────────────────────────────────────────
+
+    def _playback_step(self, rt: GridRuntime) -> None:
+        row, changed = rt.playback.match()
+        if row is None:
+            if rt.dataset_row is not None:
+                rt.dataset_row = None
+                rt.dataset_inj[:] = 0.0
+                rt.simulator.clear_profile()
+            return
+        if not changed and rt.dataset_row is not None:
+            return
+        rt.dataset_row = row
+        rt.simulator.set_profile(row.demand_mw, row.solar_mw, row.micro_price, row.t_sec)
+        rt.grid_frequency_hz = row.grid_frequency_hz
+
+        inj = np.zeros(rt.pf_state.topology.n_buses)
+        inj[3] += row.solar_mw * DATASET_INJ_SCALE
+        for b, share in DATASET_LOAD_SPLIT.items():
+            inj[b] -= row.demand_mw * share * DATASET_INJ_SCALE
+        rt.dataset_inj = inj
+
+        # Central Power Control dispatch: pull the engine SoC toward the dataset
+        # trajectory (event-sourced, so replay stays deterministic).
+        cap = rt.state.battery.capacity
+        target = int(row.battery_soc_pct / 100.0 * cap)
+        gap = target - rt.state.battery.soc
+        if abs(gap) > cap * 0.002:
+            new_soc = int(rt.state.battery.soc + gap * SOC_SYNC_GAIN)
+            evt = SoCChanged(rt.log.next_seq(), max(0, min(cap, new_soc)))
+            rt.log.append(evt)
+            rt.state.apply(evt)
+            storage.record_event(rt.grid_id, "HubDispatch", {"soc": new_soc, "row": row.timestamp}, int(time.time() * 1000))
+
+    def load_dataset(self, grid_id: str, run_id: Optional[str], name: str, rows: List[DatasetRow]) -> None:
+        rt = self.get_runtime(grid_id)
+        if rows:
+            rt.playback.load(run_id or "", name, rows)
+        else:
+            rt.playback.clear()
+        # Drop the previous run's footprint; the next tick re-applies the new row.
+        rt.dataset_row = None
+        rt.dataset_inj = np.zeros(rt.pf_state.topology.n_buses)
+        rt.simulator.clear_profile()
+        rt.data_version += 1
+
+    # ── household trading terminal ─────────────────────────────────────
+
+    def submit_user_order(self, grid_id: str, user_id: str, side: str, order_type: str, qty_kwh: float, limit_price: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Route a household order into the L2 book.
+          MARKET → IOC at a crossing price (fills against the AMM / best resting liquidity)
+          LIMIT  → resting limit order (exempt from the simulator TTL, cancellable)
+        Returns {order_id, fills, filled_kwh, avg_price, rejected}.
+        """
+        rt = self.get_runtime(grid_id)
+        if rt.state.emergency_active:
+            return {"rejected": True, "reason": "Emergency override active — trading paused"}
+        # Use the live book touch (not the last snapshot) so a market order
+        # still crosses when the reference price moved within the last tick.
+        best_bid = rt.state.lob.best_bid() or int(rt.last_mid_inr * MICRO)
+        best_ask = rt.state.lob.best_ask() or int(rt.last_mid_inr * MICRO)
+        lob_side = Side.BID if side == "BUY" else Side.ASK
+        if order_type == "MARKET":
+            # Cross up to 10 % through the touch; anything unfilled is dropped (IOC).
+            price = int(best_ask * 1.10) if side == "BUY" else int(best_bid * 0.90)
+            otype = OrderType.IOC
+        else:
+            if limit_price is None or limit_price <= 0:
+                return {"rejected": True, "reason": "limit_price required"}
+            price = int(limit_price * MICRO)
+            otype = OrderType.LIMIT
+        user_order = trading_book.new_order(user_id, side, order_type, qty_kwh, limit_price, None)
+        engine_id = f"{USER_PREFIX}{user_order.order_id}"
+        rt.user_orders[engine_id] = user_order.order_id
+        order = Order(engine_id, user_trader_id(user_id), lob_side, otype, price, int(round(qty_kwh * MICRO)), int(time.time() * 1000))
+        events = self.submit_order(rt, order)
+        fills = [e for e in events if isinstance(e, TradeExecuted)]
+        rejections = [e for e in events if isinstance(e, TradeRejected)]
+        filled = sum(e.fill.volume for e in fills) / MICRO
+        avg = (sum(e.fill.price * e.fill.volume for e in fills) / sum(e.fill.volume for e in fills) / MICRO) if fills else 0.0
+        if order_type == "MARKET" and not fills:
+            trading_book.set_status(user_order, "REJECTED", "No liquidity within 10 % of the touch" + (" (PTDF congestion)" if rejections else ""))
+        elif order_type == "MARKET" and filled < qty_kwh - 1e-6:
+            trading_book.set_status(user_order, "PARTIAL", f"Filled {filled:.2f} of {qty_kwh:.2f} kWh (IOC remainder cancelled)")
+        rt.data_version += 1
+        return {
+            "rejected": user_order.status == "REJECTED",
+            "order": user_order.as_dict(),
+            "filled_kwh": filled,
+            "avg_price": avg,
+            "fills": len(fills),
+            "ptdf_rejections": len(rejections),
+        }
+
+    def cancel_user_order(self, grid_id: str, user_order_id: str) -> bool:
+        rt = self.get_runtime(grid_id)
+        order = trading_book.find_order(user_order_id)
+        if order is None:
+            return False
+        if order.type == "AUTO_CHARGE":
+            trading_book.set_status(order, "CANCELLED")
+            return True
+        engine_id = f"{USER_PREFIX}{user_order_id}"
+        evt = rt.state.lob.cancel_order(engine_id, rt.log.next_seq)
+        if evt:
+            rt.log.append(evt)
+        if order.status in ("OPEN", "PARTIAL"):
+            trading_book.set_status(order, "CANCELLED")
+        return True
+
+    def arm_auto_charge(self, grid_id: str, user_id: str, qty_kwh: float, trigger_price: float) -> Dict[str, Any]:
+        order = trading_book.new_order(user_id, "BUY", "AUTO_CHARGE", qty_kwh, None, trigger_price)
+        return {"rejected": False, "order": order.as_dict()}
+
+    def _check_auto_triggers(self, rt: GridRuntime) -> None:
+        if rt.tick % 5 != 0:
+            return
+        armed = trading_book.armed_triggers()
+        if not armed:
+            return
+        ob = rt.latest_orderbook or {}
+        best_ask = ob.get("best_ask")
+        if not best_ask:
+            return
+        ask_inr = best_ask / MICRO
+        for trig in armed:
+            if trig.trigger_price is not None and ask_inr <= trig.trigger_price:
+                ok, reason = trading_book.can_afford(trig.user_id, "BUY", trig.qty_kwh, ask_inr)
+                if not ok:
+                    trading_book.set_status(trig, "REJECTED", reason)
+                    continue
+                trading_book.set_status(trig, "TRIGGERED", f"Ask ₹{ask_inr:.3f} ≤ trigger ₹{trig.trigger_price:.2f}")
+                self.submit_user_order(rt.grid_id, trig.user_id, "BUY", "MARKET", trig.qty_kwh)
 
     # ── control surface ────────────────────────────────────────────────
 

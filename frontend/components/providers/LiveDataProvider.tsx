@@ -15,7 +15,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { isGridSnapshot, isOrderbookSnapshot } from '@/lib/live/snapshots';
-import { GRID_ID, WS_BASE, bootstrapSession, fetchHistory } from '@/lib/live/session';
+import { GRID_ID, WS_BASE, bootstrapSession, fetchHistory, fetchPortfolio } from '@/lib/live/session';
+import type { Portfolio } from '@/lib/types';
 
 /** Reconnect delay for attempt n: 1 s, 2 s, 4 s … capped at 15 s. */
 export function backoffMs(attempt: number): number {
@@ -121,6 +122,81 @@ function useEngineSocket(feed: FeedName, path: string) {
   }, [feed, path, token, sessionReady]);
 }
 
+/**
+ * Household portfolio stream: /ws/user/{user_id}. The user id comes from the
+ * portfolio REST call (demo sessions share the `demo-judge` portfolio).
+ * Pushes arrive only when the portfolio version changes (fills, orders).
+ */
+function useUserSocket() {
+  const token = useStore((s) => s.jwtToken);
+  const sessionReady = useStore((s) => s.sessionReady);
+  const live = useStore((s) => s.dataSource === 'live');
+
+  useEffect(() => {
+    if (!sessionReady || !live || typeof window === 'undefined') return;
+    let ws: WebSocket | null = null;
+    let closed = false;
+    let attempt = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const { setPortfolio, setPortfolioConnected } = useStore.getState();
+
+    const connect = async () => {
+      if (closed) return;
+      let userId: string | null = null;
+      try {
+        const pf = await fetchPortfolio();
+        if (closed) return;
+        setPortfolio(pf);
+        userId = pf.user_id;
+      } catch {
+        timer = setTimeout(connect, backoffMs(attempt++));
+        return;
+      }
+      const url = `${WS_BASE}/ws/user/${encodeURIComponent(userId)}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+      try {
+        ws = new WebSocket(url);
+      } catch {
+        timer = setTimeout(connect, backoffMs(attempt++));
+        return;
+      }
+      const socket = ws;
+      socket.onopen = () => {
+        attempt = 0;
+        setPortfolioConnected(true);
+      };
+      socket.onmessage = (event: MessageEvent) => {
+        try {
+          const msg = JSON.parse(event.data as string) as Portfolio & { type?: string };
+          if (msg.type === 'portfolio') setPortfolio(msg);
+        } catch {
+          /* ignore malformed frame */
+        }
+      };
+      socket.onclose = () => {
+        setPortfolioConnected(false);
+        if (!closed) timer = setTimeout(connect, backoffMs(attempt++));
+      };
+      socket.onerror = () => undefined;
+    };
+
+    void connect();
+
+    return () => {
+      closed = true;
+      if (timer) clearTimeout(timer);
+      if (ws) {
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onclose = null;
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000, 'unmount');
+        ws = null;
+      }
+      setPortfolioConnected(false);
+    };
+  }, [token, sessionReady, live]);
+}
+
 function useHistoryHydration() {
   const sessionReady = useStore((s) => s.sessionReady);
   const range = useStore((s) => s.historyRange);
@@ -170,6 +246,7 @@ export function LiveDataProvider({ children }: { children: React.ReactNode }): R
   useSessionBootstrap();
   useEngineSocket('orderbook', `/ws/orderbook/${GRID_ID}`);
   useEngineSocket('grid', `/ws/grid/${GRID_ID}`);
+  useUserSocket();
   useHistoryHydration();
   return <>{children}</>;
 }

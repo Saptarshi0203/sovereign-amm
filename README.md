@@ -143,7 +143,7 @@ make backend
 make frontend
 
 # 5. Run the test suites
-make test            # 44 pytest cases: engine math + API/WebSocket/DuckDB layer
+make test            # 58 pytest cases: engine math + API/WebSocket/DuckDB + playback + trading
 make test-frontend   # 953 vitest cases
 cd frontend && npm run build
 ```
@@ -159,6 +159,11 @@ Or everything at once with Docker: `make dev` (`docker compose up --build`).
 | `GET /history/demo?window=24H` | REST | DuckDB 1-minute columnar rollups over the 86,400-point history (1H/4H return raw ticks) |
 | `POST /api/control/inject` · `POST /api/control/inject/csv` | REST | Custom datasets (ticks / orders / bus injections / SoC / parameters) — every connected dashboard re-hydrates |
 | `POST /api/auth/demo` | REST | Guest Demo Session token (auto-started by the frontend; Google OAuth / password sign-in still available) |
+
+| `POST /api/simulation/upload-csv` · `GET /api/simulation/status` | REST | Custom 24 h dataset (`timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz`, 10 s rows) — playback is matched to the wall clock (`SIM_TIMEZONE`, default IST) so 08:00 streams the 08:00 row |
+| `POST /api/trading/orders` · `GET /api/trading/portfolio` · `ws://…/ws/user/{id}` | REST + WS | Household trading terminal: market / limit / auto-charge orders against the Central Power Control AMM, live fills, PnL and savings vs utility tariff |
+
+Generate the built-in sample dataset (also produced automatically at startup): `python simulation/generators/generate_demo_csv.py` → `simulation/data/sample_24h_microgrid.csv` (8,640 rows, 100 homes + 5 MWh hub).
 
 The frontend keeps every widget on a single Zustand store (`frontend/lib/store.ts`). When the backend is unreachable the dashboards fall back to the seeded in-browser simulation and show a `SIMULATED` pill instead of `LIVE · 10 Hz`.
 

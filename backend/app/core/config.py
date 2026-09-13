@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Allow unauthenticated WebSocket access to the demo grid (presentation mode).
     PUBLIC_DEMO: bool = True
     GOOGLE_CLIENT_ID: str = ""
+    # Wall-clock timezone used to align dataset playback with the time of day.
+    SIM_TIMEZONE: str = "Asia/Kolkata"
+    # Auto-generate + activate the sample 24 h dataset when no run is active.
+    AUTO_SAMPLE_DATASET: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

@@ -61,7 +61,9 @@ import type {
   Level,
   Line,
   OrderBook,
+  PlaybackStatus,
   PnLSummary,
+  Portfolio,
   RiskParams,
   TimeseriesPoint,
   Trade,
@@ -222,6 +224,23 @@ export interface StoreState {
   setHistoryRange(range: '1H' | '4H' | '24H' | 'ALL'): void;
   setHistoryLoading(loading: boolean): void;
   setFeedConnected(feed: 'orderbook' | 'grid', connected: boolean): void;
+
+  // ── Playback slice (clock-synced dataset) ────────────────────────────────
+
+  /** Active dataset playback status (from the 1 Hz grid frame). */
+  playback: PlaybackStatus | null;
+  /** Wall-clock time the engine is synced to (HH:MM:SS) or null. */
+  syncedTime: string | null;
+  /** Grid frequency from the active dataset row (Hz). */
+  gridFrequencyHz: number;
+  setPlayback(status: PlaybackStatus | null): void;
+
+  // ── Trading slice (household terminal) ───────────────────────────────────
+
+  portfolio: Portfolio | null;
+  portfolioConnected: boolean;
+  setPortfolio(p: Portfolio | null): void;
+  setPortfolioConnected(connected: boolean): void;
 
   // ── Session slice ─────────────────────────────────────────────────────────
 
@@ -430,6 +449,8 @@ export const useStore = create<StoreState>()(
           pnl: pnlFromWire(snap.pnl),
           lastTickTs: snap.ts,
           dataSource: 'live',
+          ...(snap.synced_time !== undefined ? { syncedTime: snap.synced_time } : {}),
+          ...(typeof snap.grid_frequency_hz === 'number' ? { gridFrequencyHz: snap.grid_frequency_hz } : {}),
           emergency: snap.emergency !== s.emergency.active ? { ...s.emergency, active: snap.emergency } : s.emergency,
           ...(dataVersionChanged ? { dataVersion: snap.data_version } : {}),
         };
@@ -456,6 +477,8 @@ export const useStore = create<StoreState>()(
           glft: glftFromWire(b.glft),
           rejectedTrades: b.rejected_trades,
           historyPoints: snap.history_points ?? s.historyPoints,
+          ...(snap.playback ? { playback: snap.playback, syncedTime: snap.playback.active ? snap.playback.synced_time : null } : {}),
+          ...(typeof snap.grid_frequency_hz === 'number' ? { gridFrequencyHz: snap.grid_frequency_hz } : {}),
           ...(snap.data_version !== s.dataVersion ? { dataVersion: snap.data_version } : {}),
         };
       }),
@@ -476,6 +499,20 @@ export const useStore = create<StoreState>()(
         const dataSource: DataSource = orderbookConnected ? 'live' : 'simulated';
         return { orderbookConnected, gridConnected, dataSource };
       }),
+
+    // ── Playback slice ──────────────────────────────────────────────────────
+
+    playback: null,
+    syncedTime: null,
+    gridFrequencyHz: 50,
+    setPlayback: (status) => set({ playback: status, syncedTime: status?.active ? status.synced_time : null }),
+
+    // ── Trading slice ───────────────────────────────────────────────────────
+
+    portfolio: null,
+    portfolioConnected: false,
+    setPortfolio: (p) => set({ portfolio: p }),
+    setPortfolioConnected: (connected) => set({ portfolioConnected: connected }),
 
     // ── Session slice ───────────────────────────────────────────────────────
 

@@ -23,8 +23,9 @@ export function PnlPanel() {
         <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">P&L Summary</p>
         {!live && <span className="text-[10px] font-mono text-amber-500">awaiting engine</span>}
       </div>
-      <p className={`text-2xl font-bold font-mono tabular-nums ${pnl.net >= 0 ? 'text-emerald-400' : 'text-rose-500'} ${netFlash}`}>
+      <p className={`text-2xl font-bold font-mono tabular-nums ${pnl.net >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
         {inr(pnl.net)}
+        <span className={`ml-2 text-sm ${netFlash}`}>{netFlash === 'text-emerald-400' ? '▲' : netFlash === 'text-rose-500' ? '▼' : ''}</span>
       </p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs font-mono text-slate-400">
         <span>Realised</span>

@@ -396,6 +396,84 @@ export interface AuthUser {
   demo?: boolean;
 }
 
+/** A household order on the trading terminal. */
+export interface UserOrder {
+  order_id: string;
+  user_id: string;
+  side: 'BUY' | 'SELL';
+  type: 'MARKET' | 'LIMIT' | 'AUTO_CHARGE';
+  qty_kwh: number;
+  filled_kwh: number;
+  limit_price: number | null;
+  trigger_price: number | null;
+  status: 'OPEN' | 'ARMED' | 'FILLED' | 'PARTIAL' | 'CANCELLED' | 'REJECTED' | 'TRIGGERED';
+  created_ts: number;
+  updated_ts: number;
+  avg_fill_price: number;
+  note: string;
+}
+
+/** A household execution. */
+export interface UserFill {
+  ts: number;
+  order_id: string;
+  side: 'BUY' | 'SELL';
+  price: number;
+  qty_kwh: number;
+  counterparty: string;
+}
+
+/** Household portfolio streamed on /ws/user/{id}. */
+export interface Portfolio {
+  user_id: string;
+  email: string;
+  wallet_balance_inr: number;
+  energy_inventory_kwh: number;
+  home_solar_capacity_kw: number;
+  bought_kwh: number;
+  sold_kwh: number;
+  spent_inr: number;
+  earned_inr: number;
+  savings_inr: number;
+  avg_cost_inr: number;
+  realized_pnl_inr: number;
+  unrealized_pnl_inr: number;
+  equity_inr: number;
+  mark_price: number;
+  active_orders: UserOrder[];
+  recent_orders: UserOrder[];
+  fills: UserFill[];
+  version: number;
+}
+
+/** One row of a clock-synced playback dataset. */
+export interface DatasetRow {
+  t_sec: number;
+  timestamp: string;
+  bus_id: string;
+  house_count: number;
+  solar_mw: number;
+  demand_mw: number;
+  micro_price: number;
+  battery_soc_pct: number;
+  grid_frequency_hz: number;
+}
+
+/** Playback status streamed with every grid frame. */
+export interface PlaybackStatus {
+  active: boolean;
+  run_id: string | null;
+  name: string;
+  rows: number;
+  step_s: number;
+  index: number;
+  synced_time: string;
+  timezone: string;
+  tz_label: string;
+  row: DatasetRow | null;
+  version: number;
+}
+
 /**
  * The two possible modes for the AuthDrawer slide-in panel.
  *
