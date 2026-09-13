@@ -1,170 +1,345 @@
 <div align="center">
-  <h1 align="center">Sovereign-AMM</h1>
-  <p align="center">
-    <strong>Deterministic HFT Market Microstructure & Quantitative Energy Matching Engine</strong>
-  </p>
-  <p align="center">
-    <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge" alt="Status: Active" />
-    <img src="https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge" alt="Build: Passing" />
-    <img src="https://img.shields.io/badge/Stack-Python%20%26%20Next.js-blue?style=for-the-badge" alt="Stack: Python & Next.js" />
-    <img src="https://img.shields.io/badge/Math-GLFT%20%26%20Rainflow-orange?style=for-the-badge" alt="Math: GLFT & Rainflow" />
-  </p>
-  <p align="center">
-    <a href="#architecture"><strong>[ Architecture ]</strong></a> &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="#core-mathematics"><strong>[ Core Math ]</strong></a> &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="#platform-capabilities"><strong>[ Capabilities ]</strong></a> &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="#quickstart"><strong>[ Quickstart ]</strong></a>
-  </p>
+
+<h1>⚡ Sovereign-AMM</h1>
+
+<p><strong>A deterministic, physics-aware energy exchange for microgrids — where the community battery is the market maker.</strong></p>
+
+<p>
+  <a href="https://sovereign-amm-git-main-riturajbarman.vercel.app/dashboard"><img src="https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live demo" /></a>
+  <a href="https://sovereign-amm-backend.onrender.com/docs"><img src="https://img.shields.io/badge/API%20Docs-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="API docs" /></a>
+  <a href="docs/PRODUCT_GUIDE.md"><img src="https://img.shields.io/badge/Product%20Guide-read-3b82f6?style=for-the-badge&logo=readthedocs&logoColor=white" alt="Product guide" /></a>
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/engine-10%20Hz-10b981?style=flat-square" alt="10 Hz" />
+  <img src="https://img.shields.io/badge/pytest-58%20passed-10b981?style=flat-square&logo=pytest&logoColor=white" alt="pytest" />
+  <img src="https://img.shields.io/badge/vitest-953%20passed-10b981?style=flat-square&logo=vitest&logoColor=white" alt="vitest" />
+  <img src="https://img.shields.io/badge/next%20build-passing-10b981?style=flat-square&logo=nextdotjs&logoColor=white" alt="build" />
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="python" />
+  <img src="https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="next" />
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="ts" />
+  <img src="https://img.shields.io/badge/DuckDB-rollups-FFF000?style=flat-square&logo=duckdb&logoColor=black" alt="duckdb" />
+</p>
+
+<p>
+  <a href="#-what-it-does">What it does</a> ·
+  <a href="#-live-demo">Live demo</a> ·
+  <a href="#-architecture">Architecture</a> ·
+  <a href="#-the-mathematics">Mathematics</a> ·
+  <a href="#-features">Features</a> ·
+  <a href="#-api--streams">API</a> ·
+  <a href="#-quickstart">Quickstart</a> ·
+  <a href="#-deployment">Deployment</a> ·
+  <a href="#-testing">Testing</a>
+</p>
+
+<img src="docs/screenshots/dashboard.png" alt="Sovereign-AMM trading dashboard" width="100%" />
+
 </div>
 
+---
+
+## 🧭 What it does
+
+Sovereign-AMM treats a physical microgrid — 100 homes, rooftop solar, EV chargers and a **5 MWh community battery** — as a **high-frequency limit-order-book exchange**.
+
+- Households, solar farms and the utility post **bids and asks for kWh** into an L2 order book that updates **10 times per second**.
+- The central battery is the **algorithmic market maker**. It quotes a two-sided price with the **GLFT bounded-inventory model** and folds **Rainflow battery-wear cost** into its ask — so it never runs empty, never over-fills, and never sells its own lifetime for free.
+- Every match is **screened against grid physics (PTDF)** before it executes: a trade that would overload a line is rejected, and congestion shows up as **locational marginal prices** per bus.
+- The whole town is driven by a **24-hour dataset synchronised to the wall clock** — at 08:00 IST the engine streams the 08:00 row — and **any signed-in household can trade** against the battery from the terminal.
+
+> **Thesis:** grid stability and fair local prices come from *deterministic market microstructure + hard physics constraints*, not from predictive black boxes. Every price on screen is a formula with visible inputs.
+
+---
+
+## 🚀 Live demo
+
+| | URL |
+|---|---|
+| **Frontend** | https://sovereign-amm-git-main-riturajbarman.vercel.app |
+| **Backend / OpenAPI** | https://sovereign-amm-backend.onrender.com/docs |
+| **Health** | https://sovereign-amm-backend.onrender.com/health |
+
+The site opens in **Demo Mode** — a guest session that unlocks every panel, no account required. Google sign-in is one click away and gives you a personal trading portfolio.
+
+> The backend runs on Render's free tier and sleeps after 15 minutes of inactivity. The first request takes ~30–60 s; the dashboards show `SIMULATED` (an in-browser fallback) until the engine wakes, then flip to `LIVE · 10 Hz` automatically.
+
+<details>
+<summary><strong>More screenshots</strong></summary>
 <br/>
 
-## The System
+**Grid — PTDF topology, LMP shadow costs, 9 × 7 PTDF matrix**
 
-**Sovereign-AMM** is a deterministic energy matching engine that treats a physical microgrid as a high-frequency financial exchange. By employing rigorous mathematical models, the system eschews non-deterministic predictive AI in favor of robust market microstructure principles. 
+<img src="docs/screenshots/grid.png" alt="Grid page" width="100%" />
 
-In this exchange, households and solar producers post bids and asks for energy (kWh) into an **L2 limit order book**. A central grid battery acts as the algorithmic market maker, continuously quoting a two-sided price utilizing the **Gueant-Lehalle-Fernandez-Tapia (GLFT)** bounded-inventory model, critically augmented with dynamic **Rainflow fatigue costs** to account for physical battery degradation.
+**Battery — Rainflow DoD histogram, GLFT inventory boundaries, live risk parameters**
 
-**Thesis**: Uncompromising grid stability is achieved through deterministic market microstructure and strict physics constraints.
+<img src="docs/screenshots/battery.png" alt="Battery page" width="100%" />
+
+**Trade — household order desk against the Central Power Control hub**
+
+<img src="docs/screenshots/trade.png" alt="Trade page" width="100%" />
+
+</details>
 
 ---
 
-<h2 id="architecture">Architecture</h2>
-
-The system leverages an event-sourced ledger and strict constraint screening to maintain perfect state determinism and O(1) matching efficiency. The platform is wrapped in a secure, role-based Next.js frontend for operators and judges.
+## 🏗 Architecture
 
 ```mermaid
-graph TD
-    classDef core fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
-    classDef ext fill:#0f172a,stroke:#64748b,stroke-width:2px,color:#cbd5e1;
-    classDef ui fill:#334155,stroke:#94a3b8,stroke-width:2px,color:#f8fafc;
+flowchart TB
+    classDef engine fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#e2e8f0
+    classDef backend fill:#111827,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0
+    classDef ui fill:#1e293b,stroke:#94a3b8,stroke-width:2px,color:#f8fafc
+    classDef data fill:#1c1917,stroke:#f59e0b,stroke-width:2px,color:#fde68a
 
-    LS["Load Simulator<br/>(Raised Sine + AR(1) Noise)"]:::ext -->|Injects Orders| L2["L2 Order Book<br/>(Integer Micro-Units)"]:::core
-    L2 <-->|GLFT Quotes + Rainflow Wear| BAT(("Market Maker Battery")):::core
-    L2 -->|Proposed Trades| PTDF["PTDF Screening<br/>(Linearized Limits)"]:::core
-    PTDF -->|Accepted Matches| EL["Event Ledger<br/>(Deterministic State Projection)"]:::core
-    
-    EL -->|10Hz Tick Stream| WS["WebSocket API Hub"]:::ext
-    EL --> RAG["ChromaDB + LLM Sidecar<br/>(RAG Explainability)"]:::ext
-    
-    WS --> UI["Next.js Control Room Dashboard<br/>(RBAC: Admin, Operator, Judge)"]:::ui
-    RAG -->|Contextual Answers| UI
+    subgraph DATA["Inputs"]
+        CSV["24 h dataset CSV<br/>(auto-generated or uploaded)"]:::data
+        SIM["City simulator<br/>6 participant types"]:::data
+        USR["Household orders<br/>market · limit · auto-charge"]:::data
+    end
+
+    subgraph ENGINE["engine/ — pure Python + numpy, deterministic"]
+        LOB["L2 limit order book<br/>price-time priority · integer micro-units"]:::engine
+        GLFT["GLFT market maker<br/>bid/ask from inventory q"]:::engine
+        RF["Rainflow stream<br/>DoD cycles → C_deg"]:::engine
+        PTDF["PTDF screening<br/>7 buses · 9 lines · f = PTDF·p"]:::engine
+        LOG["Event log<br/>single source of truth"]:::engine
+    end
+
+    subgraph API["backend/ — FastAPI on Render"]
+        FAC["engine_facade<br/>10 Hz tick loop per grid"]:::backend
+        PB["playback<br/>wall-clock ↔ dataset row"]:::backend
+        TR["trading<br/>portfolios · fills · savings"]:::backend
+        ST["storage<br/>SQLite WAL + DuckDB rollups"]:::backend
+    end
+
+    subgraph WEB["frontend/ — Next.js 14 on Vercel"]
+        STORE["Zustand store<br/>single source for every widget"]:::ui
+        PAGES["Dashboard · Grid · Battery<br/>Trade · Control"]:::ui
+    end
+
+    CSV --> PB --> FAC
+    SIM --> FAC
+    USR --> TR --> FAC
+    FAC --> LOB <--> GLFT
+    GLFT --> RF
+    LOB --> PTDF --> LOG
+    LOG --> FAC
+    FAC --> ST
+    FAC -- "ws 10 Hz orderbook · 1 Hz grid · user" --> STORE
+    ST -- "REST history 24H rollups" --> STORE
+    STORE --> PAGES
 ```
 
+**Design rules that make it trustworthy**
+
+| Rule | Why |
+|---|---|
+| `engine/` is pure maths — numpy only, no I/O, no network, no unseeded randomness | Testable in isolation; identical results on every run |
+| State lives in an **event log**; the book and battery are projections | Replay the log → identical state (proven in tests) |
+| Money and energy are **integer micro-units** (1 = 1e‑6 kWh / 1e‑6 INR) | No floating-point drift in the ledger |
+| **One engine loop per grid**, WebSocket clients only read snapshots | Any number of viewers, zero effect on the deterministic path |
+| Trades are **PTDF-screened before** they reach the ledger | Physics is a hard constraint, not a KPI |
+
 ---
 
-<h2 id="core-mathematics">Core Mathematics & Microstructure</h2>
+## 📐 The mathematics
 
-Sovereign-AMM strictly adheres to mathematical rigor. Core components include:
-
-- **GLFT Pricing Model**: The market maker computes optimal bid-ask spreads dynamically based on inventory levels, shielding against inventory risk while maintaining liquidity.
-- **Rainflow Cycle Counting**: Physical battery degradation is priced into the spread using a streaming 3-point cycle counting algorithm. Every reversal and closed cycle contributes directly to marginal wear cost ($C_{deg}$).
-- **Power Transfer Distribution Factors (PTDF)**: Trades are validated against physical transmission limits in sub-milliseconds, ensuring that localized matching never violates global grid constraints.
-- **Micro-price Referencing**: The mid-price is dynamically adjusted based on order book imbalance, providing a more accurate reference price for the market maker.
-
----
-
-<h2 id="platform-capabilities">Platform Capabilities & Modules</h2>
-
-The system exposes a comprehensive suite of real-time operator interfaces and observability tools.
-
-<table width="100%">
-  <thead>
-    <tr>
-      <th align="left">Module</th>
-      <th align="left">Description & Implementation Details</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><strong>Live Grid Topology</strong></td>
-      <td>Real-time microgrid map visualizing power flow direction, per-line loading, and thermal limits. PTDF-based congestion is computed instantly, highlighting congested lines and blocking unsafe trades.</td>
-    </tr>
-    <tr>
-      <td><strong>GLFT Pricing Waterfall</strong></td>
-      <td>Live decomposition of the pricing algorithm: micro-price &rarr; inventory adjustment &rarr; risk adjustment &rarr; degradation cost &rarr; final bid/ask spread.</td>
-    </tr>
-    <tr>
-      <td><strong>Battery Degradation Monitor</strong></td>
-      <td>Live State-of-Charge (SoC) graph bounded by physical walls. Streams Rainflow cycle counts to compute accumulated wear and marginal degradation cost (C_deg) in real time.</td>
-    </tr>
-    <tr>
-      <td><strong>Simulated Settlement Ledger</strong></td>
-      <td>Tracks user energy consumption and solar generation. Replaces fiat banking with simulated monthly net settlements formatted to NPCI bulk-NEFT standards.</td>
-    </tr>
-    <tr>
-      <td><strong>RAG Explainability Copilot</strong></td>
-      <td>Global slide-out drawer allows judges to ask "Why did the price spike?" or "Why was this trade rejected?" Answers strictly cite event-log entries via ChromaDB vector search.</td>
-    </tr>
-    <tr>
-      <td><strong>Interactive Demo Mode</strong></td>
-      <td>Pre-seeded deterministic scenarios (Load Spike, Solar Surplus, Low Battery, Grid Congestion) demonstrating system response without requiring raw parameter manipulation.</td>
-    </tr>
-    <tr>
-      <td><strong>Role-Based Access Control</strong></td>
-      <td>Secure JWT authentication with Argon2id hashing. Strict segregation of duties across Admin, Grid Operator, Battery Operator, Market Participant, and Viewer/Judge roles.</td>
-    </tr>
-    <tr>
-      <td><strong>Emergency Safety Override</strong></td>
-      <td>Operator-only kill switch. Pauses automated trading and battery dispatch while maintaining event log continuity. Triggers site-wide visual alerts.</td>
-    </tr>
-    <tr>
-      <td><strong>System Health & Telemetry</strong></td>
-      <td>Live status and latency metrics for the L2 Order Book, GLFT Engine, PTDF Engine, and WS Hub. Includes a live-tailing view of the raw event stream for auditability.</td>
-    </tr>
-  </tbody>
+<table>
+<tr><th align="left">Component</th><th align="left">Formula</th><th align="left">Role</th></tr>
+<tr>
+<td><strong>Micro-price</strong></td>
+<td><code>micro = (P_bid·V_ask + P_ask·V_bid) / (V_bid + V_ask)</code></td>
+<td>Volume-weighted reference price (Stoikov), EWMA-filtered at 10 Hz</td>
+</tr>
+<tr>
+<td><strong>GLFT quotes</strong><br/><sub>Guéant–Lehalle–Fernandez-Tapia</sub></td>
+<td>
+<code>q = 2(soc − Q/2)/Q ∈ [−1, 1]</code><br/>
+<code>base = (1/k)·ln(1 + k/γ)</code><br/>
+<code>spread = √( σ²γ/(2kA) · (1+γ/k)^(1+k/γ) )</code><br/>
+<code>bid = mid − [base + ((2q+1)/2)·spread]</code><br/>
+<code>ask = mid + [base − ((2q−1)/2)·spread] + C_deg</code>
+</td>
+<td>Inventory-skewed two-sided quote; hard walls suppress the bid at the SoC ceiling and the ask at the floor</td>
+</tr>
+<tr>
+<td><strong>Rainflow wear</strong><br/><sub>ASTM E1049, Wöhler curve</sub></td>
+<td>
+<code>N(d) = N₀·d^(−β)</code><br/>
+<code>C_deg(d) = C_capex / (2·N(d)·E_nom·η)</code>
+</td>
+<td>Streaming 3-point cycle extraction; marginal cost of the dominant open excursion is added to the ask</td>
+</tr>
+<tr>
+<td><strong>PTDF screening</strong><br/><sub>DC power flow</sub></td>
+<td>
+<code>PTDF = (B_d·A_inc)·pinv(B_bus)</code>, slack column zeroed<br/>
+<code>f = PTDF·p_inj</code><br/>
+reject if <code>∃l: |f_l + (PTDF[l,i] − PTDF[l,j])·ΔP| > f_max,l · margin</code>
+</td>
+<td>O(L) congestion check per fill; makers that fail are parked for that taker, not dropped</td>
+</tr>
+<tr>
+<td><strong>LMP decomposition</strong></td>
+<td><code>LMP_i = λ_energy + λ_loss,i − Σ_l PTDF[l,i]·μ_l·sign(f_l)</code></td>
+<td>Shadow price μ_l ramps once a line exceeds 80 % loading</td>
+</tr>
 </table>
 
----
-
-<h2 id="recent-updates">Recent Updates</h2>
-
-- **Persistent Backend Storage**: Migrated ledger and tick data to robust local SQLite storage (`storage.py`) for enhanced data durability across sessions.
-- **Enhanced Security Core**: Centralized JWT authentication and Argon2id hashing within the dedicated `security.py` module to enforce strict Role-Based Access Control (Admin, Operator, Judge).
-- **Expanded City Simulation**: Introduced robust mock data generators (`city_data.py`, `seed_history.py`) to seed complex virtual city topologies and history for realistic local testing.
+Full derivations: [`docs/math_spec.md`](docs/math_spec.md) · design decisions: [`docs/adr/`](docs/adr/)
 
 ---
 
-<h2 id="quickstart">Quickstart</h2>
+## ✨ Features
 
-Local development (Python ≥ 3.11, Node 20):
+| Area | What you get |
+|---|---|
+| **Trading Dashboard** | 12 × 12 L2 depth with the AMM's own levels marked, micro-price / OBI / spread tiles, 24 h price-and-SoC chart (DuckDB 1-minute rollups over 86,400 ticks with live ticks appended), radial SoC and OBI gauges, AMM P&L (realised, unrealised, wear cost, position), engine fill tape |
+| **Grid Topology** | 7-bus / 9-line SVG with flow-direction animation; emerald → amber (> 80 %) → pulsing red (> 95 %); node injection override (−5…+5 MW); LMP table with congestion decomposition and binding-line shadow prices; full 9 × 7 PTDF matrix with live `f / f_max` |
+| **Battery Market Maker** | Rainflow DoD histogram (engine-computed, hydrated from history), GLFT reservation curves over q ∈ [−1, 1] with floor/ceiling bands, live σ / γ / k / A, δ_bid / δ_ask, throughput and average spread; sliders push γ and σ to the engine |
+| **Clock-synced playback** | `POST /api/simulation/upload-csv` ingests `timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz`; the engine matches `T_now = h·3600 + m·60 + s` (IST) to the nearest 10 s row and drives demand, solar, price, nodal injections, grid frequency and hub dispatch. A generated 8,640-row sample day is activated on startup |
+| **Household terminal** | Market (IOC), limit (resting, cancellable) and **auto-charge** orders ("buy 10 kWh when the ask ≤ ₹4.50") routed into the same book; wallet, inventory, avg cost, realised / unrealised PnL and **savings vs utility tariff**; fills pushed on `/ws/user/{id}` |
+| **Control Room** | Order desk, topology + injections, day profile with a NOW marker, dataset upload with progress, scenario buttons (load spike, solar surplus, low battery, congestion), JSON / CSV dataset injection |
+| **Demo Mode & auth** | Auto-started guest session unlocks every panel for presentations; Google OAuth 2.0 and password sign-in; JWT with grid scope; emergency override kill-switch |
+| **Resilience** | Offline fallback to a seeded in-browser simulation (`SIMULATED` badge), WebSocket back-off reconnects, server-side disconnect handling, bounded book and event log |
+
+---
+
+## 🔌 API & streams
+
+| Endpoint | Rate / type | Payload |
+|---|---|---|
+| `ws://…/ws/orderbook/{grid}` | 10 Hz | depth, micro-price, OBI, spread, tape, AMM quotes, SoC, q, C_deg, PnL, synced clock |
+| `ws://…/ws/grid/{grid}` | 1 Hz | 9 line flows + status, LMP rows, PTDF matrix, battery analytics (rainflow, risk, GLFT breakdown), playback status |
+| `ws://…/ws/user/{user_id}` | on change | household portfolio, open orders, fills |
+| `GET /history/{grid}?window=1H\|4H\|24H\|ALL` | REST | raw ticks (1H/4H) or 1-minute DuckDB rollups (24H/ALL); `/history/export/{grid}` streams CSV |
+| `POST /api/simulation/upload-csv` · `GET /api/simulation/status` · `/profile` · `/runs` | REST | dataset playback control |
+| `POST /api/trading/orders` · `DELETE /api/trading/orders/{id}` · `GET /api/trading/portfolio` | REST | household trading |
+| `POST /api/control/inject` · `/inject/csv` | REST | inject ticks, orders, bus injections, SoC, parameters |
+| `POST /grid/{grid}/inject` · `/reset` · `PUT /grid/{grid}/parameters` | REST | power control and GLFT parameters |
+| `POST /api/demo/trigger/{scenario}` · `POST /api/emergency/toggle` | REST | scripted scenarios, kill-switch |
+| `POST /api/auth/demo` · `/google` · `/login` · `GET /api/auth/me` | REST | guest session, OAuth, password auth |
+
+Interactive docs: `/docs` on the backend.
+
+---
+
+## 🛠 Quickstart
+
+**Prerequisites:** Python 3.11+ (3.12 recommended), Node 20+.
 
 ```bash
-# 1. Install engine, API and frontend dependencies
+git clone https://github.com/riturajbarman/sovereign-amm.git
+cd sovereign-amm
+
+# 1. Dependencies (engine + API + frontend)
 make install
 
-# 2. Seed 24 h of history (86,400 ticks) into backend/app/db/sovereign.db
+# 2. Seed 24 h of tick history (86,400 rows) and generate the playback dataset
 make seed
+make dataset
 
-# 3. Start the FastAPI engine on :8000 (10 Hz tick loop starts automatically)
+# 3. Backend — FastAPI + 10 Hz engine on :8000 (run from the repo root)
 make backend
 
-# 4. In another terminal, start the Next.js dashboard on :3000
+# 4. Frontend — Next.js on :3000 (in another terminal)
 make frontend
-
-# 5. Run the test suites
-make test            # 58 pytest cases: engine math + API/WebSocket/DuckDB + playback + trading
-make test-frontend   # 953 vitest cases
-cd frontend && npm run build
 ```
 
-Or everything at once with Docker: `make dev` (`docker compose up --build`).
+Open http://localhost:3000/dashboard — you land in Demo Mode with the engine streaming.
 
-### Live data path
+<details>
+<summary><strong>Environment variables</strong></summary>
 
-| Stream / endpoint | Rate | Feeds |
+**Backend** (`.env` or host settings)
+
+| Variable | Default | Purpose |
 |---|---|---|
-| `ws://…/ws/orderbook/demo` | 10 Hz | L2 depth (12 × 12), micro-price, OBI, tape, AMM quotes, SoC, PnL |
-| `ws://…/ws/grid/demo` | 1 Hz | 9 line flows (`f = PTDF · p`), LMP decomposition, 9 × 7 PTDF, rainflow histogram, GLFT risk params |
-| `GET /history/demo?window=24H` | REST | DuckDB 1-minute columnar rollups over the 86,400-point history (1H/4H return raw ticks) |
-| `POST /api/control/inject` · `POST /api/control/inject/csv` | REST | Custom datasets (ticks / orders / bus injections / SoC / parameters) — every connected dashboard re-hydrates |
-| `POST /api/auth/demo` | REST | Guest Demo Session token (auto-started by the frontend; Google OAuth / password sign-in still available) |
+| `ALLOWED_ORIGINS` | `http://localhost:3000,…` | CORS allow-list (every `*.vercel.app` origin is also accepted) |
+| `JWT_SECRET` | dev value | Sign JWTs — change in production |
+| `PUBLIC_DEMO` | `true` | Anonymous access to the `demo` grid streams |
+| `DEMO_GRID_ID` | `demo` | Grid started at boot |
+| `SIM_TIMEZONE` | `Asia/Kolkata` | Wall clock used for dataset playback |
+| `AUTO_SAMPLE_DATASET` | `true` | Generate + activate the sample day when no run is active |
+| `GOOGLE_CLIENT_ID` | — | Verify Google ID tokens against your client |
+| `DATABASE_PATH` | `backend/app/db/sovereign.db` | SQLite file |
 
-| `POST /api/simulation/upload-csv` · `GET /api/simulation/status` | REST | Custom 24 h dataset (`timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz`, 10 s rows) — playback is matched to the wall clock (`SIM_TIMEZONE`, default IST) so 08:00 streams the 08:00 row |
-| `POST /api/trading/orders` · `GET /api/trading/portfolio` · `ws://…/ws/user/{id}` | REST + WS | Household trading terminal: market / limit / auto-charge orders against the Central Power Control AMM, live fills, PnL and savings vs utility tariff |
+**Frontend** (`frontend/.env.local`)
 
-Generate the built-in sample dataset (also produced automatically at startup): `python simulation/generators/generate_demo_csv.py` → `simulation/data/sample_24h_microgrid.csv` (8,640 rows, 100 homes + 5 MWh hub).
+| Variable | Example |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` |
+| `NEXT_PUBLIC_WS_URL` | `ws://localhost:8000` (derived from the API URL if omitted) |
+| `NEXT_PUBLIC_GRID_ID` | `demo` |
+| `NEXT_PUBLIC_AUTO_DEMO` | `true` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | your OAuth client id |
 
-The frontend keeps every widget on a single Zustand store (`frontend/lib/store.ts`). When the backend is unreachable the dashboards fall back to the seeded in-browser simulation and show a `SIMULATED` pill instead of `LIVE · 10 Hz`.
+</details>
 
-> **Note**: The engine strictly enforces pure math in `engine/core`. No floating point operations for ledger accounting, and no network/I/O calls within the matching logic.
+<details>
+<summary><strong>Docker</strong></summary>
+
+```bash
+make dev   # docker compose up --build → backend :8000, frontend :3000, redis, chroma
+```
+
+</details>
+
+---
+
+## ☁️ Deployment
+
+| Service | Host | Notes |
+|---|---|---|
+| Backend | **Render** (web service, repo root) | Build: `pip install -r backend/requirements.txt` · Start: `python simulation/seed_history.py && python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT` · `PYTHON_VERSION=3.12.4` |
+| Frontend | **Vercel** (root directory `frontend`) | Set the `NEXT_PUBLIC_*` variables above and redeploy — they are compiled into the bundle |
+
+Render's disk is ephemeral: history and the sample dataset are regenerated on every boot (~1 s); uploaded datasets and portfolios persist until the next deploy.
+
+---
+
+## 🧪 Testing
+
+```bash
+make test            # 58 pytest cases — engine maths, API, WebSockets, DuckDB rollups, playback, trading
+make test-frontend   # 953 vitest cases — store, validators, mapping, components
+cd frontend && npm run build   # strict TypeScript, zero errors
+```
+
+What the suites guarantee:
+
+- GLFT quotes never cross, respect SoC walls, and are monotone in q (property-based with Hypothesis)
+- Rainflow cost is monotone in depth; the DoD histogram sums correctly
+- PTDF rejects overloads before the ledger append; `f = PTDF·p` holds for every streamed frame
+- Event-log replay reproduces live state exactly
+- Clock matcher maps 08:00:00 → the 08:00 row, 14:44:06 → 14:44:10, and wraps at midnight
+- Market / limit / auto-charge orders update wallets, inventory and savings; guards reject overspend
+
+---
+
+## 🗂 Repository layout
+
+```
+engine/            pure-math core: order book, GLFT, rainflow, PTDF, event log
+backend/app/       FastAPI: engine_facade (10 Hz loop), playback, trading, storage, api/*
+simulation/        city simulator, 24 h history seeder, dataset generator, sample CSV
+frontend/          Next.js 14 app: lib/store.ts (Zustand), components/, app/(dashboard)/*
+tests/             pytest suites (core/, events/, api/)
+docs/              PRODUCT_GUIDE.md (plain-English walkthrough), math_spec.md, adr/, screenshots/
+```
+
+---
+
+## 📚 Further reading
+
+- **[Product Guide](docs/PRODUCT_GUIDE.md)** — every page and every box explained in plain English, with a demo script
+- **[Math specification](docs/math_spec.md)** — symbol tables and derivations
+- **Architecture decision records** — [GLFT over Avellaneda-Stoikov](docs/adr/001-glft-over-as.md) · [ZK solvency design](docs/adr/002-zk-solvency-design.md) · [PTDF over DC-OPF](docs/adr/003-ptdf-over-dc-opf.md) · [Advanced risk](docs/adr/004-advanced-risk.md) · [Shapley settlement](docs/adr/005-shapley-settlement.md)
+
+---
+
+<div align="center">
+<sub>Sovereign-AMM · deterministic energy markets, powered by grid physics.</sub>
+</div>
