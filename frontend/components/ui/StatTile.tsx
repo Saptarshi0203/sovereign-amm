@@ -2,89 +2,117 @@
 
 /**
  * @file StatTile.tsx
- * @description Single-metric display tile used in stat grids across the
- * Sovereign-AMM dashboard (depth page, dashboard cockpit, battery page, etc.).
+ * @description E8-style single-metric tile with icon badge, trend indicator,
+ * and glassmorphic treatment. Used in stat grids across all dashboard pages.
  *
- * Layout:
- *   ┌─────────────────────────────┐
- *   │ LABEL (xs, slate-500)       │
- *   │ VALUE  UNIT (2xl mono bold) │
- *   └─────────────────────────────┘
+ * Layout (E8-inspired):
+ *   ┌─────────────────────────────────────┐
+ *   │ [icon]  LABEL            [trend ▲]  │
+ *   │         VALUE                       │
+ *   │         unit / sub-label            │
+ *   └─────────────────────────────────────┘
  *
- * The `flashClass` prop is threaded directly into the value element so callers
- * can apply `useTickFlash()` output without a wrapper component.
- *
- * Requirements addressed: 30.1, 30.2, 30.3 (tabular-nums / JetBrains Mono)
+ * Requirements addressed: 30.1, 30.2, 30.3
  */
 
 import React from 'react';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
 interface StatTileProps {
-  /** Short uppercase metric name, e.g. `"MICRO PRICE"`. */
   label: string;
-  /** Pre-formatted value string, e.g. `"₹4.8534"`. */
   value: string;
-  /** Optional unit suffix appended in muted small text, e.g. `"kWh"`. */
   unit?: string;
-  /**
-   * Tailwind colour class injected into the value element for tick flashing.
-   * Comes from `useTickFlash(numericValue)`.
-   * Example: `"text-emerald-400"` | `"text-rose-500"` | `"text-slate-50"`.
-   */
   flashClass?: string;
-  /** Additional Tailwind classes for the outer wrapper. */
   className?: string;
+  /** Optional lucide icon to show as badge */
+  icon?: React.ReactNode;
+  /** Trend direction — renders a colored arrow */
+  trend?: 'up' | 'down' | 'flat';
+  /** Small secondary label below the value */
+  sub?: string;
 }
 
-// ---------------------------------------------------------------------------
-// StatTile
-// ---------------------------------------------------------------------------
-
-/**
- * Single-metric display tile with JetBrains Mono numerics.
- *
- * @example
- * const flash = useTickFlash(microPrice);
- * <StatTile label="MICRO PRICE" value={formatPrice(microPrice)} unit="₹/kWh" flashClass={flash} />
- */
 export function StatTile({
   label,
   value,
   unit,
   flashClass,
   className,
+  icon,
+  trend,
+  sub,
 }: StatTileProps): React.ReactElement {
+  const TrendIcon =
+    trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
+  const trendColor =
+    trend === 'up'
+      ? 'text-emerald-400'
+      : trend === 'down'
+        ? 'text-rose-400'
+        : 'text-slate-500';
+
   return (
     <div
       className={cn(
-        'flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm p-4',
+        // Glass card base
+        'relative flex flex-col gap-1.5 rounded-2xl p-4 overflow-hidden',
+        // Dark
+        'bg-[#0d1722]/80 border border-[#162435]/90 backdrop-blur-xl',
+        // Hover
+        'transition-all duration-200',
+        'hover:border-cyan-500/20 hover:shadow-[0_0_0_1px_rgba(0,242,254,0.06),0_4px_16px_rgba(0,0,0,0.3)]',
         className,
       )}
     >
-      {/* Label row */}
-      <span className="text-xs uppercase tracking-widest text-slate-500 font-sans">
-        {label}
-      </span>
+      {/* Subtle top-edge glow line */}
+      <div
+        aria-hidden="true"
+        className="absolute top-0 left-4 right-4 h-px"
+        style={{
+          background:
+            'linear-gradient(to right, transparent, rgba(0,242,254,0.15) 50%, transparent)',
+        }}
+      />
+
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {icon && (
+            <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-cyan-500/10 text-cyan-400">
+              {icon}
+            </span>
+          )}
+          <span className="text-[10px] uppercase tracking-[0.18em] font-mono font-medium text-slate-500">
+            {label}
+          </span>
+        </div>
+        {trend && (
+          <TrendIcon className={cn('w-3.5 h-3.5', trendColor)} aria-hidden="true" />
+        )}
+      </div>
 
       {/* Value row */}
-      <div className="flex items-baseline">
+      <div className="flex items-baseline gap-1.5">
         <span
           className={cn(
-            'font-mono tabular-nums text-2xl font-bold text-slate-50',
+            'font-mono tabular-nums text-2xl font-bold leading-none text-slate-50',
             flashClass,
           )}
         >
           {value}
         </span>
-        {unit !== undefined && (
-          <span className="text-xs text-slate-500 ml-1">{unit}</span>
+        {unit && (
+          <span className="text-[11px] text-slate-500 font-mono">{unit}</span>
         )}
       </div>
+
+      {/* Sub label */}
+      {sub && (
+        <span className="text-[10px] text-slate-600 font-mono truncate">{sub}</span>
+      )}
     </div>
   );
 }
+
+export default StatTile;

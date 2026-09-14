@@ -6,52 +6,50 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 interface Tab {
   label: string;
   href: string;
+  adminOnly?: boolean;
 }
 
 interface MobileMenuProps {
   tabs: Tab[];
   currentPath: string;
-  /** Called when any menu link is clicked, so the parent can close the menu */
   onClose: () => void;
 }
 
 /**
- * MobileMenu — vertical dropdown shown on viewports < 768 px when the
- * hamburger icon is toggled.
- *
- * Requirements: 2.6, 2.7
+ * Mobile navigation drawer — E8 midnight aesthetic.
+ * Slides down below the Navbar, full-width, with glassmorphic bg.
  */
 export function MobileMenu({ tabs, currentPath, onClose }: MobileMenuProps) {
   return (
-    <div className="md:hidden bg-white dark:bg-slate-900 border-t border-sky-200 dark:border-slate-800 animate-slide-down">
-      <div className="px-2 pt-2 pb-3 space-y-1">
+    <div className="md:hidden animate-slide-down border-t border-[#162435]/80 bg-[#0b131b]/98 backdrop-blur-xl">
+      <nav className="px-4 py-3 flex flex-col gap-0.5" aria-label="Mobile navigation">
         {tabs.map((tab) => {
-          const isActive =
-            currentPath === tab.href ||
-            currentPath.startsWith(tab.href + '/');
-
+          const isActive = currentPath === tab.href || currentPath.startsWith(tab.href + '/');
           return (
             <Link
               key={tab.href}
               href={tab.href}
               onClick={onClose}
-              className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                isActive
-                  ? 'bg-sky-100 dark:bg-slate-800 text-sky-900 dark:text-white'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 hover:text-sky-900 dark:hover:text-white'
-              }`}
+              aria-current={isActive ? 'page' : undefined}
+              className={`
+                flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
+                ${isActive
+                  ? 'bg-cyan-500/10 text-slate-50 border border-cyan-500/20'
+                  : 'text-slate-400 hover:text-slate-100 hover:bg-[#162435]/60 border border-transparent'
+                }
+              `}
             >
               {tab.label}
             </Link>
           );
         })}
-      </div>
-      <div className="px-4 py-3 border-t border-sky-200 dark:border-slate-800">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Theme</span>
-          <ThemeToggle />
-        </div>
+      </nav>
+      <div className="flex items-center justify-between px-5 py-3 border-t border-[#162435]/60">
+        <span className="text-xs text-slate-500 font-mono tracking-widest">THEME</span>
+        <ThemeToggle />
       </div>
     </div>
   );
 }
+
+export default MobileMenu;
