@@ -2,261 +2,262 @@
 
 /**
  * @file TerminalCarousel.tsx
- * @description Three-slide auto-advancing carousel. Each slide previews a live
- * chart and links to its dedicated terminal route on click.
+ * @description 3-card tabbed "Interactive Preview" carousel — E8-style.
  *
- * ## Behaviour
- * - Auto-advances every 8 s; pauses when the container is hovered or when the
- *   user interacts with navigation controls.
- * - Click on the slide surface navigates to the slide's route via `router.push`.
- *   Clicks on chevrons or dot indicators carry `data-carousel-control="true"` and
- *   are excluded from navigation via `e.target.closest('[data-carousel-control]')`.
- * - Chevrons call `e.stopPropagation()` so the surrounding slide click handler
- *   never fires on control interactions.
- * - Keyboard navigation: ArrowLeft / ArrowRight while the carousel has focus.
- * - `role="region" aria-label` on the slide, `role="tablist"` on the dot strip.
+ * Three terminal previews rendered as tall glass cards with:
+ *  - Glowing accent border on the active card
+ *  - Live chart rendered inside each card
+ *  - "Explore Terminal →" CTA that routes to the page
+ *  - Tab selector row at the top (replaces bare dot indicators)
  *
- * ## Charts
- * - Slide 0 → `<DepthChart />`       → /depth
- * - Slide 1 → `<PriceStateChart />`  → /price
- * - Slide 2 → `<GridTopologySVG />`  → /control
- *
- * All three charts are loaded with `dynamic(..., { ssr: false })` because they
- * read live Zustand store state and use Recharts / SVG APIs unavailable in SSR.
- *
+ * Auto-advances every 8 s; pauses on hover.
+ * Keyboard: ArrowLeft / ArrowRight while focused.
  * Requirements: 14.1–14.13
  */
 
 import {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  type KeyboardEvent,
+  useState, useEffect, useRef, useCallback, type KeyboardEvent,
 } from 'react';
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-
-// ---------------------------------------------------------------------------
-// Dynamic chart imports — client-only, no SSR
-// ---------------------------------------------------------------------------
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DepthChart = dynamic(
   () => import('@/components/charts/DepthChart').then((m) => m.DepthChart),
   { ssr: false },
 );
-
 const PriceStateChart = dynamic(
   () => import('@/components/charts/PriceStateChart').then((m) => m.PriceStateChart),
   { ssr: false },
 );
-
 const GridTopologySVG = dynamic(
   () => import('@/components/charts/GridTopologySVG').then((m) => m.GridTopologySVG),
   { ssr: false },
 );
 
-// ---------------------------------------------------------------------------
-// Slide definitions
-// ---------------------------------------------------------------------------
-
+/* ── Slide definitions ──────────────────────────────────────────────────── */
 const SLIDES = [
   {
-    id: 'depth',
-    title: 'L2 Order Book Depth',
-    subtitle: 'Live 12-level bid/ask book — emerald bids, rose asks',
-    route: '/depth',
+    id: 'trading',
+    label: '01',
+    title: 'Quant Trading Dashboard',
+    subtitle: 'Live micro-price, PnL stats & execution tape',
+    route: '/dashboard',
+    accentColor: 'rgba(0,242,254,0.6)',
+    accentBg: 'rgba(0,242,254,0.06)',
+    accentBorder: 'rgba(0,242,254,0.25)',
+    badge: 'LIVE BOOK',
+    badgeColor: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
     Component: DepthChart,
   },
   {
     id: 'price',
+    label: '02',
     title: 'Price & State History',
     subtitle: 'Micro-price vs SoC — negative correlation visible',
     route: '/price',
+    accentColor: 'rgba(16,185,129,0.6)',
+    accentBg: 'rgba(16,185,129,0.06)',
+    accentBorder: 'rgba(16,185,129,0.25)',
+    badge: 'GLFT ENGINE',
+    badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
     Component: PriceStateChart,
   },
   {
-    id: 'control',
-    title: 'PTDF Grid Topology',
-    subtitle: '7-bus campus microgrid — congestion shown live',
-    route: '/control',
+    id: 'grid',
+    label: '03',
+    title: '7-Bus Grid Topology',
+    subtitle: 'PTDF power-flow node map with congestion indicators',
+    route: '/grid',
+    accentColor: 'rgba(139,92,246,0.6)',
+    accentBg: 'rgba(139,92,246,0.06)',
+    accentBorder: 'rgba(139,92,246,0.25)',
+    badge: 'PTDF LIVE',
+    badgeColor: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
     Component: GridTopologySVG,
   },
 ] as const;
 
 type SlideIndex = 0 | 1 | 2;
 
-// ---------------------------------------------------------------------------
-// TerminalCarousel
-// ---------------------------------------------------------------------------
-
-/**
- * Three-slide carousel showing live DepthChart, PriceStateChart, and
- * GridTopologySVG. Auto-advances every 8 s; pauses on hover or interaction.
- * Slide click routes to the terminal route unless a control element was clicked.
- */
+/* ── TerminalCarousel ───────────────────────────────────────────────────── */
 export function TerminalCarousel() {
   const [current, setCurrent] = useState<SlideIndex>(0);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused]   = useState(false);
   const router = useRouter();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ---------------------------------------------------------------------------
-  // Timer management
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Clear any existing interval and start a fresh 8 s auto-advance interval.
-   * When `paused` is true the interval callback does nothing (the ref still
-   * runs so that resuming hover immediately picks up the correct cadence).
-   */
   const resetTimer = useCallback(() => {
     if (timerRef.current !== null) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      if (!paused) {
-        setCurrent((c) => ((c + 1) % SLIDES.length) as SlideIndex);
-      }
+      if (!paused) setCurrent((c) => ((c + 1) % SLIDES.length) as SlideIndex);
     }, 8000);
   }, [paused]);
 
   useEffect(() => {
     resetTimer();
-    return () => {
-      if (timerRef.current !== null) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current !== null) clearInterval(timerRef.current); };
   }, [resetTimer, paused]);
 
-  // ---------------------------------------------------------------------------
-  // Navigation helpers
-  // ---------------------------------------------------------------------------
+  const go = useCallback((idx: number) => {
+    setCurrent((idx % SLIDES.length) as SlideIndex);
+    setPaused(true);
+    resetTimer();
+  }, [resetTimer]);
 
-  /** Navigate to a specific slide, mark paused, and restart the timer. */
-  const go = useCallback(
-    (idx: number) => {
-      setCurrent((idx % SLIDES.length) as SlideIndex);
-      setPaused(true);
-      resetTimer();
-    },
-    [resetTimer],
-  );
-
-  const prev = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    go((current - 1 + SLIDES.length) % SLIDES.length);
-  };
-
-  const next = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    go((current + 1) % SLIDES.length);
-  };
-
-  // ---------------------------------------------------------------------------
-  // Click / keyboard handlers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Navigate to the slide's route unless the click originated from a
-   * `[data-carousel-control]` element (chevrons, dots).
-   */
-  const handleSlideClick = (e: React.MouseEvent, route: string) => {
-    if ((e.target as HTMLElement).closest('[data-carousel-control]')) return;
-    router.push(route);
-  };
+  const prev = (e: React.MouseEvent) => { e.stopPropagation(); go((current - 1 + SLIDES.length) % SLIDES.length); };
+  const next = (e: React.MouseEvent) => { e.stopPropagation(); go((current + 1) % SLIDES.length); };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      go((current - 1 + SLIDES.length) % SLIDES.length);
-    }
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      go((current + 1) % SLIDES.length);
-    }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); go((current - 1 + SLIDES.length) % SLIDES.length); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); go((current + 1) % SLIDES.length); }
   };
-
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
 
   const slide = SLIDES[current];
   const { Component: SlideChart } = slide;
 
   return (
     <div
-      className="flex flex-col gap-0"
+      className="flex flex-col gap-3"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* ── Slide surface ─────────────────────────────────────────────── */}
-      <div
-        className="rounded-xl border border-sky-200 dark:border-slate-800 hover:border-sky-300 dark:hover:border-slate-700 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(14,165,233,0.12)] dark:hover:shadow-[0_0_20px_rgba(16,185,129,0.12)]"
-        onClick={(e) => handleSlideClick(e, slide.route)}
-        role="region"
-        aria-label={`Carousel: ${slide.title}`}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-      >
-        {/* ── Header ──────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between mb-1">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{slide.title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">{slide.subtitle}</p>
-          </div>
-
-          <div className="flex items-center gap-1">
-            {/* "Open Terminal" hint — not a control, navigates with slide click */}
-            <span className="flex items-center gap-1 text-xs text-slate-500 font-mono mr-2 select-none">
-              <ExternalLink className="w-3 h-3" aria-hidden="true" />
-              OPEN TERMINAL
-            </span>
-
-            {/* Previous chevron */}
-            <button
-              data-carousel-control="true"
-              onClick={prev}
-              aria-label="Previous slide"
-              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-sky-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-            </button>
-
-            {/* Next chevron */}
-            <button
-              data-carousel-control="true"
-              onClick={next}
-              aria-label="Next slide"
-              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-sky-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-
-        {/* ── Chart area ──────────────────────────────────────────────── */}
-        <div className="min-h-[280px]">
-          <SlideChart />
-        </div>
-      </div>
-
-      {/* ── Dot indicators ────────────────────────────────────────────── */}
-      <div className="flex justify-center gap-2 mt-3" role="tablist" aria-label="Carousel slides">
+      {/* ── Tab selector row ─────────────────────────────────────────── */}
+      <div className="flex items-center gap-2" role="tablist" aria-label="Terminal previews">
         {SLIDES.map((s, i) => (
           <button
             key={s.id}
-            data-carousel-control="true"
+            type="button"
             role="tab"
+            data-carousel-control="true"
             aria-selected={i === current}
-            aria-label={s.title}
-            onClick={(e) => {
-              e.stopPropagation();
-              go(i);
-            }}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              i === current ? 'bg-sky-500 dark:bg-emerald-500' : 'bg-sky-200 dark:bg-slate-600'
-            }`}
-          />
+            onClick={(e) => { e.stopPropagation(); go(i); }}
+            className={`
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono
+              border transition-all duration-200
+              ${i === current
+                ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
+                : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700/60'
+              }
+            `}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${i === current ? 'bg-cyan-400 animate-pulse' : 'bg-slate-700'}`}
+              aria-hidden="true"
+            />
+            {s.title}
+          </button>
         ))}
+
+        {/* Spacer + chevrons */}
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            data-carousel-control="true"
+            onClick={prev}
+            aria-label="Previous terminal"
+            className="p-1.5 rounded-lg border border-[#162435]/80 text-slate-500
+              hover:text-slate-200 hover:border-slate-600/60 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            data-carousel-control="true"
+            onClick={next}
+            aria-label="Next terminal"
+            className="p-1.5 rounded-lg border border-[#162435]/80 text-slate-500
+              hover:text-slate-200 hover:border-slate-600/60 transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Slide card ───────────────────────────────────────────────── */}
+      <div
+        role="region"
+        aria-label={`Terminal preview: ${slide.title}`}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        onClick={() => router.push(slide.route)}
+        className="relative rounded-2xl border backdrop-blur-xl overflow-hidden cursor-pointer
+          transition-all duration-300"
+        style={{
+          background: `linear-gradient(135deg, #0d1722 0%, #0b131b 100%)`,
+          borderColor: slide.accentBorder,
+          boxShadow: `0 0 0 1px ${slide.accentBg}, 0 8px 48px rgba(0,0,0,0.5)`,
+        }}
+      >
+        {/* Top glow edge */}
+        <div
+          aria-hidden="true"
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{
+            background: `linear-gradient(to right, transparent, ${slide.accentColor} 50%, transparent)`,
+          }}
+        />
+
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#162435]/60">
+          <div className="flex items-center gap-3">
+            {/* Traffic-light dots */}
+            <div className="flex items-center gap-1.5" aria-hidden="true">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/70" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
+            </div>
+            <span
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${slide.badgeColor}`}
+            >
+              {slide.badge}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-100 leading-tight">{slide.title}</h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">{slide.subtitle}</p>
+            </div>
+            <span className="flex items-center gap-1 text-[10px] text-slate-600 font-mono ml-3 select-none">
+              <ExternalLink className="w-3 h-3" aria-hidden="true" />
+            </span>
+          </div>
+        </div>
+
+        {/* Chart area */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="min-h-[300px] p-4"
+          >
+            <SlideChart />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* CTA footer */}
+        <div
+          className="flex items-center justify-between px-5 py-3 border-t border-[#162435]/60"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="text-xs text-slate-600 font-mono">
+            Terminal {slide.label} / 03
+          </span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); router.push(slide.route); }}
+            className="group inline-flex items-center gap-1.5 text-xs font-semibold
+              transition-colors text-slate-400 hover:text-cyan-300"
+          >
+            Explore Terminal
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );

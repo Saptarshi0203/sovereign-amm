@@ -2,109 +2,253 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── CSS Custom Properties ──────────────────────────────────────────────── */
+:root {
+  /* Dark theme (default) */
+  --bg-base:       #070c12;
+  --bg-raised:     #0b131b;
+  --bg-card:       rgba(13, 23, 34, 0.80);
+  --bg-card-hover: rgba(13, 23, 34, 0.95);
+  --border-subtle: rgba(22, 36, 53, 0.9);
+  --border-glow:   rgba(0, 242, 254, 0.20);
+  --accent-cyan:   #00f2fe;
+  --accent-emerald:#10b981;
+  --accent-rose:   #e11d48;
+  --text-primary:  #f8fafc;
+  --text-secondary:#94a3b8;
+  --text-muted:    #475569;
+}
+
+.light {
+  --bg-base:       #f0f9ff;
+  --bg-raised:     #ffffff;
+  --bg-card:       rgba(255, 255, 255, 0.90);
+  --bg-card-hover: rgba(255, 255, 255, 1);
+  --border-subtle: rgba(186, 230, 253, 0.80);
+  --border-glow:   rgba(14, 165, 233, 0.25);
+  --accent-cyan:   #0284c7;
+  --accent-emerald:#059669;
+  --accent-rose:   #e11d48;
+  --text-primary:  #0c4a6e;
+  --text-secondary:#0369a1;
+  --text-muted:    #94a3b8;
+}
+
+/* ── Base Layer ─────────────────────────────────────────────────────────── */
 @layer base {
-  /* Primary dark background: bg-slate-950 (#020617) */
   html {
-    background-color: theme("colors.slate.950");
+    background-color: var(--bg-base);
     color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  .light html {
+    color-scheme: light;
   }
 
   body {
-    @apply bg-slate-950 text-slate-100 antialiased min-h-screen;
+    @apply antialiased min-h-screen;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Ensure tabular numerics across all monospace number displays */
   .font-mono,
   [class*="font-mono"] {
     font-variant-numeric: tabular-nums lining-nums;
   }
 
-  /* Focus ring: emerald-500 (#10b981), contrast ≥ 3:1 against slate-950.
-     Native outline is set for browsers that don't honour box-shadow as a
-     focus indicator (e.g. Safari < 16). Tailwind ring is kept as an
-     additional visual layer for browsers that support it. */
+  /* Focus ring — Cyan on dark, Sky on light */
   :focus-visible {
-    outline: 2px solid #10b981;
+    outline: 2px solid var(--accent-cyan);
     outline-offset: 2px;
-    @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-slate-950;
   }
 
-  /* Scrollbar styling for dark theme */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-slate-900;
-  }
-
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700/60 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
     @apply bg-slate-600 rounded-full;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-500;
-  }
-
-  /* Range/slider thumb styles for JudgeControls */
-  input[type="range"] {
-    @apply accent-emerald-500;
-  }
+  input[type="range"] { @apply accent-emerald-500; }
 }
 
+/* ── Component Layer ────────────────────────────────────────────────────── */
 @layer components {
-  /* Standard card component matching spec's card styling */
-  .card {
-    @apply bg-slate-900 border border-slate-800 rounded-lg shadow-card;
+
+  /* ── Glass Cards ────────────────────────────────────── */
+  .glass-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    @apply rounded-2xl backdrop-blur-xl shadow-glass;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .glass-card:hover {
+    border-color: var(--border-glow);
+    box-shadow:
+      0 0 0 1px rgba(0, 242, 254, 0.10),
+      0 8px 32px rgba(0, 0, 0, 0.40),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
-  /* Legacy .panel class - retained for backward compatibility */
+  /* Light-mode glass card overrides */
+  .light .glass-card {
+    background: var(--bg-card);
+    border-color: rgba(186, 230, 253, 0.80);
+    @apply shadow-glass-light;
+  }
+  .light .glass-card:hover {
+    border-color: rgba(14, 165, 233, 0.40);
+    box-shadow: 0 4px 24px rgba(14, 165, 233, 0.12), 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  /* Legacy .card — kept for backward compatibility */
+  .card {
+    @apply glass-card;
+  }
+
+  /* Legacy .panel */
   .panel {
-    @apply bg-slate-900 border border-slate-800 p-4 flex flex-col rounded-lg shadow-panel relative overflow-hidden;
+    @apply glass-card p-4 flex flex-col relative overflow-hidden;
     font-variant-numeric: tabular-nums lining-nums;
   }
 
   .panel-title {
-    @apply text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2;
+    @apply text-xs font-bold uppercase tracking-widest mb-4 pb-2;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
-  /* Bid/ask color utilities */
-  .bid-color {
-    @apply text-emerald-500;
+  /* ── Stat tiles ─────────────────────────────────────── */
+  .stat-tile {
+    @apply glass-card p-4 flex flex-col gap-1;
   }
 
-  .ask-color {
-    @apply text-rose-600;
+  /* ── Neon label ─────────────────────────────────────── */
+  .label-cyan {
+    @apply text-xs uppercase tracking-widest font-mono font-semibold;
+    color: var(--accent-cyan);
   }
 
-  /* Monospace number display - ensures decimal alignment */
-  .mono-num {
-    @apply font-mono tabular-nums;
+  /* ── Bid / Ask color utilities ──────────────────────── */
+  .bid-color  { @apply text-emerald-500; }
+  .ask-color  { @apply text-rose-600; }
+  .mono-num   { @apply font-mono tabular-nums; }
+
+  /* ── Glow separator line ────────────────────────────── */
+  .glow-divider {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(0, 242, 254, 0.35) 30%,
+      rgba(0, 242, 254, 0.35) 70%,
+      transparent
+    );
   }
 
-  /* Skip-to-content link (accessibility) */
+  /* ── Ambient radial glow blobs ──────────────────────── */
+  .ambient-cyan {
+    @apply absolute rounded-full pointer-events-none;
+    background: radial-gradient(ellipse at center, rgba(0, 242, 254, 0.12) 0%, transparent 70%);
+    @apply animate-glow-pulse;
+  }
+  .ambient-emerald {
+    @apply absolute rounded-full pointer-events-none;
+    background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.10) 0%, transparent 70%);
+    @apply animate-glow-pulse;
+  }
+
+  /* ── Skip-to-content (accessibility) ───────────────── */
   .skip-to-content {
     @apply absolute -top-full left-4 z-50 px-4 py-2 bg-emerald-600 text-white font-semibold rounded-b-lg;
     @apply focus:top-0 transition-[top] duration-150;
   }
+
+  /* ── Gradient text ──────────────────────────────────── */
+  .text-gradient-cyan {
+    background: linear-gradient(135deg, #00f2fe 0%, #0284c7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .text-gradient-emerald {
+    background: linear-gradient(135deg, #10b981 0%, #0284c7 60%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Section labels (E8 uppercase category) ─────────── */
+  .section-label {
+    @apply text-xs uppercase tracking-[0.2em] font-mono font-semibold;
+    color: var(--text-muted);
+  }
+
+  /* ── Interactive range sliders ──────────────────────── */
+  .slider-cyan {
+    @apply w-full h-1.5 rounded-full appearance-none cursor-pointer;
+    background: linear-gradient(to right, #00f2fe var(--val, 50%), #1e293b var(--val, 50%));
+  }
+  .slider-cyan::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full;
+    background: #00f2fe;
+    box-shadow: 0 0 8px rgba(0, 242, 254, 0.6);
+  }
+  .slider-emerald {
+    @apply w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700;
+  }
+  .slider-emerald::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  }
 }
 
-/* ── L2 order-book ladder micro-animations ──────────────────────────────── */
+/* ── Order Book Flash Animations ────────────────────────────────────────── */
 @keyframes ob-flash-up {
-  0% { background-color: rgba(16, 185, 129, 0.32); }
+  0%   { background-color: rgba(16, 185, 129, 0.32); }
   100% { background-color: transparent; }
 }
 @keyframes ob-flash-down {
-  0% { background-color: rgba(225, 29, 72, 0.32); }
+  0%   { background-color: rgba(225, 29, 72, 0.32); }
   100% { background-color: transparent; }
 }
 @keyframes ob-flash-new {
-  0% { background-color: rgba(56, 189, 248, 0.3); }
+  0%   { background-color: rgba(0, 242, 254, 0.25); }
   100% { background-color: transparent; }
 }
-.ob-row[data-flash='up'] { animation: ob-flash-up 420ms ease-out; }
+.ob-row[data-flash='up']   { animation: ob-flash-up   420ms ease-out; }
 .ob-row[data-flash='down'] { animation: ob-flash-down 420ms ease-out; }
-.ob-row[data-flash='new'] { animation: ob-flash-new 520ms ease-out; }
+.ob-row[data-flash='new']  { animation: ob-flash-new  520ms ease-out; }
 .ob-bar { transition: width 90ms linear; will-change: width; }
+
+/* ── Depth bar fill animations ──────────────────────────────────────────── */
+@keyframes bar-fill-bid {
+  from { opacity: 0; transform: scaleX(0); transform-origin: right; }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+@keyframes bar-fill-ask {
+  from { opacity: 0; transform: scaleX(0); transform-origin: left; }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+.ob-bar-bid { animation: bar-fill-bid 300ms ease-out; }
+.ob-bar-ask { animation: bar-fill-ask 300ms ease-out; }
+
+/* ── Hero radial spotlight ──────────────────────────────────────────────── */
+@keyframes spotlight-rotate {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg);   opacity: 0.6; }
+  50%       { transform: translate(-50%, -50%) rotate(180deg); opacity: 0.9; }
+}
+
+/* ── Ticker tape smooth scroll ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-marquee-fast {
+    animation: none !important;
+  }
+}

@@ -33,7 +33,7 @@ export default function RootLayout({
       className={`dark ${inter.variable} ${outfit.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
-      <body className="bg-sky-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+      <body className="bg-[#f0f9ff] dark:bg-[#070c12] text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
         {/* Accessibility: skip-to-main-content link, visible on keyboard focus */}
         <a href="#main-content" className="skip-to-content">
           Skip to main content

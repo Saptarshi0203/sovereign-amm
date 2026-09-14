@@ -2,10 +2,10 @@
 
 /**
  * @file Panel.tsx
- * @description Base container panel used throughout the Sovereign-AMM dashboard.
+ * @description Base glassmorphic container panel — E8 dark-glass aesthetic.
  *
- * Applies the standard dark-glass card treatment:
- *   rounded-xl  border border-slate-800  bg-slate-900/60  backdrop-blur-sm
+ * Dark mode: deep midnight teal background, subtle cyan border-glow on hover.
+ * Light mode: elevated white with sky-blue border and shadow.
  *
  * Requirements addressed: 30.1, 30.2
  */
@@ -13,34 +13,26 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
 interface PanelProps {
-  /** Panel contents. */
   children: React.ReactNode;
-  /** Additional Tailwind classes merged via cn(). */
   className?: string;
+  /** Apply a cyan glow border on hover (default: true) */
+  glow?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Panel
-// ---------------------------------------------------------------------------
-
-/**
- * Base dark-glass container used by all dashboard cards and panels.
- *
- * @example
- * <Panel className="p-4">
- *   <StatTile label="MICRO PRICE" value="₹4.8534" />
- * </Panel>
- */
-export function Panel({ children, className }: PanelProps): React.ReactElement {
+export function Panel({ children, className, glow = true }: PanelProps): React.ReactElement {
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm',
+        // Base glass card treatment
+        'rounded-2xl backdrop-blur-xl relative overflow-hidden',
+        // Dark mode
+        'bg-[#0d1722]/80 border border-[#162435]/90',
+        'dark:bg-[#0d1722]/80 dark:border-[#162435]/90',
+        // Light mode
+        'light:bg-white/90 light:border-sky-200/80 light:shadow-glass-light',
+        // Hover glow
+        glow && 'transition-all duration-200 hover:border-cyan-500/25 hover:shadow-[0_0_0_1px_rgba(0,242,254,0.08),0_8px_32px_rgba(0,0,0,0.4)] dark:hover:border-cyan-500/25',
         className,
       )}
     >
