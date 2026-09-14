@@ -34,8 +34,9 @@ const STATUS_COLOR: Record<UserOrder['status'], string> = {
  *   SELL → market/limit ask; fills hit the AMM bid (your rooftop surplus charges the hub)
  *   AUTO-CHARGE → standing trigger: buy `qty` at market once the best ask ≤ trigger
  *
- * Executions arrive on /ws/user/{id}; the portfolio card and tables below
- * update live.
+ * Live Mode: orders go to the backend and executions arrive on /ws/user/{id}.
+ * Demo Sandbox (anonymous or offline): orders execute locally against the
+ * in-browser L2 book and a ₹1,00,000 demo wallet — no 401s, no backend.
  */
 export function OrderDesk() {
   const portfolio = useStore((s) => s.portfolio);
@@ -47,6 +48,11 @@ export function OrderDesk() {
   const ammAsk = useStore((s) => s.ammAsk);
   const emergency = useStore((s) => s.emergency.active);
   const setPortfolio = useStore((s) => s.setPortfolio);
+  const anonymous = useStore((s) => s.authState === 'anonymous');
+  const demoPlaceOrder = useStore((s) => s.demoPlaceOrder);
+  const demoCancelOrder = useStore((s) => s.demoCancelOrder);
+  const demoResetPortfolio = useStore((s) => s.demoResetPortfolio);
+  const sandbox = anonymous || !live;
 
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [type, setType] = useState<OrderType>('MARKET');
@@ -69,8 +75,8 @@ export function OrderDesk() {
     if (type === 'LIMIT') payload.limit_price = limitPrice;
     if (type === 'AUTO_CHARGE') payload.trigger_price = triggerPrice;
     try {
-      const res = await placeOrder(payload);
-      setPortfolio(res.portfolio);
+      const res = sandbox ? demoPlaceOrder(payload) : await placeOrder(payload);
+      if (!sandbox) setPortfolio(res.portfolio);
       if (res.rejected) {
         setFeedback({ tone: 'err', text: res.order.note || 'Order rejected' });
       } else if (type === 'AUTO_CHARGE') {
@@ -92,6 +98,10 @@ export function OrderDesk() {
   };
 
   const cancel = async (id: string) => {
+    if (sandbox) {
+      demoCancelOrder(id);
+      return;
+    }
     try {
       await cancelOrder(id);
     } catch (e) {
@@ -100,15 +110,20 @@ export function OrderDesk() {
   };
 
   const reset = async () => {
+    if (sandbox) {
+      demoResetPortfolio();
+      setFeedback({ tone: 'ok', text: 'Demo wallet reset to ₹1,00,000 · 25 kWh' });
+      return;
+    }
     try {
       setPortfolio(await resetPortfolio());
-      setFeedback({ tone: 'ok', text: 'Portfolio reset to ₹10,000 · 25 kWh' });
+      setFeedback({ tone: 'ok', text: 'Portfolio reset to ₹1,00,000 · 25 kWh' });
     } catch (e) {
       setFeedback({ tone: 'err', text: e instanceof Error ? e.message : 'Reset failed' });
     }
   };
 
-  const disabled = !live || busy || emergency;
+  const disabled = busy || (live && emergency);
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-4">
@@ -117,7 +132,7 @@ export function OrderDesk() {
         <div className="flex items-center justify-between">
           <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Order Desk · vs Central Power Control</p>
           <span className="text-[10px] font-mono text-slate-500">
-            {!live ? 'engine offline' : emergency ? 'EMERGENCY — trading paused' : connected ? 'fills stream live' : 'connecting…'}
+            {sandbox ? 'demo sandbox · local ₹1,00,000 wallet' : emergency ? 'EMERGENCY — trading paused' : connected ? 'fills stream live' : 'connecting…'}
           </span>
         </div>
 
@@ -240,7 +255,7 @@ export function OrderDesk() {
       <div className="p-4 flex flex-col gap-3 border-t lg:border-t-0 lg:border-l border-slate-800">
         <div className="flex items-center justify-between">
           <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Portfolio · {portfolio?.email ?? '—'}</p>
-          <button type="button" onClick={() => void reset()} disabled={!live} className="text-[10px] font-mono text-slate-500 hover:text-rose-400 disabled:opacity-40">
+          <button type="button" onClick={() => void reset()} className="text-[10px] font-mono text-slate-500 hover:text-rose-400">
             reset
           </button>
         </div>
@@ -257,7 +272,7 @@ export function OrderDesk() {
             <Stat label="Rooftop solar" value={`${portfolio.home_solar_capacity_kw.toFixed(1)} kWp`} />
           </div>
         ) : (
-          <p className="text-xs text-slate-500 font-mono">{live ? 'Loading portfolio…' : 'Start the backend to trade.'}</p>
+          <p className="text-xs text-slate-500 font-mono">Loading portfolio…</p>
         )}
 
         <div>
@@ -296,7 +311,7 @@ export function OrderDesk() {
                   <span className="text-slate-200 text-right">₹{f.price.toFixed(4)}</span>
                   <span className="text-slate-400 text-right">{f.qty_kwh.toFixed(2)} kWh</span>
                   <span className="text-slate-500 truncate" title={f.counterparty}>
-                    {f.counterparty === 'AMM' ? 'Power Control' : f.counterparty.replace('user:', '')}
+                    {f.counterparty === 'AMM' ? 'Power Control' : f.counterparty.replace('user:', '').replace(' (demo book)', '')}
                   </span>
                 </div>
               ))}

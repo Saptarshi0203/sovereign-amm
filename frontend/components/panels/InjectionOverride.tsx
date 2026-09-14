@@ -24,7 +24,9 @@ export function InjectionOverride() {
   const buses          = useStore((s) => s.buses);
   const applyInjection = useStore((s) => s.applyInjection);
   const resetGrid      = useStore((s) => s.resetGrid);
-  const live           = useStore((s) => s.dataSource === 'live');
+  const isLive         = useStore((s) => s.dataSource === 'live');
+  const isAdmin        = useStore((s) => s.isAdmin);
+  const live           = isLive && isAdmin;
   const [error, setError] = useState<string | null>(null);
 
   const [selectedBus, setSelectedBus] = useState<string>('BUS-05');
@@ -41,8 +43,9 @@ export function InjectionOverride() {
     [],
   );
 
-  // Live: the engine applies the injection through its event log and the
-  // PTDF flows arrive on the next 1 Hz grid frame. Offline: local DC power flow.
+  // Live (admin): the engine applies the injection through its event log and the
+  // PTDF flows arrive on the next 1 Hz grid frame. Demo sandbox / non-admin: the
+  // local DC power-flow (PTDF · Δp) recolours the topology instantly.
   const inject = () => {
     if (decayRef.current) clearTimeout(decayRef.current);
     setError(null);

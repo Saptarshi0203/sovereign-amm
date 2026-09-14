@@ -1,7 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { Panel } from '@/components/ui/Panel';
-import { LockOverlay } from '@/components/layout/LockOverlay';
 import { FeedStatus } from '@/components/ui/FeedStatus';
 import { OrderDesk } from '@/components/panels/OrderDesk';
 import { DatasetUpload } from '@/components/panels/DatasetUpload';
@@ -32,10 +31,8 @@ export default function TradePage() {
         </div>
 
         <Panel>
-          <LockOverlay title="Log in to Trade" body="Demo Mode shows static data. Sign in to get a ₹100,000 paper-trading wallet and trade live against the Central Power Control market." ctaLabel="Log in to Trade">
-            <OrderDesk />
-          </LockOverlay>
-        </Panel>
+<OrderDesk />
+</Panel>
 
         <div className="grid lg:grid-cols-2 gap-4">
           <Panel className="p-4">

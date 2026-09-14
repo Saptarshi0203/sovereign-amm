@@ -43,7 +43,7 @@ export function DayProfileChart({ height = 220 }: { height?: number }) {
   }, [live, playback?.active, playback?.run_id, playback?.version, loadedFor]);
 
   if (!playback?.active || points.length === 0) {
-    return <p className="text-xs font-mono text-slate-600 p-4">{live ? 'No dataset active.' : 'Engine offline.'}</p>;
+    return <p className="text-xs font-mono text-slate-600 p-4">{live ? 'No dataset active.' : 'Sign in to stream the clock-synced dataset profile.'}</p>;
   }
   const nowSec = playback.row?.t_sec ?? 0;
 

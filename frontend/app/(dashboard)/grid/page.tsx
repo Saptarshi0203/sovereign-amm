@@ -1,7 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { Panel } from '@/components/ui/Panel';
-import { LockOverlay } from '@/components/layout/LockOverlay';
 import { LmpPanel } from '@/components/panels/LmpPanel';
 import { PtdfMatrix } from '@/components/panels/PtdfMatrix';
 import { InjectionOverride } from '@/components/panels/InjectionOverride';
@@ -62,23 +61,17 @@ export default function GridPage() {
             <LineLoadingStrip />
           </Panel>
           <Panel className="p-4">
-            <LockOverlay title="Node Injection Override" body="Sign in to inject load spikes into the live power flow." ctaLabel="Sign In">
-              <InjectionOverride />
-            </LockOverlay>
-          </Panel>
+<InjectionOverride />
+</Panel>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
           <Panel>
-            <LockOverlay title="Unlock Congestion Data" body="Create a free account to view live LMP and congestion pricing." ctaLabel="Sign Up Now">
-              <LmpPanel />
-            </LockOverlay>
-          </Panel>
+<LmpPanel />
+</Panel>
           <Panel>
-            <LockOverlay title="Unlock PTDF Matrix" body="Create a free account to view live transmission sensitivity data." ctaLabel="Sign Up Now">
-              <PtdfMatrix />
-            </LockOverlay>
-          </Panel>
+<PtdfMatrix />
+</Panel>
         </div>
       </main>
     </>

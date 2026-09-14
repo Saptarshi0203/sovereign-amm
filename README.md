@@ -13,7 +13,7 @@
 <p>
   <img src="https://img.shields.io/badge/engine-10%20Hz-10b981?style=flat-square" alt="10 Hz" />
   <img src="https://img.shields.io/badge/pytest-61%20passed-10b981?style=flat-square&logo=pytest&logoColor=white" alt="pytest" />
-  <img src="https://img.shields.io/badge/vitest-953%20passed-10b981?style=flat-square&logo=vitest&logoColor=white" alt="vitest" />
+  <img src="https://img.shields.io/badge/vitest-954%20passed-10b981?style=flat-square&logo=vitest&logoColor=white" alt="vitest" />
   <img src="https://img.shields.io/badge/next%20build-passing-10b981?style=flat-square&logo=nextdotjs&logoColor=white" alt="build" />
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="python" />
   <img src="https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="next" />
@@ -60,7 +60,7 @@ Sovereign-AMM treats a physical microgrid — 100 homes, rooftop solar, EV charg
 | **Backend / OpenAPI** | https://sovereign-amm-backend.onrender.com/docs |
 | **Health** | https://sovereign-amm-backend.onrender.com/health |
 
-The site opens in **Demo Mode**: anonymous visitors see the static 24 h DuckDB history and the in-browser simulation with trading locked behind **Log in to Trade**. Signing in (Google or password) switches the UI to the authenticated **live** WebSocket feed and funds a **₹1,00,000 paper-trading wallet**; admin e-mails (`ADMIN_EMAILS`) additionally unlock the **Control Room**.
+The site opens in the **Demo Sandbox** — fully unlocked for anonymous visitors: every chart, dial, slider and order form is interactive on the 24 h DuckDB demo stream, with a local **₹1,00,000 paper wallet** (trades execute against the in-browser L2 book). Signing in (Google or password) switches to your authenticated **live** WebSocket feed and your persisted wallet; admin e-mails (`ADMIN_EMAILS`) additionally unlock the **Control Room**.
 
 > The backend runs on Render's free tier and sleeps after 15 minutes of inactivity. The first request takes ~30–60 s; the dashboards show `SIMULATED` (an in-browser fallback) until the engine wakes, then flip to `LIVE · 10 Hz` automatically.
 
@@ -202,7 +202,7 @@ Full derivations: [`docs/math_spec.md`](docs/math_spec.md) · design decisions: 
 | **Clock-synced playback** | `POST /api/simulation/upload-csv` ingests `timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz`; the engine matches `T_now = h·3600 + m·60 + s` (IST) to the nearest 10 s row and drives demand, solar, price, nodal injections, grid frequency and hub dispatch. A generated 8,640-row sample day is activated on startup |
 | **Household terminal** | Market (IOC), limit (resting, cancellable) and **auto-charge** orders ("buy 10 kWh when the ask ≤ ₹4.50") routed into the same book; wallet, inventory, avg cost, realised / unrealised PnL and **savings vs utility tariff**; fills pushed on `/ws/user/{id}` |
 | **Control Room** | Order desk, topology + injections, day profile with a NOW marker, dataset upload with progress, scenario buttons (load spike, solar surplus, low battery, congestion), JSON / CSV dataset injection |
-| **Dual-state auth (RBAC)** | Anonymous = Demo Mode (static rollups, no sockets, "Log in to Trade"); signed-in = live feed + paper trading (₹1,00,000 wallet, SQLite `users`/`trades`); `role=admin` JWTs (from `ADMIN_EMAILS`) unlock `/control`, dataset feed upload, injections, scenarios and the emergency kill-switch — enforced server-side by `require_user` / `require_admin` |
+| **Dual-state auth (RBAC)** | Anonymous = Demo Sandbox (24 h rollups + demo tick stream, no sockets, local ₹1,00,000 paper wallet, local PTDF injections and GLFT sliders — nothing locked); signed-in = live feed + persisted paper trading (SQLite `users`/`trades`); `role=admin` JWTs (from `ADMIN_EMAILS`) unlock `/control`, dataset feed upload, live injections, scenarios and the emergency kill-switch — enforced server-side by `require_user` / `require_admin` |
 | **Resilience** | Offline fallback to a seeded in-browser simulation (`SIMULATED` badge), WebSocket back-off reconnects, server-side disconnect handling, bounded book and event log |
 
 ---

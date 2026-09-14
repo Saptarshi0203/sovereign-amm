@@ -35,6 +35,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { INITIAL_BOOK, stepBook, computeOBI, computeMicroPrice } from '@/lib/mock/orderbook';
 import { INITIAL_SERIES } from '@/lib/mock/timeseries';
 import { GRID_DATA, stepGrid } from '@/lib/mock/grid';
+import { cancelDemoOrder, executeDemoOrder, markPortfolio, newDemoPortfolio, processRestingOrders, type DemoExecution, type DemoOrderInput } from '@/lib/demo/paperTrading';
 import {
   busesFromGrid,
   fillsFromTape,
@@ -242,6 +243,13 @@ export interface StoreState {
   portfolioConnected: boolean;
   setPortfolio(p: Portfolio | null): void;
   setPortfolioConnected(connected: boolean): void;
+  /**
+   * Demo Sandbox paper trading (anonymous visitors): executes against the
+   * in-browser L2 book and a local ₹100,000 wallet — no backend calls.
+   */
+  demoPlaceOrder(input: DemoOrderInput): DemoExecution;
+  demoCancelOrder(orderId: string): void;
+  demoResetPortfolio(): void;
 
   // ── Session slice ─────────────────────────────────────────────────────────
 
@@ -259,7 +267,7 @@ export interface StoreState {
   authUser: AuthUser | null;
   /** `true` once the session bootstrap has run on the client. */
   sessionReady: boolean;
-  /** `true` when a signed-in account unlocks the gated panels. */
+  /** Always `true`: the Demo Sandbox is fully interactive; kept for existing consumers. */
   isUnlocked: boolean;
   /** `true` for admin sessions. */
   isAdmin: boolean;
@@ -316,8 +324,36 @@ export const useStore = create<StoreState>()(
         const newSoc = Math.min(92, Math.max(18, s.soc + (obi > 0 ? -0.5 : 0.3)));
         const newInventoryQ = Math.max(-1, Math.min(1, 2 * (newSoc / 100) - 1));
 
+        // Demo AMM accounting: the battery is the counterparty of every tape
+        // print, capturing half the touch spread per kWh and paying C_deg wear.
+        const halfSpread = Math.max(0, (book.asks[0].px - book.bids[0].px) / 2);
+        const pnl: PnLSummary = {
+          ...s.pnl,
+          realized: s.pnl.realized + halfSpread * trade.sz,
+          wearCost: s.pnl.wearCost + s.cDeg * trade.sz,
+          throughputKwh: s.pnl.throughputKwh + trade.sz,
+          positionKwh: s.pnl.positionKwh + (trade.side === 'buy' ? -trade.sz : trade.sz),
+          fills: s.pnl.fills + 1,
+          avgSpread: s.pnl.avgSpread === 0 ? halfSpread * 2 : 0.98 * s.pnl.avgSpread + 0.02 * halfSpread * 2,
+        };
+        pnl.unrealized = pnl.positionKwh * (microPrice - s.microPrice) + s.pnl.unrealized;
+        pnl.net = pnl.realized + pnl.unrealized - pnl.wearCost;
+
+        // Demo sandbox: fill resting limit orders / fire auto-charge triggers.
+        let demoBook = book;
+        let portfolio = s.portfolio;
+        if (s.authState === 'anonymous' && portfolio) {
+          const res = processRestingOrders(portfolio, book, microPrice);
+          if (res.portfolio !== portfolio) {
+            portfolio = res.portfolio;
+            demoBook = res.book;
+          } else if (s.tickNumber % 10 === 0) {
+            portfolio = markPortfolio(portfolio, microPrice);
+          }
+        }
+
         return {
-          book,
+          book: demoBook,
           microPrice,
           obi,
           bestBid: book.bids[0],
@@ -326,6 +362,8 @@ export const useStore = create<StoreState>()(
           soc: newSoc,
           inventoryQ: newInventoryQ,
           tickNumber: s.tickNumber + 1,
+          pnl,
+          ...(portfolio !== s.portfolio ? { portfolio } : {}),
         };
       });
     },
@@ -386,7 +424,22 @@ export const useStore = create<StoreState>()(
     degradationWeight: 0.5,
     loadShock: 0,
 
-    setJudge: (patch) => set(patch),
+    setJudge: (patch) =>
+      set((s) => ({
+        ...patch,
+        // Demo sandbox: the sliders drive the GLFT parameters used by the boundary chart.
+        ...(s.dataSource !== 'live'
+          ? {
+              risk: {
+                ...s.risk,
+                ...(patch.volatility !== undefined ? { sigma: patch.volatility } : {}),
+                ...(patch.riskAversion !== undefined ? { gamma: patch.riskAversion } : {}),
+              },
+              ...(patch.volatility !== undefined ? { sigma: patch.volatility } : {}),
+              ...(patch.riskAversion !== undefined ? { gamma: patch.riskAversion } : {}),
+            }
+          : {}),
+      })),
 
     resetJudge: () =>
       set({
@@ -526,6 +579,29 @@ export const useStore = create<StoreState>()(
     setPortfolio: (p) => set({ portfolio: p }),
     setPortfolioConnected: (connected) => set({ portfolioConnected: connected }),
 
+    demoPlaceOrder: (input) => {
+      const s = get();
+      const current = s.portfolio ?? newDemoPortfolio();
+      const res = executeDemoOrder(current, s.book, input, s.microPrice);
+      set({
+        portfolio: res.portfolio,
+        book: res.book,
+        bestBid: res.book.bids[0] ?? s.bestBid,
+        bestAsk: res.book.asks[0] ?? s.bestAsk,
+        ...(res.fills > 0
+          ? {
+              trades: [
+                { id: `d-${res.order.order_id}`, ts: Date.now(), side: input.side === 'BUY' ? 'buy' : 'sell', px: res.avg_price, sz: res.filled_kwh } as Trade,
+                ...s.trades,
+              ].slice(0, MAX_TAPE),
+            }
+          : {}),
+      });
+      return res;
+    },
+    demoCancelOrder: (orderId) => set((s) => (s.portfolio ? { portfolio: cancelDemoOrder(s.portfolio, orderId, s.microPrice) } : {})),
+    demoResetPortfolio: () => set((s) => ({ portfolio: markPortfolio(newDemoPortfolio(), s.microPrice) })),
+
     // ── Session slice ───────────────────────────────────────────────────────
 
     authState: 'anonymous',
@@ -533,7 +609,7 @@ export const useStore = create<StoreState>()(
     jwtToken: null,
     authUser: null,
     sessionReady: false,
-    isUnlocked: false,
+    isUnlocked: true,
     isAdmin: false,
 
     setSession: (token, user) => {
@@ -544,14 +620,14 @@ export const useStore = create<StoreState>()(
         authUser: real ? user : null,
         authState,
         demoUser: !real,
-        isUnlocked: real,
+        isUnlocked: true,
         isAdmin: authState === 'admin',
         sessionReady: true,
-        ...(real ? {} : { portfolio: null, portfolioConnected: false }),
+        ...(real ? { portfolio: null, portfolioConnected: false } : { portfolio: markPortfolio(newDemoPortfolio(), get().microPrice), portfolioConnected: false }),
       });
     },
     clearSession: () =>
-      set({ jwtToken: null, authUser: null, authState: 'anonymous', demoUser: true, isUnlocked: false, isAdmin: false, portfolio: null, portfolioConnected: false }),
+      set((s) => ({ jwtToken: null, authUser: null, authState: 'anonymous', demoUser: true, isUnlocked: true, isAdmin: false, portfolio: markPortfolio(newDemoPortfolio(), s.microPrice), portfolioConnected: false })),
     setJwtToken: (token: string) => set({ jwtToken: token }),
     setSessionReady: (ready) => set({ sessionReady: ready }),
 

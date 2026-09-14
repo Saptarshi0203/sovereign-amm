@@ -8,7 +8,6 @@ import { OrderDesk } from '@/components/panels/OrderDesk';
 import { DatasetUpload } from '@/components/panels/DatasetUpload';
 import { DataInjector } from '@/components/panels/DataInjector';
 import { FeedStatus } from '@/components/ui/FeedStatus';
-import { LockOverlay } from '@/components/layout/LockOverlay';
 import { AdminGate } from '@/components/layout/AdminGate';
 
 const GridTopologySVG = dynamic(() => import('@/components/charts/GridTopologySVG').then((m) => m.GridTopologySVG), { ssr: false });
@@ -34,10 +33,8 @@ export default function ControlPage() {
       </div>
 
       <Panel>
-        <LockOverlay title="Interactive Order Desk" body="Sign in to trade against the Central Power Control market." ctaLabel="Sign In">
-          <OrderDesk />
-        </LockOverlay>
-      </Panel>
+<OrderDesk />
+</Panel>
 
       <div className="grid lg:grid-cols-[2fr_1fr] gap-4">
         <Panel className="p-4">

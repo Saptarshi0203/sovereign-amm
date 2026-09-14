@@ -3,7 +3,6 @@ import { useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { Panel } from '@/components/ui/Panel';
-import { LockOverlay } from '@/components/layout/LockOverlay';
 import { FeedStatus } from '@/components/ui/FeedStatus';
 import { PnlMetrics, RiskParams } from '@/components/panels/BatteryMetrics';
 import { putParameters } from '@/lib/live/session';
@@ -22,24 +21,17 @@ const InventoryBoundaryChart = dynamic(
 );
 
 export default function BatteryPage() {
-  const openAuth = useStore((s) => s.openAuth);
-  const isUnlocked = useStore((s) => s.isUnlocked);
   const live = useStore((s) => s.dataSource === 'live');
   const isAdmin = useStore((s) => s.isAdmin);
   const risk = useStore((s) => s.risk);
   const setJudge = useStore((s) => s.setJudge);
-  const hasPromptedRef = useRef(false);
   const [simCapacity, setSimCapacity] = useState(100);
   const [gammaDraft, setGammaDraft] = useState<number | null>(null);
   const [sigmaDraft, setSigmaDraft] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSimSlider = useCallback(() => {
-    if (!isUnlocked && !hasPromptedRef.current) {
-      hasPromptedRef.current = true;
-      openAuth('signup');
-    }
-  }, [openAuth, isUnlocked]);
+  // Sandbox: sliders are always live — no sign-up prompt.
+  const handleSimSlider = useCallback(() => undefined, []);
 
   // Debounced parameter push: live → PUT /grid/{id}/parameters (engine re-quotes
   // on the next tick); offline → the local judge slice.
@@ -97,25 +89,13 @@ export default function BatteryPage() {
             <InventoryBoundaryChart />
           </Panel>
           <Panel>
-            <LockOverlay
-              title="PnL Metrics"
-              body="Sign in to view live profitability and throughput metrics."
-              ctaLabel="Sign In"
-            >
-              <PnlMetrics />
-            </LockOverlay>
-          </Panel>
+<PnlMetrics />
+</Panel>
         </div>
 
         <Panel>
-          <LockOverlay
-            title="Risk Parameters"
-            body="Sign in to view exact risk-aversion and boundary parameters."
-            ctaLabel="Sign In"
-          >
-            <RiskParams />
-          </LockOverlay>
-        </Panel>
+<RiskParams />
+</Panel>
 
         <Panel className="p-5">
           <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-1 font-mono">

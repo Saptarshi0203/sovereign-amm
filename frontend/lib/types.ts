@@ -432,6 +432,8 @@ export interface UserFill {
 export interface Portfolio {
   user_id: string;
   email: string;
+  /** `'demo'` for the anonymous sandbox wallet. */
+  role?: string;
   wallet_balance_inr: number;
   energy_inventory_kwh: number;
   home_solar_capacity_kw: number;

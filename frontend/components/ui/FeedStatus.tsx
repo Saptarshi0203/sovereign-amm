@@ -24,7 +24,7 @@ export function FeedStatus({ className = '' }: { className?: string }) {
           live
             ? 'Streaming from the engine over WebSocket'
             : anonymous
-              ? 'Demo Mode — static 24 h DuckDB history + in-browser simulation. Sign in for the live feed.'
+              ? 'Demo Sandbox — 24 h DuckDB history + continuous demo tick stream, fully interactive. Sign in for the live feed.'
               : 'Backend unreachable — running the seeded in-browser simulation'
         }
       >

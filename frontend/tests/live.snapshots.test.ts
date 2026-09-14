@@ -154,8 +154,9 @@ describe('store ↔ live feed integration', () => {
   it('setSession drives the dual-state machine: anonymous → user → admin', () => {
     useStore.getState().setSession(null, null);
     expect(useStore.getState().authState).toBe('anonymous');
-    expect(useStore.getState().isUnlocked).toBe(false);
+    expect(useStore.getState().isUnlocked).toBe(true); // sandbox is fully interactive
     expect(useStore.getState().demoUser).toBe(true);
+    expect(useStore.getState().portfolio?.wallet_balance_inr).toBe(100_000);
     useStore.getState().setSession('jwt', { email: 'a@b', role: 'user' });
     expect(useStore.getState().authState).toBe('user');
     expect(useStore.getState().isUnlocked).toBe(true);
@@ -166,6 +167,29 @@ describe('store ↔ live feed integration', () => {
     useStore.getState().setSession('jwt', { email: 'g', role: 'viewer', demo: true });
     expect(useStore.getState().authState).toBe('anonymous');
     useStore.getState().clearSession();
-    expect(useStore.getState().isUnlocked).toBe(false);
+    expect(useStore.getState().authState).toBe('anonymous');
+    expect(useStore.getState().portfolio?.role).toBe('demo');
+  });
+
+  it('demo sandbox executes paper trades against the local book', () => {
+    useStore.getState().setSession(null, null);
+    const before = useStore.getState().portfolio!;
+    const res = useStore.getState().demoPlaceOrder({ side: 'BUY', type: 'MARKET', qty_kwh: 2 });
+    expect(res.rejected).toBe(false);
+    expect(res.filled_kwh).toBeCloseTo(2);
+    const after = useStore.getState().portfolio!;
+    expect(after.energy_inventory_kwh).toBeCloseTo(before.energy_inventory_kwh + 2);
+    expect(after.wallet_balance_inr).toBeLessThan(before.wallet_balance_inr);
+    expect(after.fills.length).toBe(res.fills);
+    // resting limit far from the market stays open, then cancels
+    const lim = useStore.getState().demoPlaceOrder({ side: 'BUY', type: 'LIMIT', qty_kwh: 1, limit_price: 0.5 });
+    expect(lim.order.status).toBe('OPEN');
+    useStore.getState().demoCancelOrder(lim.order.order_id);
+    expect(useStore.getState().portfolio!.active_orders.length).toBe(0);
+    // insufficient inventory is rejected locally, no backend involved
+    const sell = useStore.getState().demoPlaceOrder({ side: 'SELL', type: 'MARKET', qty_kwh: 500 });
+    expect(sell.rejected).toBe(true);
+    useStore.getState().demoResetPortfolio();
+    expect(useStore.getState().portfolio!.wallet_balance_inr).toBe(100_000);
   });
 });

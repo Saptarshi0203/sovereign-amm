@@ -89,7 +89,7 @@ export function DataInjector() {
         <span className="text-[10px] font-mono text-slate-500">{historyPoints !== null ? `${historyPoints.toLocaleString()} pts stored` : ''}</span>
       </div>
 
-      {!live && <p className="text-xs text-amber-500 font-mono">Engine offline — start the backend to inject datasets.</p>}
+      {!live && <p className="text-xs text-amber-500 font-mono">Sign in as an admin to inject datasets into the live engine.</p>}
 
       <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
         <select

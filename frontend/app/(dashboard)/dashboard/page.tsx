@@ -2,7 +2,6 @@
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { Panel } from '@/components/ui/Panel';
-import { LockOverlay } from '@/components/layout/LockOverlay';
 import { TickerTape } from '@/components/landing/TickerTape';
 import { StatTile } from '@/components/ui/StatTile';
 import { FeedStatus } from '@/components/ui/FeedStatus';
@@ -80,15 +79,11 @@ export default function DashboardPage() {
             <ObiGauge />
           </Panel>
           <Panel>
-            <LockOverlay title="Log in to Trade" body="Demo Mode shows static data. Sign in for a ₹100,000 paper-trading wallet and your own live P&L." ctaLabel="Log in to Trade">
-              <PnlPanel />
-            </LockOverlay>
-          </Panel>
+<PnlPanel />
+</Panel>
           <Panel>
-            <LockOverlay title="Log in to Trade" body="Sign in to see live executions from the engine tape." ctaLabel="Log in to Trade">
-              <FillsTable />
-            </LockOverlay>
-          </Panel>
+<FillsTable />
+</Panel>
         </div>
 
         {isAdmin && (

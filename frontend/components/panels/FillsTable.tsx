@@ -25,7 +25,7 @@ export function FillsTable({ rows = 6 }: { rows?: number }) {
     <div className="p-4 min-h-40">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Recent Fills</p>
-        <span className="text-[10px] font-mono text-slate-500">{live ? 'engine tape' : 'simulated'}</span>
+        <span className="text-[10px] font-mono text-slate-500">{live ? 'engine tape' : 'demo tape · 24h'}</span>
       </div>
       <div className="text-xs font-mono text-slate-400 space-y-1">
         {items.length === 0 && <p className="text-slate-600">No executions yet…</p>}

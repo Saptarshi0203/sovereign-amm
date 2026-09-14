@@ -39,7 +39,7 @@ export function AuthButtons() {
       {demoUser && (
         <span
           className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-700/40 rounded-md px-2 py-1 whitespace-nowrap"
-          title="Demo Mode — static 24 h history; sign in for the live feed and trading"
+          title="Demo Sandbox — fully interactive on the 24 h demo stream with a ₹1,00,000 paper wallet. Sign in for your live regional feed and personal wallet."
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           DEMO MODE

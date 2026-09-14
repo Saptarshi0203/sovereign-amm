@@ -18,7 +18,7 @@ export function PnlMetrics() {
     <div className="p-4 min-h-32">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">PnL Metrics</p>
-        <span className="text-[10px] font-mono text-slate-500">{live ? `${pnl.fills.toLocaleString()} fills` : 'awaiting engine'}</span>
+        <span className="text-[10px] font-mono text-slate-500">{`${pnl.fills.toLocaleString()} fills${live ? '' : ' · demo stream'}`}</span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-sm">
         <div>

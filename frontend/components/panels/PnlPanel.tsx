@@ -15,8 +15,8 @@ function inr(v: number, decimals = 2): string {
  *   unrealised = position value − entry cost = (mark − avg cost) · inventory
  *   total      = unrealised + realised
  *
- * In Demo Mode (anonymous) the panel is replaced by a "Log in to Trade" prompt
- * via <LockOverlay/>; nothing here is hard-coded.
+ * Demo Sandbox (anonymous): the same panel runs on the local ₹100,000 demo
+ * wallet, updated by trades against the in-browser book. Nothing is hard-coded.
  */
 export function PnlPanel() {
   const portfolio = useStore((s) => s.portfolio);
@@ -30,7 +30,7 @@ export function PnlPanel() {
       <div className="flex flex-col gap-2 p-4 min-h-40">
         <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Your P&amp;L</p>
         <p className="text-2xl font-bold font-mono text-slate-500">—</p>
-        <p className="text-xs font-mono text-slate-500">{live ? 'Loading your portfolio…' : 'Sign in to start paper trading with ₹100,000.'}</p>
+        <p className="text-xs font-mono text-slate-500">{live ? 'Loading your portfolio…' : 'Place a trade on the Trade tab to start.'}</p>
       </div>
     );
   }
@@ -39,7 +39,7 @@ export function PnlPanel() {
     <div className="flex flex-col gap-2 p-4 min-h-40">
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Your P&amp;L</p>
-        <span className="text-[10px] font-mono text-slate-500">{connected ? 'live' : 'polling'} · {portfolio.fills.length} trades</span>
+        <span className="text-[10px] font-mono text-slate-500">{portfolio.role === 'demo' ? 'demo wallet' : connected ? 'live' : 'polling'} · {portfolio.fills.length} trades</span>
       </div>
       <p className={`text-2xl font-bold font-mono tabular-nums ${total >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
         {inr(total)}
