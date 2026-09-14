@@ -12,9 +12,10 @@ import { activateRun, deactivatePlayback, fetchRuns, regenerateSample, sampleCsv
  * CSV schema: timestamp, bus_id, house_count, solar_mw, demand_mw,
  * micro_price, battery_soc_pct, grid_frequency_hz — one row per 10 s.
  */
-export function DatasetUpload({ compact = false }: { compact?: boolean }) {
+export function DatasetUpload({ compact = false, title = 'Playback dataset' }: { compact?: boolean; title?: string }) {
   const playback = useStore((s) => s.playback);
-  const live = useStore((s) => s.dataSource === 'live');
+  const isAdmin = useStore((s) => s.isAdmin);
+  const live = useStore((s) => s.dataSource === 'live') && isAdmin;
   const fileRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export function DatasetUpload({ compact = false }: { compact?: boolean }) {
     <div className={`flex flex-col gap-3 ${compact ? '' : 'p-4'}`}>
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">
-          <Database className="inline w-3.5 h-3.5 mr-1" /> Playback dataset
+          <Database className="inline w-3.5 h-3.5 mr-1" /> {title}
         </p>
         <a href={sampleCsvUrl()} className="text-[10px] font-mono text-slate-500 hover:text-sky-400" title="Download the generated 24 h sample CSV">
           <Download className="inline w-3 h-3 mr-0.5" /> sample CSV
@@ -144,7 +145,7 @@ export function DatasetUpload({ compact = false }: { compact?: boolean }) {
       )}
 
       <p className="text-[10px] font-mono text-slate-600">
-        Schema: timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz · matched to the wall clock ({playback?.tz_label ?? 'IST'}) at 10 s resolution.
+        Schema: timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz · matched to the wall clock ({playback?.tz_label ?? 'IST'}) at 10 s resolution. Uploading overrides the synthetic CitySimulator instantly.{!isAdmin ? ' Admin role required.' : ''}
       </p>
     </div>
   );

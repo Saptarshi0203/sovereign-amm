@@ -1,24 +1,29 @@
 """
-User trading book: per-user portfolios, order lifecycle and PnL/savings.
+User trading book: per-user paper-trading portfolios, order lifecycle and PnL.
 
 Users trade against the Central Power Control AMM (and everyone else in the
 L2 book) as trader_id ``user:<user_id>``. Fills are attributed here from the
-engine's fill callback; a per-user version counter lets `/ws/user/{id}` push
+engine's fill callback and persisted to SQLite (`users` wallet columns and
+the `trades` table); a per-user version counter lets `/ws/user/{id}` push
 updates only when something changed.
+
+PnL definition (per user, from their own trade history only):
+    unrealized = (mark_price − avg_cost) · inventory
+    realized   = Σ over sells of (sell_price − avg_cost_at_sale) · qty
+    total      = unrealized + realized
 
 Money and energy are tracked in floats here (this is the *account* layer;
 the ledger inside engine/ stays in integer micro-units).
 """
 from __future__ import annotations
 
-import json
-import os
-import pathlib
 import threading
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
+
+from backend.app.db.store import DEFAULT_AVG_COST_INR, DEFAULT_INVENTORY_KWH, DEFAULT_SOLAR_KW, DEFAULT_WALLET_INR, store
 
 MICRO = 1_000_000
 USER_PREFIX = "user:"
@@ -28,13 +33,16 @@ UTILITY_BUY_TARIFF = 6.50
 #: Feed-in tariff a household would otherwise receive for exports (₹/kWh).
 UTILITY_FEED_IN_TARIFF = 3.25
 
-STARTING_WALLET_INR = 10_000.0
-STARTING_INVENTORY_KWH = 25.0
-#: Cost basis of the starting inventory (₹/kWh) — what the household paid to fill its home battery.
-STARTING_AVG_COST_INR = 5.0
-DEFAULT_SOLAR_KW = 5.0
+STARTING_WALLET_INR = DEFAULT_WALLET_INR
+STARTING_INVENTORY_KWH = DEFAULT_INVENTORY_KWH
+STARTING_AVG_COST_INR = DEFAULT_AVG_COST_INR
 
-PORTFOLIO_FILE = pathlib.Path(__file__).parent / "db" / "portfolios.json"
+PERSISTED_FIELDS = (
+    "wallet_balance_inr", "energy_inventory_kwh", "home_solar_capacity_kw", "bought_kwh", "sold_kwh",
+    "spent_inr", "earned_inr", "savings_inr", "avg_cost_inr", "realized_pnl_inr",
+)
+#: Portfolio attribute → users table column
+COLUMN_OF = {**{f: f for f in PERSISTED_FIELDS}, "wallet_balance_inr": "wallet_balance"}
 
 
 def user_trader_id(user_id: str) -> str:
@@ -85,6 +93,7 @@ class Portfolio:
     wallet_balance_inr: float = STARTING_WALLET_INR
     energy_inventory_kwh: float = STARTING_INVENTORY_KWH
     home_solar_capacity_kw: float = DEFAULT_SOLAR_KW
+    role: str = "user"
     bought_kwh: float = 0.0
     sold_kwh: float = 0.0
     spent_inr: float = 0.0
@@ -106,6 +115,7 @@ class Portfolio:
         return {
             "user_id": self.user_id,
             "email": self.email,
+            "role": self.role,
             "wallet_balance_inr": round(self.wallet_balance_inr, 2),
             "energy_inventory_kwh": round(self.energy_inventory_kwh, 3),
             "home_solar_capacity_kw": self.home_solar_capacity_kw,
@@ -117,6 +127,9 @@ class Portfolio:
             "avg_cost_inr": round(self.avg_cost_inr, 4),
             "realized_pnl_inr": round(self.realized_pnl_inr, 2),
             "unrealized_pnl_inr": round(unrealized, 2),
+            "total_pnl_inr": round(unrealized + self.realized_pnl_inr, 2),
+            "position_value_inr": round(self.energy_inventory_kwh * mark_price, 2),
+            "entry_cost_inr": round(self.energy_inventory_kwh * self.avg_cost_inr, 2),
             "equity_inr": round(self.wallet_balance_inr + self.energy_inventory_kwh * mark_price, 2),
             "mark_price": mark_price,
             "active_orders": [o.as_dict() for o in self.active_orders()],
@@ -127,51 +140,28 @@ class Portfolio:
 
 
 class TradingBook:
-    def __init__(self, path: pathlib.Path = PORTFOLIO_FILE):
-        self.path = path
+    def __init__(self):
         self._lock = threading.Lock()
         self.portfolios: Dict[str, Portfolio] = {}
         # order_id → user_id, for fill attribution
         self.order_owner: Dict[str, str] = {}
-        self._load()
 
-    # ── persistence (wallet/inventory only; open orders are engine state) ──
+    # ── persistence (SQLite users + trades) ─────────────────────────────
 
-    def _load(self) -> None:
-        try:
-            if self.path.exists():
-                data = json.loads(self.path.read_text())
-                for uid, p in data.items():
-                    pf = Portfolio(user_id=uid, email=p.get("email", uid))
-                    for k in ("wallet_balance_inr", "energy_inventory_kwh", "home_solar_capacity_kw", "bought_kwh", "sold_kwh", "spent_inr", "earned_inr", "savings_inr", "avg_cost_inr", "realized_pnl_inr"):
-                        if k in p:
-                            setattr(pf, k, float(p[k]))
-                    self.portfolios[uid] = pf
-        except (OSError, ValueError):
-            self.portfolios = {}
+    def _hydrate(self, user_id: str, email: str) -> Portfolio:
+        row = store.get_user_by_id(user_id) or store.get_user(email)
+        if row is None:
+            row = store.add_user({"id": user_id, "email": email})
+        pf = Portfolio(user_id=row["id"], email=row["email"], role=row.get("role", "user"))
+        for attr, col in COLUMN_OF.items():
+            if row.get(col) is not None:
+                setattr(pf, attr, float(row[col]))
+        for t in reversed(store.list_trades(row["id"], limit=200)):
+            pf.fills.append(UserFill(ts=int(t["ts"]), order_id=t["order_id"] or "", side=t["side"], price=float(t["price"]), qty_kwh=float(t["qty_kwh"]), counterparty=t["counterparty"] or ""))
+        return pf
 
-    def _save(self) -> None:
-        try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            out = {
-                uid: {
-                    "email": p.email,
-                    "wallet_balance_inr": p.wallet_balance_inr,
-                    "energy_inventory_kwh": p.energy_inventory_kwh,
-                    "home_solar_capacity_kw": p.home_solar_capacity_kw,
-                    "bought_kwh": p.bought_kwh,
-                    "sold_kwh": p.sold_kwh,
-                    "spent_inr": p.spent_inr,
-                    "earned_inr": p.earned_inr,
-                    "savings_inr": p.savings_inr,
-                    "avg_cost_inr": p.avg_cost_inr,
-                    "realized_pnl_inr": p.realized_pnl_inr,
-                }
-                for uid, p in self.portfolios.items()
-            }
-            self.path.write_text(json.dumps(out, indent=2))
-        except OSError:
-            pass
+    def _persist(self, pf: Portfolio) -> None:
+        store.update_user_by_id(pf.user_id, {col: getattr(pf, attr) for attr, col in COLUMN_OF.items()})
 
     # ── accounts ───────────────────────────────────────────────────────
 
@@ -179,17 +169,21 @@ class TradingBook:
         with self._lock:
             pf = self.portfolios.get(user_id)
             if pf is None:
-                pf = Portfolio(user_id=user_id, email=email)
-                self.portfolios[user_id] = pf
+                pf = self._hydrate(user_id, email)
+                self.portfolios[pf.user_id] = pf
+                if pf.user_id != user_id:
+                    self.portfolios[user_id] = pf
             return pf
 
     def reset(self, user_id: str) -> None:
         with self._lock:
             pf = self.portfolios.get(user_id)
             if pf:
-                email = pf.email
-                self.portfolios[user_id] = Portfolio(user_id=user_id, email=email, version=pf.version + 1)
-                self._save()
+                fresh = Portfolio(user_id=pf.user_id, email=pf.email, role=pf.role, version=pf.version + 1)
+                self.portfolios[pf.user_id] = fresh
+                self.portfolios[user_id] = fresh
+                store.clear_trades(pf.user_id)
+                self._persist(fresh)
 
     # ── orders ─────────────────────────────────────────────────────────
 
@@ -269,6 +263,7 @@ class TradingBook:
             pf.fills.append(UserFill(ts=ts, order_id=order_id, side=side, price=price, qty_kwh=qty, counterparty=counterparty))
             if len(pf.fills) > 200:
                 del pf.fills[:-200]
+            store.add_trade(pf.user_id, order_id, side, price, qty, counterparty, ts)
             if order is not None:
                 filled_before = order.filled_kwh
                 order.filled_kwh += qty
@@ -276,7 +271,7 @@ class TradingBook:
                 order.status = "FILLED" if order.filled_kwh >= order.qty_kwh - 1e-6 else "PARTIAL"
                 order.updated_ts = ts
             pf.version += 1
-        self._save()
+        self._persist(pf)
         return uid
 
 

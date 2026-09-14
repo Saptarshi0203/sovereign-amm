@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from backend.app.api.deps import auth_scope
+from backend.app.api.deps import require_admin
 from backend.app.core.config import settings
 from backend.app.engine_facade import engine_facade
 from backend.app.playback import dataset_store, parse_csv_text
@@ -61,7 +61,7 @@ async def upload_csv(
     file: UploadFile = File(...),
     name: str = Form(""),
     activate: bool = Form(True),
-    user: Dict[str, Any] = Depends(auth_scope),
+    user: Dict[str, Any] = Depends(require_admin),
 ) -> Dict[str, Any]:
     raw = await file.read()
     if len(raw) > 50 * 1024 * 1024:
@@ -89,12 +89,12 @@ def list_runs() -> List[Dict[str, Any]]:
 
 
 @router.post("/activate/{run_id}")
-def activate(run_id: str, user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+def activate(run_id: str, user: Dict[str, Any] = Depends(require_admin)) -> Dict[str, Any]:
     return activate_run(run_id)
 
 
 @router.post("/deactivate")
-def deactivate(user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+def deactivate(user: Dict[str, Any] = Depends(require_admin)) -> Dict[str, Any]:
     engine_facade.load_dataset(settings.DEMO_GRID_ID, None, "", [])
     return engine_facade.get_runtime(settings.DEMO_GRID_ID).playback.status()
 
@@ -106,7 +106,7 @@ def profile(max_points: int = 1440) -> Dict[str, Any]:
 
 
 @router.post("/generate-sample")
-def generate_sample(user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+def generate_sample(user: Dict[str, Any] = Depends(require_admin)) -> Dict[str, Any]:
     return ensure_sample_dataset(force=True)
 
 

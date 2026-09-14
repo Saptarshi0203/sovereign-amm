@@ -5,18 +5,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 
+import { useStore } from '@/lib/store';
 import { AuthButtons } from './AuthButtons';
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { DatasetDrawerButton } from '../layout/DatasetDrawer';
 
 /** All top-level navigation destinations. */
-const navigationTabs = [
+const navigationTabs: { label: string; href: string; adminOnly?: boolean }[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Grid', href: '/grid' },
   { label: 'Battery', href: '/battery' },
   { label: 'Trade', href: '/trade' },
-  { label: 'Control', href: '/control' },
+  { label: 'Control', href: '/control', adminOnly: true },
   { label: 'Pricing', href: '/pricing' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
@@ -35,6 +36,8 @@ const navigationTabs = [
  */
 export function Navbar() {
   const pathname = usePathname();
+  const isAdmin = useStore((s) => s.isAdmin);
+  const visibleTabs = navigationTabs.filter((t) => !t.adminOnly || isAdmin);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -57,7 +60,7 @@ export function Navbar() {
 
           {/* ── Desktop tabs (hidden on mobile) ───────────────────────────── */}
           <div className="hidden md:flex items-center gap-1">
-            {navigationTabs.map((tab) => {
+            {visibleTabs.map((tab) => {
               const isActive =
                 pathname === tab.href ||
                 pathname.startsWith(tab.href + '/');
@@ -116,7 +119,7 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div id="mobile-menu">
           <MobileMenu
-            tabs={navigationTabs}
+            tabs={visibleTabs}
             currentPath={pathname}
             onClose={closeMobileMenu}
           />

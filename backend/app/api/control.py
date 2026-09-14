@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Tuple
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from backend.app.api.deps import auth_scope
+from backend.app.api.deps import require_admin
 from backend.app.api.schemas import DatasetInjectRequest, OrderRow, TickRow
 from backend.app.core.config import settings
 from backend.app.core.security import verify_grid_scope
@@ -80,7 +80,7 @@ async def _apply(req: DatasetInjectRequest, actor: str) -> Dict[str, Any]:
 
 
 @router.post("/inject")
-async def inject_dataset(req: DatasetInjectRequest, user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+async def inject_dataset(req: DatasetInjectRequest, user: Dict[str, Any] = Depends(require_admin)) -> Dict[str, Any]:
     if not verify_grid_scope(user, req.grid_id):
         raise HTTPException(status_code=403, detail="Access to grid_id forbidden")
     return await _apply(req, actor=user.get("sub", "operator"))
@@ -92,7 +92,7 @@ async def inject_csv(
     grid_id: str = Form(settings.DEMO_GRID_ID),
     kind: str = Form("ticks", description="ticks | orders"),
     replace_history: bool = Form(False),
-    user: Dict[str, Any] = Depends(auth_scope),
+    user: Dict[str, Any] = Depends(require_admin),
 ) -> Dict[str, Any]:
     """
     CSV feeds.

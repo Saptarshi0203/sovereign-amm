@@ -7,7 +7,7 @@ install:
 	pip install -r backend/requirements.txt
 	cd frontend && npm install
 
-# Engine + API tests (58). Uses an isolated temp DB for the API layer.
+# Engine + API tests (61). Uses an isolated temp DB for the API layer.
 test:
 	pytest tests/
 

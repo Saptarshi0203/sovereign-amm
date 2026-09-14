@@ -7,6 +7,10 @@
  * bootstrap. Everything it receives is written to the central Zustand store;
  * no component talks to the network directly for market data.
  *
+ * Dual-state: anonymous visitors (Demo Mode) never open a socket — they get
+ * the static 24 h history over REST and the in-browser simulation. Signed-in
+ * users get the authenticated live channel (/ws/orderbook, /ws/grid, /ws/user).
+ *
  * Leak safety: every socket, timer and abort controller is torn down in the
  * effect cleanup, and a generation counter discards late callbacks from a
  * previous connection attempt.
@@ -31,9 +35,10 @@ type FeedName = 'orderbook' | 'grid';
 function useEngineSocket(feed: FeedName, path: string) {
   const token = useStore((s) => s.jwtToken);
   const sessionReady = useStore((s) => s.sessionReady);
+  const authenticated = useStore((s) => s.authState !== 'anonymous');
 
   useEffect(() => {
-    if (!sessionReady || typeof window === 'undefined') return;
+    if (!sessionReady || !authenticated || !token || typeof window === 'undefined') return;
 
     let ws: WebSocket | null = null;
     let closed = false;
@@ -119,7 +124,7 @@ function useEngineSocket(feed: FeedName, path: string) {
       }
       setFeedConnected(feed, false);
     };
-  }, [feed, path, token, sessionReady]);
+  }, [feed, path, token, sessionReady, authenticated]);
 }
 
 /**
@@ -131,9 +136,10 @@ function useUserSocket() {
   const token = useStore((s) => s.jwtToken);
   const sessionReady = useStore((s) => s.sessionReady);
   const live = useStore((s) => s.dataSource === 'live');
+  const authenticated = useStore((s) => s.authState !== 'anonymous');
 
   useEffect(() => {
-    if (!sessionReady || !live || typeof window === 'undefined') return;
+    if (!sessionReady || !live || !authenticated || typeof window === 'undefined') return;
     let ws: WebSocket | null = null;
     let closed = false;
     let attempt = 0;
@@ -194,7 +200,7 @@ function useUserSocket() {
       }
       setPortfolioConnected(false);
     };
-  }, [token, sessionReady, live]);
+  }, [token, sessionReady, live, authenticated]);
 }
 
 function useHistoryHydration() {

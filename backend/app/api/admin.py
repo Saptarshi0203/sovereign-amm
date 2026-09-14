@@ -38,7 +38,7 @@ def list_users(admin: Dict[str, Any] = Depends(admin_user)):
     return safe_users
 
 class ApproveRequest(BaseModel):
-    assigned_bus_id: int = 1
+    assigned_bus_id: str = "BUS-02"
 
 @router.post("/users/{user_id}/approve")
 def approve_user(user_id: str, req: ApproveRequest, admin: Dict[str, Any] = Depends(admin_user)):
@@ -95,7 +95,7 @@ def update_role(user_id: str, req: RoleRequest, admin: Dict[str, Any] = Depends(
     if user["id"] == admin["id"]:
         raise HTTPException(status_code=403, detail="Admin cannot change their own role")
         
-    valid_roles = ["admin", "grid_operator", "battery_operator", "market_participant", "viewer"]
+    valid_roles = ["admin", "user", "grid_operator", "battery_operator", "viewer"]
     if req.role not in valid_roles:
         raise HTTPException(status_code=400, detail="Invalid role")
         

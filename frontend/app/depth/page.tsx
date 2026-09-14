@@ -7,8 +7,8 @@ import { Panel } from '@/components/ui/Panel';
 import { formatPrice, formatOBI } from '@/lib/utils';
 import { useTickFlash } from '@/lib/hooks/useTickFlash';
 
-const DepthChart = dynamic(
-  () => import('@/components/charts/DepthChart').then((m) => m.DepthChart),
+const OrderBookLadder = dynamic(
+  () => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder),
   { ssr: false },
 );
 const ObiGauge = dynamic(
@@ -79,7 +79,7 @@ export default function DepthPage() {
         <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3 font-mono">
           Bid / Ask Depth
         </h2>
-        <DepthChart />
+        <OrderBookLadder height={520} />
       </Panel>
 
       {/* ── Bottom row: OBI gauge + Time & Sales ─────────────────────────── */}

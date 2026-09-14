@@ -6,21 +6,21 @@ import { signOut } from '@/lib/live/session';
 /**
  * AuthButtons — rendered in the Navbar.
  *
- * - Guest Demo Session → "DEMO MODE" badge + "Sign In" (opens the drawer, so
- *   Google OAuth / password sign-in stays one click away during a demo).
- * - Real session → e-mail + "Sign Out" (drops back to the demo session).
- * - No session → "Sign In" / "Sign Up Now".
+ * - Anonymous → "DEMO MODE" badge + "Sign In" (static data until you sign in).
+ * - Signed in → name/e-mail (+ ADMIN tag) with "Sign Out".
  */
 export function AuthButtons() {
   const openAuth = useStore((s) => s.openAuth);
-  const demoUser = useStore((s) => s.demoUser);
+  const authState = useStore((s) => s.authState);
   const authUser = useStore((s) => s.authUser);
-  const jwtToken = useStore((s) => s.jwtToken);
-  const isReal = !demoUser && jwtToken !== null;
+  const demoUser = authState === 'anonymous';
 
-  if (isReal) {
+  if (!demoUser) {
     return (
       <div className="flex items-center gap-3">
+        {authState === 'admin' && (
+          <span className="text-[10px] font-mono text-violet-300 border border-violet-700/50 rounded px-1.5 py-0.5 whitespace-nowrap">ADMIN</span>
+        )}
         <span className="hidden sm:inline text-xs font-mono text-slate-400 max-w-[180px] truncate" title={authUser?.email}>
           {authUser?.name || authUser?.email}
         </span>
@@ -39,7 +39,7 @@ export function AuthButtons() {
       {demoUser && (
         <span
           className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-700/40 rounded-md px-2 py-1 whitespace-nowrap"
-          title="Guest Demo Session — all panels unlocked"
+          title="Demo Mode — static 24 h history; sign in for the live feed and trading"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           DEMO MODE

@@ -2,12 +2,14 @@
  * @file session.ts
  * @description Backend endpoints + session bootstrap for the dashboards.
  *
- * Session precedence:
- *   1. A stored real JWT (password / Google sign-in) that still validates.
- *   2. A Guest Demo Session token from `POST /api/auth/demo` (auto-started so
- *      judges never hit a sign-in wall — disable with NEXT_PUBLIC_AUTO_DEMO=false).
- *   3. A local guest session when the backend is unreachable (panels stay
- *      unlocked and run on the in-browser simulation).
+ * Dual-state session model:
+ *   anonymous → DEMO MODE: static 24 h history from the seeded DuckDB rollups,
+ *               no live sockets, trading replaced by "Log in to Trade".
+ *   user      → LIVE MODE: authenticated WebSocket feed + paper trading.
+ *   admin     → LIVE MODE + Control Room (dataset feed, injections, scenarios).
+ *
+ * The JWT is the only thing that flips the state; it is validated against
+ * GET /api/auth/me on every page load.
  */
 
 import { useStore } from '@/lib/store';
@@ -28,18 +30,18 @@ export const WS_BASE: string = (() => {
   return API_BASE.replace(/^http/, 'ws');
 })();
 
-export const AUTO_DEMO: boolean = (process.env.NEXT_PUBLIC_AUTO_DEMO ?? 'true') !== 'false';
 
 interface StoredSession {
   token: string | null;
   user: AuthUser | null;
-  demo: boolean;
 }
 
 function readStored(): StoredSession | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as StoredSession) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredSession & { demo?: boolean };
+    return parsed.demo ? null : parsed; // legacy guest sessions are discarded
   } catch {
     return null;
   }
@@ -70,6 +72,11 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       ...(init.headers as Record<string, string> | undefined),
     },
   });
+  if (res.status === 401 && useStore.getState().jwtToken) {
+    // Token expired or revoked → drop back to Demo Mode.
+    useStore.getState().clearSession();
+    writeStored(null);
+  }
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {
@@ -90,19 +97,9 @@ interface SessionResponse {
   user: AuthUser;
 }
 
-function commit(token: string | null, user: AuthUser | null, demo: boolean): void {
-  useStore.getState().setSession(token, user, demo);
-  writeStored({ token, user, demo });
-}
-
-/** Start (or refresh) a Guest Demo Session. Falls back to a local guest when offline. */
-export async function startDemoSession(): Promise<void> {
-  try {
-    const data = await apiFetch<SessionResponse>('/api/auth/demo', { method: 'POST', headers: { Authorization: '' } });
-    commit(data.token, { ...data.user, demo: true }, true);
-  } catch {
-    commit(null, { email: 'guest@demo', role: 'viewer', demo: true }, true);
-  }
+function commit(token: string, user: AuthUser): void {
+  useStore.getState().setSession(token, user);
+  writeStored({ token, user });
 }
 
 export async function loginWithPassword(email: string, password: string): Promise<void> {
@@ -111,7 +108,7 @@ export async function loginWithPassword(email: string, password: string): Promis
     body: JSON.stringify({ email, password }),
     headers: { Authorization: '' },
   });
-  commit(data.token, data.user, false);
+  commit(data.token, data.user);
 }
 
 export async function loginWithGoogle(credential: string): Promise<void> {
@@ -120,7 +117,7 @@ export async function loginWithGoogle(credential: string): Promise<void> {
     body: JSON.stringify({ token: credential }),
     headers: { Authorization: '' },
   });
-  commit(data.token, data.user, false);
+  commit(data.token, data.user);
 }
 
 export async function signOut(): Promise<void> {
@@ -131,17 +128,15 @@ export async function signOut(): Promise<void> {
   }
   useStore.getState().clearSession();
   writeStored(null);
-  if (AUTO_DEMO) await startDemoSession();
-  else useStore.getState().setSessionReady(true);
 }
 
 /**
- * Restore a persisted session, validating real tokens against the backend.
- * Always resolves; the store's `sessionReady` flips to true at the end.
+ * Restore a persisted session, validating the token against the backend.
+ * Anything that fails validation leaves the visitor in Demo Mode.
  */
 export async function bootstrapSession(): Promise<void> {
   const stored = readStored();
-  if (stored?.token && !stored.demo) {
+  if (stored?.token) {
     try {
       const res = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${stored.token}` },
@@ -149,26 +144,17 @@ export async function bootstrapSession(): Promise<void> {
       });
       if (res.ok) {
         const user = (await res.json()) as AuthUser;
-        commit(stored.token, user, false);
+        commit(stored.token, user);
         return;
       }
+      writeStored(null);
     } catch {
       // Backend unreachable — keep the stored identity so the UI stays unlocked.
-      useStore.getState().setSession(stored.token, stored.user, false);
+      useStore.getState().setSession(stored.token, stored.user);
       return;
     }
   }
-  if (stored?.demo && stored.token) {
-    // Demo tokens are cheap to refresh; try, but keep the old one if offline.
-    useStore.getState().setSession(stored.token, stored.user, true);
-    await startDemoSession();
-    return;
-  }
-  if (AUTO_DEMO) {
-    await startDemoSession();
-    return;
-  }
-  useStore.getState().setSessionReady(true);
+  useStore.getState().setSession(null, null);
 }
 
 // ── Domain calls used by the dashboards ────────────────────────────────────

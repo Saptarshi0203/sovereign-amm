@@ -151,12 +151,21 @@ describe('store ↔ live feed integration', () => {
     expect(useStore.getState().tickNumber).toBe(42); // no-op while live
   });
 
-  it('setSession unlocks gated panels for demo and real sessions', () => {
-    useStore.getState().setSession(null, { email: 'guest', role: 'viewer', demo: true }, true);
+  it('setSession drives the dual-state machine: anonymous → user → admin', () => {
+    useStore.getState().setSession(null, null);
+    expect(useStore.getState().authState).toBe('anonymous');
+    expect(useStore.getState().isUnlocked).toBe(false);
+    expect(useStore.getState().demoUser).toBe(true);
+    useStore.getState().setSession('jwt', { email: 'a@b', role: 'user' });
+    expect(useStore.getState().authState).toBe('user');
     expect(useStore.getState().isUnlocked).toBe(true);
+    expect(useStore.getState().isAdmin).toBe(false);
+    useStore.getState().setSession('jwt', { email: 'boss@b', role: 'admin' });
+    expect(useStore.getState().isAdmin).toBe(true);
+    // guest tokens never unlock anything
+    useStore.getState().setSession('jwt', { email: 'g', role: 'viewer', demo: true });
+    expect(useStore.getState().authState).toBe('anonymous');
     useStore.getState().clearSession();
     expect(useStore.getState().isUnlocked).toBe(false);
-    useStore.getState().setSession('jwt', { email: 'a@b', role: 'admin' }, false);
-    expect(useStore.getState().isUnlocked).toBe(true);
   });
 });

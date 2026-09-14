@@ -10,11 +10,11 @@ interface LockOverlayProps {
 }
 
 /**
- * Gates premium panels behind a session. Any session — a Guest Demo Session
- * (auto-started for presentations) or a real sign-in — renders the children
- * directly with no blur, no overlay and full pointer events. Until the session
- * bootstrap has run we render the children un-gated as well, so SSR/hydration
- * never paints a lock that immediately disappears.
+ * Gates live / trading panels behind a signed-in session. Anonymous visitors
+ * (Demo Mode) see the panel blurred with a "Log in" prompt; signed-in users
+ * get the children directly with full pointer events. Until the session
+ * bootstrap has run we render the children un-gated so hydration never paints
+ * a lock that immediately disappears.
  */
 export function LockOverlay({ title, body, ctaLabel, children }: LockOverlayProps) {
   const openAuth = useStore((s) => s.openAuth);

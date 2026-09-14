@@ -25,8 +25,9 @@ from backend.app.engine_facade import MICRO, engine_facade  # noqa: E402
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(admin_headers):
     with TestClient(app) as c:
+        c.headers.update(admin_headers)  # mutations are admin-only
         # Let the 10 Hz loop produce a few frames.
         time.sleep(1.2)
         yield c
@@ -49,6 +50,23 @@ def test_demo_session_token_unlocks_me(client):
     assert me.status_code == 200
     assert me.json()["role"] == "viewer"
     assert me.json()["demo"] is True
+    # Guest tokens are read-only: trading and admin mutations are refused
+    assert client.post("/api/trading/orders", json={"side": "BUY", "type": "MARKET", "qty_kwh": 1}, headers={"Authorization": f"Bearer {token}"}).status_code == 401
+    assert client.post("/grid/demo/reset", headers={"Authorization": f"Bearer {token}"}).status_code == 401
+
+
+def test_admin_email_gets_admin_role_and_wallet(client, admin_headers, user_headers):
+    me = client.get("/api/auth/me", headers=admin_headers).json()
+    assert me["role"] == "admin" and me["wallet_balance_inr"] == 100_000.0
+    me = client.get("/api/auth/me", headers=user_headers).json()
+    assert me["role"] == "user"
+    # Regular users cannot hit admin-only control endpoints
+    assert client.post("/grid/demo/reset", headers=user_headers).status_code == 403
+    assert client.post("/api/control/inject", json={"grid_id": "demo", "soc_pct": 50}, headers=user_headers).status_code == 403
+    # Anonymous callers can still read the static demo history but not mutate
+    anon = TestClient(app)
+    assert anon.get("/history/demo?window=24H").status_code == 200
+    assert anon.post("/grid/demo/reset").status_code == 401
 
 
 def test_orderbook_snapshot_shape_and_invariants(client):

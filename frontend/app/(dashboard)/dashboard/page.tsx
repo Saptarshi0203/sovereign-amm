@@ -12,7 +12,7 @@ import { DataInjector } from '@/components/panels/DataInjector';
 import { formatPrice, formatOBI } from '@/lib/utils';
 import { useTickFlash } from '@/lib/hooks/useTickFlash';
 
-const DepthChart = dynamic(() => import('@/components/charts/DepthChart').then((m) => m.DepthChart), { ssr: false });
+const OrderBookLadder = dynamic(() => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder), { ssr: false });
 const PriceStateChart = dynamic(() => import('@/components/charts/PriceStateChart').then((m) => m.PriceStateChart), { ssr: false });
 const BatteryGauge = dynamic(() => import('@/components/charts/BatteryGauge').then((m) => m.BatteryGauge), { ssr: false });
 const ObiGauge = dynamic(() => import('@/components/charts/ObiGauge').then((m) => m.ObiGauge), { ssr: false });
@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const ammAsk = useStore((s) => s.ammAsk);
   const narration = useStore((s) => s.narration);
   const scenario = useStore((s) => s.scenario);
+  const isAdmin = useStore((s) => s.isAdmin);
   const microFlash = useTickFlash(microPrice);
   const spreadFlash = useTickFlash(bestAsk.px - bestBid.px);
 
@@ -63,7 +64,7 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-[1fr_2fr] gap-4">
           <Panel className="p-4">
             <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">L2 Order Book</h2>
-            <DepthChart />
+            <OrderBookLadder height={320} />
           </Panel>
           <Panel className="p-4">
             <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">Price &amp; SoC</h2>
@@ -79,22 +80,22 @@ export default function DashboardPage() {
             <ObiGauge />
           </Panel>
           <Panel>
-            <LockOverlay title="Your Terminal, Live." body="Sign in to view live PnL, fills, and inventory positions." ctaLabel="Sign In">
+            <LockOverlay title="Log in to Trade" body="Demo Mode shows static data. Sign in for a ₹100,000 paper-trading wallet and your own live P&L." ctaLabel="Log in to Trade">
               <PnlPanel />
             </LockOverlay>
           </Panel>
           <Panel>
-            <LockOverlay title="Your Terminal, Live." body="Sign in to view live fills and inventory positions." ctaLabel="Sign In">
+            <LockOverlay title="Log in to Trade" body="Sign in to see live executions from the engine tape." ctaLabel="Log in to Trade">
               <FillsTable />
             </LockOverlay>
           </Panel>
         </div>
 
-        <Panel>
-          <LockOverlay title="Inject Custom Data" body="Sign in to push custom datasets into the engine." ctaLabel="Sign In">
+        {isAdmin && (
+          <Panel>
             <DataInjector />
-          </LockOverlay>
-        </Panel>
+          </Panel>
+        )}
       </main>
     </>
   );

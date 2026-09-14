@@ -16,8 +16,11 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     # Public grid that guests / judges may stream without an account.
     DEMO_GRID_ID: str = "demo"
-    # Allow unauthenticated WebSocket access to the demo grid (presentation mode).
-    PUBLIC_DEMO: bool = True
+    # Allow unauthenticated read access (REST snapshots / WebSocket streams) to the demo grid.
+    # Dual-state mode: anonymous visitors only get the static 24 h history; live streams need a JWT.
+    PUBLIC_DEMO: bool = False
+    # Comma-separated e-mails that receive role=admin on sign-in.
+    ADMIN_EMAILS: str = "admin@sovereign.amm,rituraj.barman.coder@gmail.com,riturajtrades25@gmail.com"
     GOOGLE_CLIENT_ID: str = ""
     # Wall-clock timezone used to align dataset playback with the time of day.
     SIM_TIMEZONE: str = "Asia/Kolkata"
@@ -25,6 +28,10 @@ class Settings(BaseSettings):
     AUTO_SAMPLE_DATASET: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @property
+    def admin_emails(self) -> List[str]:
+        return [e.strip().lower() for e in self.ADMIN_EMAILS.split(",") if e.strip()]
 
     @property
     def allowed_origins_list(self) -> List[str]:

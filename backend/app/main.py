@@ -26,6 +26,15 @@ from backend.app.engine_facade import engine_facade
 async def lifespan(app: FastAPI):
     await storage.init_db()
     dataset_store.init()
+    # Demo Mode charts read the static 24 h rollups: (re)seed when the last
+    # 24 h of stored history is sparse (fresh install, or the seed has aged out).
+    if storage.tick_count_since(settings.DEMO_GRID_ID, int(time.time() * 1000) - 24 * 3600 * 1000) < 20_000:
+        try:
+            from simulation.seed_history import seed_db
+
+            await seed_db()
+        except Exception as e:  # keep booting on a seeding failure
+            print(f"[MAIN] history seeding skipped: {e}")
     # One deterministic 10 Hz engine loop for the public demo grid.
     engine_facade.start(settings.DEMO_GRID_ID)
     # Clock-synced playback: activate the last uploaded run, or the built-in 24 h sample.

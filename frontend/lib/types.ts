@@ -390,11 +390,16 @@ export type DataSource = 'live' | 'simulated';
 export interface AuthUser {
   id?: string;
   email: string;
+  /** `'admin'` unlocks the Control Room; everyone else is `'user'`. */
   role: string;
   name?: string;
   picture?: string;
   demo?: boolean;
+  wallet_balance_inr?: number;
 }
+
+/** Session state machine: anonymous = Demo Mode, user = live, admin = live + control. */
+export type AuthState = 'anonymous' | 'user' | 'admin';
 
 /** A household order on the trading terminal. */
 export interface UserOrder {
@@ -438,6 +443,9 @@ export interface Portfolio {
   avg_cost_inr: number;
   realized_pnl_inr: number;
   unrealized_pnl_inr: number;
+  total_pnl_inr: number;
+  position_value_inr: number;
+  entry_cost_inr: number;
   equity_inr: number;
   mark_price: number;
   active_orders: UserOrder[];

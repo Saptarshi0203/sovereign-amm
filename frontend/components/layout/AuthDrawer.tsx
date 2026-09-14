@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { GoogleLogin } from '@react-oauth/google';
-import { loginWithGoogle, loginWithPassword, startDemoSession, apiFetch } from '@/lib/live/session';
+import { loginWithGoogle, loginWithPassword, apiFetch } from '@/lib/live/session';
 
 export function AuthDrawer(): React.ReactElement {
   const authDrawerOpen = useStore((s) => s.authDrawerOpen);
@@ -158,13 +158,10 @@ export function AuthDrawer(): React.ReactElement {
             />
             <button
               type="button"
-              onClick={async () => {
-                await startDemoSession();
-                closeAuth();
-              }}
+              onClick={closeAuth}
               className="mt-3 text-xs text-slate-400 hover:text-emerald-400 underline underline-offset-2"
             >
-              Continue as guest (Demo Mode)
+              Keep browsing in Demo Mode (static data, no trading)
             </button>
           </div>
         </div>
@@ -190,13 +187,7 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign in failed';
-      if (/fetch|network|Failed/i.test(msg)) {
-        // Backend unreachable — keep the presentation moving on a guest session.
-        await startDemoSession();
-        onSuccess();
-      } else {
-        setError(msg);
-      }
+      setError(/fetch|network|Failed/i.test(msg) ? 'Backend unreachable — try again in a moment' : msg);
     } finally {
       setBusy(false);
     }
@@ -268,12 +259,11 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         body: JSON.stringify({ email, password, consumer_no: name }),
         headers: { Authorization: '' },
       });
-      setStatus('Account created — pending admin approval. Continuing in Demo Mode.');
+      setStatus('Account created — an admin must approve it before you can sign in. Until then the site stays in Demo Mode.');
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Signup failed — continuing in Demo Mode.');
+      setStatus(err instanceof Error ? err.message : 'Signup failed.');
     }
-    await startDemoSession();
-    setTimeout(onSuccess, 900);
+    setTimeout(onSuccess, 1800);
   };
 
   return (

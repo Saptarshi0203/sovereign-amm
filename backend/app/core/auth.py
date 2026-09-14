@@ -96,6 +96,7 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="User not found")
     if user.get("status") != "approved":
         raise HTTPException(status_code=403, detail=f"Account access is strictly {user['status']}")
+    user["role"] = resolve_role(user["email"], user.get("role"))
     return user
 
 
@@ -107,6 +108,32 @@ def get_optional_user(
         return get_current_user(authorization, access_token)
     except HTTPException:
         return None
+
+
+def resolve_role(email: str, stored_role: Optional[str]) -> str:
+    """Admin allow-list wins; legacy 'market_participant' maps to 'user'."""
+    if email.lower() in settings.admin_emails:
+        return "admin"
+    if stored_role in (None, "", "market_participant"):
+        return "user"
+    return stored_role
+
+
+def token_claims(user: Dict[str, Any]) -> Dict[str, Any]:
+    """Claims embedded in every access token: identity, role and grid scope."""
+    return {
+        "sub": user["email"],
+        "uid": user["id"],
+        "role": resolve_role(user["email"], user.get("role")),
+        "grid_id": user.get("grid_id") or settings.DEMO_GRID_ID,
+    }
+
+
+def require_user(user: dict = Security(get_current_user)) -> Dict[str, Any]:
+    """An approved, non-guest account (trading, uploads)."""
+    if user.get("demo"):
+        raise HTTPException(status_code=401, detail="Sign in to trade")
+    return user
 
 
 def require_role(roles: List[str]):

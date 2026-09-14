@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.app.api.deps import auth_scope
+from backend.app.api.deps import require_admin
 from backend.app.core.config import settings
 from backend.app.engine_facade import engine_facade
 
@@ -66,7 +66,7 @@ def get_status():
 
 
 @router.post("/trigger/{scenario_id}")
-async def trigger_scenario(scenario_id: str, user: Dict[str, Any] = Depends(auth_scope)):
+async def trigger_scenario(scenario_id: str, user: Dict[str, Any] = Depends(require_admin)):
     if scenario_id not in SCENARIOS:
         raise HTTPException(status_code=404, detail="Scenario not found")
     grid_id = settings.DEMO_GRID_ID

@@ -25,10 +25,19 @@ from simulation.generators.generate_demo_csv import COLUMNS, ROWS, generate_rows
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(admin_headers):
     with TestClient(app) as c:
+        c.headers.update(admin_headers)  # dataset + control mutations are admin-only
         time.sleep(1.2)
         yield c
+
+
+@pytest.fixture(scope="module")
+def trader(client, user_headers):
+    """A regular household account; trading requires a non-guest JWT."""
+    t = TestClient(app)
+    t.headers.update(user_headers)
+    return t
 
 
 # ── generator ──────────────────────────────────────────────────────────────
@@ -171,13 +180,13 @@ def clean_market(client):
         client.post(f"/api/simulation/activate/{sample['run_id']}")
 
 
-def test_market_buy_fills_and_updates_portfolio(client, clean_market):
-    client.post("/api/trading/reset")
-    pf0 = client.get("/api/trading/portfolio").json()
+def test_market_buy_fills_and_updates_portfolio(client, trader, clean_market):
+    trader.post("/api/trading/reset")
+    pf0 = trader.get("/api/trading/portfolio").json()
     assert pf0["wallet_balance_inr"] == STARTING_WALLET_INR
     assert pf0["energy_inventory_kwh"] == STARTING_INVENTORY_KWH
 
-    r = client.post("/api/trading/orders", json={"side": "BUY", "type": "MARKET", "qty_kwh": 2.0})
+    r = trader.post("/api/trading/orders", json={"side": "BUY", "type": "MARKET", "qty_kwh": 2.0})
     assert r.status_code == 200, r.text
     res = r.json()
     rt = engine_facade.get_runtime("demo")
@@ -193,57 +202,82 @@ def test_market_buy_fills_and_updates_portfolio(client, clean_market):
     assert abs(pf["savings_inr"] - (UTILITY_BUY_TARIFF - res["avg_price"]) * res["filled_kwh"]) < 0.05
 
 
-def test_market_sell_and_inventory_guard(client, clean_market):
-    r = client.post("/api/trading/orders", json={"side": "SELL", "type": "MARKET", "qty_kwh": 1.0})
+def test_market_sell_and_inventory_guard(client, trader, clean_market):
+    r = trader.post("/api/trading/orders", json={"side": "SELL", "type": "MARKET", "qty_kwh": 1.0})
     assert r.status_code == 200 and r.json()["filled_kwh"] > 0
     assert r.json()["portfolio"]["earned_inr"] > 0
     # Cannot sell more than owned
-    r = client.post("/api/trading/orders", json={"side": "SELL", "type": "MARKET", "qty_kwh": 400.0})
+    r = trader.post("/api/trading/orders", json={"side": "SELL", "type": "MARKET", "qty_kwh": 400.0})
     assert r.status_code == 400
     # Cannot spend more than the wallet
-    r = client.post("/api/trading/orders", json={"side": "BUY", "type": "LIMIT", "qty_kwh": 500.0, "limit_price": 100.0})
+    r = trader.post("/api/trading/orders", json={"side": "BUY", "type": "LIMIT", "qty_kwh": 500.0, "limit_price": 500.0})
     assert r.status_code == 400
 
 
-def test_limit_order_rests_and_can_be_cancelled(client, clean_market):
-    r = client.post("/api/trading/orders", json={"side": "BUY", "type": "LIMIT", "qty_kwh": 1.5, "limit_price": 1.05})
+def test_limit_order_rests_and_can_be_cancelled(client, trader, clean_market):
+    r = trader.post("/api/trading/orders", json={"side": "BUY", "type": "LIMIT", "qty_kwh": 1.5, "limit_price": 1.05})
     assert r.status_code == 200
     order = r.json()["order"]
     assert order["status"] == "OPEN"
-    pf = client.get("/api/trading/portfolio").json()
+    pf = trader.get("/api/trading/portfolio").json()
     assert any(o["order_id"] == order["order_id"] for o in pf["active_orders"])
     # The resting order survives the simulator TTL sweep
     time.sleep(0.8)
     rt = engine_facade.get_runtime("demo")
     assert f"user:{order['order_id']}" in rt.state.lob.resting_order_ids()
-    r = client.delete(f"/api/trading/orders/{order['order_id']}")
+    r = trader.delete(f"/api/trading/orders/{order['order_id']}")
     assert r.status_code == 200 and r.json()["order"]["status"] == "CANCELLED"
     assert f"user:{order['order_id']}" not in rt.state.lob.resting_order_ids()
-    assert client.delete("/api/trading/orders/does-not-exist").status_code == 404
+    assert trader.delete("/api/trading/orders/does-not-exist").status_code == 404
 
 
-def test_auto_charge_trigger_fires_when_ask_drops(client, clean_market):
+def test_auto_charge_trigger_fires_when_ask_drops(client, trader, clean_market):
     ob = client.get("/api/orderbook/demo").json()
     ask = ob["best_ask"] / 1e6
     # Trigger far below the market: stays armed
-    r = client.post("/api/trading/orders", json={"side": "BUY", "type": "AUTO_CHARGE", "qty_kwh": 1.0, "trigger_price": 0.5})
+    r = trader.post("/api/trading/orders", json={"side": "BUY", "type": "AUTO_CHARGE", "qty_kwh": 1.0, "trigger_price": 0.5})
     assert r.status_code == 200 and r.json()["order"]["status"] == "ARMED"
     armed_id = r.json()["order"]["order_id"]
     # Trigger above the market: fires on the next check and buys at market
-    r = client.post("/api/trading/orders", json={"side": "BUY", "type": "AUTO_CHARGE", "qty_kwh": 1.0, "trigger_price": ask * 1.5})
+    r = trader.post("/api/trading/orders", json={"side": "BUY", "type": "AUTO_CHARGE", "qty_kwh": 1.0, "trigger_price": ask * 1.5})
     fire_id = r.json()["order"]["order_id"]
     time.sleep(1.2)
-    pf = client.get("/api/trading/portfolio").json()
+    pf = trader.get("/api/trading/portfolio").json()
     statuses = {o["order_id"]: o["status"] for o in pf["recent_orders"]}
     assert statuses[armed_id] == "ARMED"
     assert statuses[fire_id] == "TRIGGERED"
     assert any(f["side"] == "BUY" for f in pf["fills"])
-    client.delete(f"/api/trading/orders/{armed_id}")
+    trader.delete(f"/api/trading/orders/{armed_id}")
     assert trading_book.find_order(armed_id).status == "CANCELLED"
 
 
-def test_user_websocket_pushes_portfolio(client):
-    with client.websocket_connect("/ws/user/demo-judge") as ws:
+def test_user_websocket_pushes_portfolio(client, trader, user_headers):
+    uid = trader.get("/api/trading/portfolio").json()["user_id"]
+    token = user_headers["Authorization"].split(" ", 1)[1]
+    with client.websocket_connect(f"/ws/user/{uid}?token={token}") as ws:
         msg = ws.receive_json()
-    assert msg["type"] == "portfolio" and msg["user_id"] == "demo-judge"
-    assert "wallet_balance_inr" in msg
+    assert msg["type"] == "portfolio" and msg["user_id"] == uid
+    assert "wallet_balance_inr" in msg and "total_pnl_inr" in msg
+
+
+def test_trades_persist_in_sqlite_and_pnl_formula(trader):
+    from backend.app.db.store import store
+
+    pf = trader.get("/api/trading/portfolio").json()
+    rows = store.list_trades(pf["user_id"])
+    assert len(rows) == len(pf["fills"]) > 0
+    assert abs(pf["total_pnl_inr"] - (pf["position_value_inr"] - pf["entry_cost_inr"] + pf["realized_pnl_inr"])) < 0.05
+    # wallet column mirrors the live portfolio
+    assert abs(store.get_user_by_id(pf["user_id"])["wallet_balance"] - pf["wallet_balance_inr"]) < 0.01
+
+
+def test_anonymous_live_stream_refused_when_public_demo_off(client):
+    from starlette.websockets import WebSocketDisconnect
+
+    settings.PUBLIC_DEMO = False
+    try:
+        with pytest.raises(WebSocketDisconnect):
+            with client.websocket_connect("/ws/live", headers={"Authorization": ""}) as ws:
+                ws.receive_json()
+    finally:
+        settings.PUBLIC_DEMO = True

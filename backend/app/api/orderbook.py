@@ -77,6 +77,12 @@ async def ws_orderbook(websocket: WebSocket, grid_id: str):
     await _pump(websocket, engine_facade.stream_orderbook(grid_id, hz=10))
 
 
+@router.websocket("/ws/live")
+async def ws_live(websocket: WebSocket):
+    """Authenticated live market channel (alias of /ws/orderbook/{DEMO_GRID_ID})."""
+    await ws_orderbook(websocket, settings.DEMO_GRID_ID)
+
+
 @router.websocket("/orderbook/ws/{grid_id}")
 async def ws_orderbook_alias(websocket: WebSocket, grid_id: str):
     await ws_orderbook(websocket, grid_id)

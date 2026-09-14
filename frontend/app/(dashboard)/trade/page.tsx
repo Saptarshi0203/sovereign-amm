@@ -9,11 +9,12 @@ import { TickerTape } from '@/components/landing/TickerTape';
 import { useStore } from '@/lib/store';
 
 const DayProfileChart = dynamic(() => import('@/components/charts/DayProfileChart').then((m) => m.DayProfileChart), { ssr: false });
-const DepthChart = dynamic(() => import('@/components/charts/DepthChart').then((m) => m.DepthChart), { ssr: false });
+const OrderBookLadder = dynamic(() => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder), { ssr: false });
 
 export default function TradePage() {
   const freq = useStore((s) => s.gridFrequencyHz);
   const playback = useStore((s) => s.playback);
+  const isAdmin = useStore((s) => s.isAdmin);
   return (
     <>
       <TickerTape />
@@ -31,7 +32,7 @@ export default function TradePage() {
         </div>
 
         <Panel>
-          <LockOverlay title="Interactive Order Desk" body="Sign in to trade against the Central Power Control market." ctaLabel="Sign In">
+          <LockOverlay title="Log in to Trade" body="Demo Mode shows static data. Sign in to get a ₹100,000 paper-trading wallet and trade live against the Central Power Control market." ctaLabel="Log in to Trade">
             <OrderDesk />
           </LockOverlay>
         </Panel>
@@ -43,15 +44,15 @@ export default function TradePage() {
           </Panel>
           <Panel className="p-4">
             <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">L2 Order Book</h2>
-            <DepthChart />
+            <OrderBookLadder height={300} />
           </Panel>
         </div>
 
-        <Panel>
-          <LockOverlay title="Custom Dataset" body="Sign in to upload a 24 h dataset." ctaLabel="Sign In">
-            <DatasetUpload />
-          </LockOverlay>
-        </Panel>
+        {isAdmin && (
+          <Panel>
+            <DatasetUpload title="Admin live data feed · city telemetry" />
+          </Panel>
+        )}
       </main>
     </>
   );

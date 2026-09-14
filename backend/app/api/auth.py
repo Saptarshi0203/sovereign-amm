@@ -14,6 +14,8 @@ from backend.app.core.auth import (
     extract_token,
     get_current_user,
     get_password_hash,
+    resolve_role,
+    token_claims,
     verify_password,
 )
 from backend.app.core.config import settings
@@ -44,6 +46,8 @@ class GoogleLoginRequest(BaseModel):
 def _public_user(user: Dict[str, Any]) -> Dict[str, Any]:
     u = dict(user)
     u.pop("password_hash", None)
+    u["role"] = resolve_role(u["email"], u.get("role"))
+    u["wallet_balance_inr"] = float(u.get("wallet_balance") or 0.0)
     return u
 
 
@@ -68,8 +72,8 @@ def signup(req: SignupRequest):
             "id": f"user-{uuid.uuid4().hex[:8]}",
             "email": req.email,
             "password_hash": get_password_hash(req.password),
-            "role": "market_participant",
-            "status": "pending",
+            "role": resolve_role(req.email, "user"),
+            "status": "approved" if req.email.lower() in settings.admin_emails else "pending",
             "consumer_no": req.consumer_no,
             "connection_type": req.connection_type,
             "sanctioned_load_kw": req.sanctioned_load_kw,
@@ -90,7 +94,7 @@ def login(req: LoginRequest, response: Response):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     if user["status"] != "approved":
         raise HTTPException(status_code=403, detail=f"Account is {user['status']}")
-    token = create_access_token({"sub": user["email"], "role": user["role"], "grid_id": user.get("grid_id", settings.DEMO_GRID_ID)})
+    token = create_access_token(token_claims(user))
     _set_cookie(response, token)
     return {"message": "Login successful", "token": token, "access_token": token, "user": _public_user(user)}
 
@@ -140,26 +144,33 @@ def google_login(req: GoogleLoginRequest, response: Response):
 
     user = store.get_user(email)
     if not user:
-        user = {
-            "id": f"user-{uuid.uuid4().hex[:8]}",
-            "email": email,
-            "name": idinfo.get("name", ""),
-            "picture": idinfo.get("picture", ""),
-            "password_hash": get_password_hash(uuid.uuid4().hex),
-            "role": "market_participant",
-            "status": "approved",
-            "consumer_no": "GOOGLE-AUTH",
-            "connection_type": "residential",
-            "sanctioned_load_kw": 5.0,
-            "solar_kwp": 0.0,
-            "inverter_rating_kw": 0.0,
-            "assigned_bus_id": None,
-            "bank_account_masked": "XXXXXX0000",
-            "grid_id": settings.DEMO_GRID_ID,
-        }
-        store.add_user(user)
+        # First Google sign-in: create the account with the paper-trading wallet (₹100,000).
+        user = store.add_user(
+            {
+                "id": f"user-{uuid.uuid4().hex[:8]}",
+                "email": email,
+                "name": idinfo.get("name", ""),
+                "picture": idinfo.get("picture", ""),
+                "password_hash": get_password_hash(uuid.uuid4().hex),
+                "role": resolve_role(email, "user"),
+                "status": "approved",
+                "consumer_no": "GOOGLE-AUTH",
+                "grid_id": settings.DEMO_GRID_ID,
+            }
+        )
+    else:
+        patch = {}
+        if idinfo.get("name") and not user.get("name"):
+            patch["name"] = idinfo["name"]
+        if idinfo.get("picture") and not user.get("picture"):
+            patch["picture"] = idinfo["picture"]
+        if user.get("status") != "approved":
+            patch["status"] = "approved"
+        if patch:
+            store.update_user(email, patch)
+            user = store.get_user(email) or user
 
-    token = create_access_token({"sub": user["email"], "role": user["role"], "grid_id": user.get("grid_id", settings.DEMO_GRID_ID)})
+    token = create_access_token(token_claims(user))
     _set_cookie(response, token)
     return {"message": "Login successful", "token": token, "access_token": token, "user": _public_user(user)}
 

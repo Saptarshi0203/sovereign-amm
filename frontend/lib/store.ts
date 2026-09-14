@@ -52,6 +52,7 @@ import {
 
 import type {
   AuthMode,
+  AuthState,
   AuthUser,
   Bus,
   DataSource,
@@ -244,17 +245,25 @@ export interface StoreState {
 
   // ── Session slice ─────────────────────────────────────────────────────────
 
-  /** `true` when browsing under a Guest Demo Session (unlocks gated panels). */
+  /**
+   * `'anonymous'` → Demo Mode: static 24 h history, no live sockets, trading locked.
+   * `'user'`      → Live Mode: authenticated WebSocket feed + paper trading.
+   * `'admin'`     → Live Mode + Control Room (dataset feed, injections, scenarios).
+   */
+  authState: AuthState;
+  /** `true` while anonymous (kept for existing consumers; == authState === 'anonymous'). */
   demoUser: boolean;
-  /** JWT for the current session (demo or real). */
+  /** JWT for the current session or null. */
   jwtToken: string | null;
-  /** Current principal (demo or real). */
+  /** Current principal or null. */
   authUser: AuthUser | null;
   /** `true` once the session bootstrap has run on the client. */
   sessionReady: boolean;
-  /** `true` when any session (demo or authenticated) unlocks the gated panels. */
+  /** `true` when a signed-in account unlocks the gated panels. */
   isUnlocked: boolean;
-  setSession(token: string | null, user: AuthUser | null, demo: boolean): void;
+  /** `true` for admin sessions. */
+  isAdmin: boolean;
+  setSession(token: string | null, user: AuthUser | null): void;
   clearSession(): void;
   setJwtToken(token: string): void;
   setSessionReady(ready: boolean): void;
@@ -484,9 +493,12 @@ export const useStore = create<StoreState>()(
       }),
 
     setHistory: (rows) =>
-      set(() => {
+      set((s) => {
         const series = timeseriesFromHistory(rows);
-        return { timeseries: series.length > 0 ? series : INITIAL_SERIES, historyLoading: false };
+        const last = series[series.length - 1];
+        // Demo Mode: the gauges follow the end of the static history rather than the mock clock.
+        const demoSoc = s.dataSource !== 'live' && last ? { soc: last.soc, inventoryQ: Math.max(-1, Math.min(1, 2 * (last.soc / 100) - 1)), cDeg: last.cDeg } : {};
+        return { timeseries: series.length > 0 ? series : INITIAL_SERIES, historyLoading: false, ...demoSoc };
       }),
 
     setHistoryRange: (range) => set({ historyRange: range }),
@@ -516,16 +528,31 @@ export const useStore = create<StoreState>()(
 
     // ── Session slice ───────────────────────────────────────────────────────
 
-    demoUser: false,
+    authState: 'anonymous',
+    demoUser: true,
     jwtToken: null,
     authUser: null,
     sessionReady: false,
     isUnlocked: false,
+    isAdmin: false,
 
-    setSession: (token, user, demo) =>
-      set({ jwtToken: token, authUser: user, demoUser: demo, isUnlocked: demo || token !== null, sessionReady: true }),
-    clearSession: () => set({ jwtToken: null, authUser: null, demoUser: false, isUnlocked: false }),
-    setJwtToken: (token: string) => set({ jwtToken: token, isUnlocked: true }),
+    setSession: (token, user) => {
+      const real = token !== null && user !== null && !user.demo;
+      const authState: AuthState = !real ? 'anonymous' : user?.role === 'admin' ? 'admin' : 'user';
+      set({
+        jwtToken: real ? token : null,
+        authUser: real ? user : null,
+        authState,
+        demoUser: !real,
+        isUnlocked: real,
+        isAdmin: authState === 'admin',
+        sessionReady: true,
+        ...(real ? {} : { portfolio: null, portfolioConnected: false }),
+      });
+    },
+    clearSession: () =>
+      set({ jwtToken: null, authUser: null, authState: 'anonymous', demoUser: true, isUnlocked: false, isAdmin: false, portfolio: null, portfolioConnected: false }),
+    setJwtToken: (token: string) => set({ jwtToken: token }),
     setSessionReady: (ready) => set({ sessionReady: ready }),
 
     // ── UI slice ─────────────────────────────────────────────────────────────

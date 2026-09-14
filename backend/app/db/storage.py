@@ -242,6 +242,17 @@ class StorageManager:
             r["c_deg"] = float(r["c_deg"] or 0.0)
         return records
 
+    def tick_count_since(self, grid_id: str, since_ms: int) -> int:
+        try:
+            con = sqlite3.connect(self.db_path)
+            try:
+                row = con.execute("SELECT count(*) FROM ticks WHERE grid_id = ? AND ts >= ?", (grid_id, since_ms)).fetchone()
+                return int(row[0] or 0)
+            finally:
+                con.close()
+        except Exception:
+            return 0
+
     def tick_count(self, grid_id: str) -> int:
         try:
             con = sqlite3.connect(self.db_path)

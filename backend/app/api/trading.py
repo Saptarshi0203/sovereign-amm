@@ -6,6 +6,9 @@ Interactive household trading terminal.
     DELETE /api/trading/orders/{order_id}  cancel a resting limit / armed auto-charge
     POST   /api/trading/reset              reset the caller's demo portfolio
     WS     /ws/user/{user_id}              portfolio + fill push stream (1 Hz on change)
+
+All routes verify the caller's JWT (approved, non-guest account). Balance and
+inventory are checked server-side before an order reaches the matching engine.
 """
 import asyncio
 from typing import Any, Dict, Optional
@@ -13,7 +16,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
-from backend.app.api.deps import auth_scope, ws_auth_scope
+from backend.app.api.deps import require_user, ws_auth_scope
 from backend.app.core.config import settings
 from backend.app.engine_facade import MICRO, engine_facade
 from backend.app.trading import trading_book
@@ -30,8 +33,9 @@ class OrderRequest(BaseModel):
 
 
 def _identity(user: Dict[str, Any]) -> tuple[str, str]:
-    email = user.get("sub") or user.get("email") or "guest"
-    uid = user.get("user_id") or ("demo-judge" if user.get("demo") else email)
+    """(user_id, email) from either a DB user row or a decoded JWT payload."""
+    email = user.get("email") or user.get("sub") or "guest"
+    uid = user.get("id") or user.get("uid") or ("demo-judge" if user.get("demo") else email)
     return str(uid), str(email)
 
 
@@ -41,13 +45,13 @@ def _mark() -> float:
 
 
 @router.get("/api/trading/portfolio")
-def get_portfolio(user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+def get_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
     return trading_book.get_or_create(uid, email).as_dict(_mark())
 
 
 @router.post("/api/trading/orders")
-def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
     trading_book.get_or_create(uid, email)
     grid = settings.DEMO_GRID_ID
@@ -72,7 +76,7 @@ def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(auth_scope)) -
 
 
 @router.delete("/api/trading/orders/{order_id}")
-def cancel_order(order_id: str, user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+def cancel_order(order_id: str, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, _ = _identity(user)
     order = trading_book.find_order(order_id)
     if order is None or order.user_id != uid:
@@ -82,7 +86,7 @@ def cancel_order(order_id: str, user: Dict[str, Any] = Depends(auth_scope)) -> D
 
 
 @router.post("/api/trading/reset")
-def reset_portfolio(user: Dict[str, Any] = Depends(auth_scope)) -> Dict[str, Any]:
+def reset_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
     for o in list(trading_book.get_or_create(uid, email).active_orders()):
         engine_facade.cancel_user_order(settings.DEMO_GRID_ID, o.order_id)
@@ -96,6 +100,9 @@ async def ws_user(websocket: WebSocket, user_id: str):
     try:
         payload = await ws_auth_scope(websocket, settings.DEMO_GRID_ID)
     except Exception:
+        return
+    if payload.get("demo"):
+        await websocket.close(code=4401, reason="Sign in to trade")
         return
     uid, email = _identity(payload)
     if uid != user_id and payload.get("role") != "admin":

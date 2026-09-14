@@ -3,7 +3,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from backend.app.api.deps import auth_scope
+from backend.app.api.deps import require_admin
 from backend.app.core.config import settings
 from backend.app.engine_facade import engine_facade
 
@@ -23,7 +23,7 @@ def emergency_status(grid_id: str = settings.DEMO_GRID_ID):
 
 
 @router.post("/toggle")
-async def toggle_emergency(req: EmergencyToggleRequest, user: Dict[str, Any] = Depends(auth_scope)):
+async def toggle_emergency(req: EmergencyToggleRequest, user: Dict[str, Any] = Depends(require_admin)):
     if req.active and not req.reason:
         raise HTTPException(status_code=400, detail="Reason is required to engage emergency override")
     await engine_facade.set_emergency(req.grid_id, req.active, operator=user.get("sub", "operator"), reason=req.reason)

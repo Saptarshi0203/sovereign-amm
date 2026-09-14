@@ -9,38 +9,55 @@ function inr(v: number, decimals = 2): string {
 }
 
 /**
- * Live AMM PnL: realized + unrealized (marked at the micro-price) minus
- * Rainflow wear cost, with throughput and open position.
+ * The signed-in user's paper-trading P&L — computed exclusively from their
+ * own trade history (SQLite `trades` + wallet columns):
+ *
+ *   unrealised = position value − entry cost = (mark − avg cost) · inventory
+ *   total      = unrealised + realised
+ *
+ * In Demo Mode (anonymous) the panel is replaced by a "Log in to Trade" prompt
+ * via <LockOverlay/>; nothing here is hard-coded.
  */
 export function PnlPanel() {
-  const pnl = useStore((s) => s.pnl);
+  const portfolio = useStore((s) => s.portfolio);
+  const connected = useStore((s) => s.portfolioConnected);
   const live = useStore((s) => s.dataSource === 'live');
-  const netFlash = useTickFlash(pnl.net);
+  const total = portfolio?.total_pnl_inr ?? 0;
+  const flash = useTickFlash(total);
+
+  if (!portfolio) {
+    return (
+      <div className="flex flex-col gap-2 p-4 min-h-40">
+        <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Your P&amp;L</p>
+        <p className="text-2xl font-bold font-mono text-slate-500">—</p>
+        <p className="text-xs font-mono text-slate-500">{live ? 'Loading your portfolio…' : 'Sign in to start paper trading with ₹100,000.'}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2 p-4 min-h-40">
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">P&L Summary</p>
-        {!live && <span className="text-[10px] font-mono text-amber-500">awaiting engine</span>}
+        <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Your P&amp;L</p>
+        <span className="text-[10px] font-mono text-slate-500">{connected ? 'live' : 'polling'} · {portfolio.fills.length} trades</span>
       </div>
-      <p className={`text-2xl font-bold font-mono tabular-nums ${pnl.net >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
-        {inr(pnl.net)}
-        <span className={`ml-2 text-sm ${netFlash}`}>{netFlash === 'text-emerald-400' ? '▲' : netFlash === 'text-rose-500' ? '▼' : ''}</span>
+      <p className={`text-2xl font-bold font-mono tabular-nums ${total >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+        {inr(total)}
+        <span className={`ml-2 text-sm ${flash}`}>{flash === 'text-emerald-400' ? '▲' : flash === 'text-rose-500' ? '▼' : ''}</span>
       </p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs font-mono text-slate-400">
-        <span>Realised</span>
-        <span className={`text-right tabular-nums ${pnl.realized >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{inr(pnl.realized)}</span>
+        <span>Position value</span>
+        <span className="text-right tabular-nums text-slate-200">₹{portfolio.position_value_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+        <span>Entry cost</span>
+        <span className="text-right tabular-nums text-slate-200">₹{portfolio.entry_cost_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         <span>Unrealised</span>
-        <span className={`text-right tabular-nums ${pnl.unrealized >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{inr(pnl.unrealized)}</span>
-        <span>Wear cost (C_deg)</span>
-        <span className="text-right tabular-nums text-amber-400">−₹{pnl.wearCost.toFixed(2)}</span>
-        <span>Position</span>
-        <span className="text-right tabular-nums text-slate-200">
-          {pnl.positionKwh >= 0 ? '+' : ''}
-          {pnl.positionKwh.toFixed(1)} kWh
-        </span>
-        <span>Fills</span>
-        <span className="text-right tabular-nums text-slate-200">{pnl.fills.toLocaleString()}</span>
+        <span className={`text-right tabular-nums ${portfolio.unrealized_pnl_inr >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{inr(portfolio.unrealized_pnl_inr)}</span>
+        <span>Realised</span>
+        <span className={`text-right tabular-nums ${portfolio.realized_pnl_inr >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{inr(portfolio.realized_pnl_inr)}</span>
+        <span>Wallet</span>
+        <span className="text-right tabular-nums text-slate-200">₹{portfolio.wallet_balance_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+        <span>Inventory</span>
+        <span className="text-right tabular-nums text-slate-200">{portfolio.energy_inventory_kwh.toFixed(2)} kWh</span>
       </div>
     </div>
   );

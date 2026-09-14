@@ -11,6 +11,7 @@ export function DatasetDrawerButton() {
   const [open, setOpen] = useState(false);
   const playback = useStore((s) => s.playback);
   const live = useStore((s) => s.dataSource === 'live');
+  const isAdmin = useStore((s) => s.isAdmin);
 
   useEffect(() => {
     if (!open) return;
@@ -20,6 +21,8 @@ export function DatasetDrawerButton() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
+
+  if (!isAdmin) return null;
 
   return (
     <>

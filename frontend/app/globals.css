@@ -90,3 +90,21 @@
     @apply focus:top-0 transition-[top] duration-150;
   }
 }
+
+/* ── L2 order-book ladder micro-animations ──────────────────────────────── */
+@keyframes ob-flash-up {
+  0% { background-color: rgba(16, 185, 129, 0.32); }
+  100% { background-color: transparent; }
+}
+@keyframes ob-flash-down {
+  0% { background-color: rgba(225, 29, 72, 0.32); }
+  100% { background-color: transparent; }
+}
+@keyframes ob-flash-new {
+  0% { background-color: rgba(56, 189, 248, 0.3); }
+  100% { background-color: transparent; }
+}
+.ob-row[data-flash='up'] { animation: ob-flash-up 420ms ease-out; }
+.ob-row[data-flash='down'] { animation: ob-flash-down 420ms ease-out; }
+.ob-row[data-flash='new'] { animation: ob-flash-new 520ms ease-out; }
+.ob-bar { transition: width 90ms linear; will-change: width; }

@@ -25,6 +25,7 @@ export default function BatteryPage() {
   const openAuth = useStore((s) => s.openAuth);
   const isUnlocked = useStore((s) => s.isUnlocked);
   const live = useStore((s) => s.dataSource === 'live');
+  const isAdmin = useStore((s) => s.isAdmin);
   const risk = useStore((s) => s.risk);
   const setJudge = useStore((s) => s.setJudge);
   const hasPromptedRef = useRef(false);
@@ -46,11 +47,11 @@ export default function BatteryPage() {
     (patch: { gamma?: number; sigma?: number }) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        if (live) putParameters(patch).catch(() => undefined);
+        if (live && isAdmin) putParameters(patch).catch(() => undefined);
         else setJudge({ ...(patch.gamma !== undefined ? { riskAversion: patch.gamma } : {}), ...(patch.sigma !== undefined ? { volatility: patch.sigma } : {}) });
       }, 350);
     },
-    [live, setJudge],
+    [live, isAdmin, setJudge],
   );
   const gammaValue = gammaDraft ?? risk.gamma;
   const sigmaValue = sigmaDraft ?? risk.sigma;
@@ -191,7 +192,7 @@ export default function BatteryPage() {
             />
           </div>
           <p className="text-xs text-slate-600 mt-2 font-mono">
-            {live ? 'Parameters are pushed to the engine via PUT /grid/demo/parameters.' : 'Engine offline — parameters drive the in-browser simulation.'}
+            {live && isAdmin ? 'Parameters are pushed to the engine via PUT /grid/demo/parameters.' : live ? 'Preview only — admin sessions push parameters to the live engine.' : 'Demo Mode — parameters drive the in-browser simulation.'}
           </p>
         </Panel>
       </main>
