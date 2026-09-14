@@ -233,3 +233,28 @@ def test_csv_export_streams_rows(client):
     lines = r.text.strip().splitlines()
     assert lines[0] == "ts,grid_id,micro_price,soc_pct,sigma,c_deg"
     assert len(lines) > 100
+
+
+def test_google_upsert_seeds_wallet_and_admin_override(client):
+    """User.upsert_from_google: new e-mail → ₹100,000 wallet, admin allow-list → role=admin, repeat login refreshes profile."""
+    from backend.app.core.auth import create_access_token
+    from backend.app.models.user import User
+
+    u = User.upsert_from_google({"sub": "g-123", "email": "New.Person@example.com", "name": "New Person", "picture": "https://img/p.png"})
+    assert u.email == "new.person@example.com" and u.google_id == "g-123"
+    assert u.role == "user" and u.wallet_balance == 100_000.0
+    again = User.upsert_from_google({"sub": "g-123", "email": "new.person@example.com", "name": "New P.", "picture": "https://img/p2.png"})
+    assert again.id == u.id and again.name == "New P." and again.picture == "https://img/p2.png"
+
+    admin = User.upsert_from_google({"sub": "g-999", "email": "admin@test.local"})
+    assert admin.role == "admin"
+    claims = admin.jwt_claims()
+    assert claims["role"] == "admin" and claims["wallet_balance"] == 100_000.0 and claims["sub"] == "admin@test.local"
+
+    # The issued JWT authenticates against /api/auth/me and the /api/trade alias
+    tok = create_access_token(u.jwt_claims())
+    me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {tok}"}).json()
+    assert me["email"] == u.email and me["wallet_balance_inr"] == 100_000.0
+    assert client.get("/api/trade/portfolio", headers={"Authorization": f"Bearer {tok}"}).status_code == 200
+    assert client.post("/api/trade/orders", json={"side": "BUY", "type": "MARKET", "qty_kwh": 1}, headers={"Authorization": ""}).status_code == 401
+    assert client.post("/api/auth/google", json={"token": "not-a-real-token"}).status_code == 401

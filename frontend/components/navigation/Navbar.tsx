@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 
-import { useStore } from '@/lib/store';
+import { useAuthStore } from '@/store/authStore';
 import { AuthButtons } from './AuthButtons';
 import { MobileMenu } from './MobileMenu';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -36,7 +36,8 @@ const navigationTabs: { label: string; href: string; adminOnly?: boolean }[] = [
  */
 export function Navbar() {
   const pathname = usePathname();
-  const isAdmin = useStore((s) => s.isAdmin);
+  // The Control tab renders strictly for admin JWTs held in the persisted auth store.
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const visibleTabs = navigationTabs.filter((t) => !t.adminOnly || isAdmin);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 

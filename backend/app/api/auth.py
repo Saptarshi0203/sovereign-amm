@@ -20,6 +20,7 @@ from backend.app.core.auth import (
 )
 from backend.app.core.config import settings
 from backend.app.db.store import store
+from backend.app.models.user import User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -126,6 +127,13 @@ def logout(
 
 @router.post("/google")
 def google_login(req: GoogleLoginRequest, response: Response):
+    """
+    Google OAuth 2.0 sign-in / sign-up.
+
+    1. Verify the ID token signature + audience with google-auth (GOOGLE_CLIENT_ID).
+    2. Upsert the user (new e-mail → ₹100,000 paper wallet; admin e-mails → role=admin).
+    3. Issue a JWT with sub, uid, role, name, wallet_balance, grid_id.
+    """
     try:
         from google.auth.transport import requests as google_requests
         from google.oauth2 import id_token
@@ -137,42 +145,17 @@ def google_login(req: GoogleLoginRequest, response: Response):
         idinfo = id_token.verify_oauth2_token(req.token, google_requests.Request(), client_id or None)
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid Google token")
-
-    email = idinfo.get("email")
-    if not email:
+    if idinfo.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        raise HTTPException(status_code=401, detail="Wrong token issuer")
+    if not idinfo.get("email"):
         raise HTTPException(status_code=400, detail="Token has no email")
+    if idinfo.get("email_verified") is False:
+        raise HTTPException(status_code=403, detail="Google e-mail is not verified")
 
-    user = store.get_user(email)
-    if not user:
-        # First Google sign-in: create the account with the paper-trading wallet (₹100,000).
-        user = store.add_user(
-            {
-                "id": f"user-{uuid.uuid4().hex[:8]}",
-                "email": email,
-                "name": idinfo.get("name", ""),
-                "picture": idinfo.get("picture", ""),
-                "password_hash": get_password_hash(uuid.uuid4().hex),
-                "role": resolve_role(email, "user"),
-                "status": "approved",
-                "consumer_no": "GOOGLE-AUTH",
-                "grid_id": settings.DEMO_GRID_ID,
-            }
-        )
-    else:
-        patch = {}
-        if idinfo.get("name") and not user.get("name"):
-            patch["name"] = idinfo["name"]
-        if idinfo.get("picture") and not user.get("picture"):
-            patch["picture"] = idinfo["picture"]
-        if user.get("status") != "approved":
-            patch["status"] = "approved"
-        if patch:
-            store.update_user(email, patch)
-            user = store.get_user(email) or user
-
-    token = create_access_token(token_claims(user))
+    user = User.upsert_from_google(idinfo)
+    token = create_access_token(user.jwt_claims())
     _set_cookie(response, token)
-    return {"message": "Login successful", "token": token, "access_token": token, "user": _public_user(user)}
+    return {"message": "Login successful", "token": token, "access_token": token, "user": user.to_public()}
 
 
 @router.get("/me")

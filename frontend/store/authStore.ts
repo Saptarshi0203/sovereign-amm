@@ -1,128 +1,94 @@
-import { create } from 'zustand';
-import { AuthState, User, LoginResponse } from '@/types/auth';
-
 /**
- * Zustand authentication store implementing AuthState.
+ * @file authStore.ts
+ * @description Persisted Zustand authentication store.
  *
- * Manages the full authentication lifecycle:
- * - `login`     — POST /api/auth/login, stores token and user on success
- * - `logout`    — clears in-memory token/user, sets isAuthenticated=false
- * - `checkAuth` — GET /api/auth/me, validates current token; clears state on failure
+ * State
+ *   token       JWT issued by POST /api/auth/google (or /login); null when logged out
+ *   user        public user payload (email, name, picture, role, wallet_balance…)
+ *   isLoggedIn  token && user present
+ *   isAdmin     user.role === 'admin'
  *
- * The authoritative token copy lives in the HTTP-only Set-Cookie header returned
- * by the backend (Requirement 24.1). The `token` field here mirrors it for
- * in-memory use (WebSocket handshake, Bearer header).
+ * Actions
+ *   login(token, user)   store the session, mirror it into the central app store
+ *   logout()             clear it (and drop back to the Demo Sandbox)
+ *   setWallet(balance)   live wallet updates from the portfolio stream
  *
- * Related requirements: 24.1, 24.2, 24.4
+ * Persistence: `zustand/middleware` `persist` → localStorage key
+ * `sovereign-auth`, so the session survives refreshes. The central UI store
+ * (`@/lib/store`) is kept in sync so every page reacts to auth changes.
  */
-export const useAuthStore = create<AuthState>((set, get) => ({
-  // ── Initial state ──────────────────────────────────────────────────────────
-  isAuthenticated: false,
-  user: null,
-  token: null,
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { useStore } from '@/lib/store';
+import type { AuthUser } from '@/lib/types';
 
-  /**
-   * Submit credentials to the backend auth endpoint.
-   * On success the backend sets an HTTP-only cookie (Requirement 24.1) and also
-   * returns the JWT in the response body for in-memory use.
-   *
-   * @throws {Error} When the server responds with a non-OK status or the
-   *                 network request fails entirely.
-   */
-  login: async (email: string, password: string): Promise<void> => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-    const response = await fetch(`${apiBase}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // Send / receive HTTP-only cookies
-      body: JSON.stringify({ email, password }),
-    });
+export interface AuthSessionUser extends AuthUser {
+  google_id?: string | null;
+  wallet_balance?: number;
+  status?: string;
+  created_at?: number;
+}
 
-    if (!response.ok) {
-      let message = `Login failed (HTTP ${response.status})`;
-      try {
-        const body = await response.json();
-        if (body?.detail) message = body.detail;
-        else if (body?.message) message = body.message;
-      } catch {
-        // Non-JSON error body — keep default message
-      }
-      throw new Error(message);
-    }
+export interface AuthStoreState {
+  token: string | null;
+  user: AuthSessionUser | null;
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+  /** `true` once the persisted state has been rehydrated on the client. */
+  hydrated: boolean;
+  login(token: string, user: AuthSessionUser): void;
+  logout(): void;
+  setWallet(balance: number): void;
+  setHydrated(v: boolean): void;
+}
 
-    const data: LoginResponse = await response.json();
+/** Mirror the auth session into the central app store (dual-state engine). */
+function syncAppStore(token: string | null, user: AuthSessionUser | null): void {
+  useStore.getState().setSession(token, user ? { ...user, wallet_balance_inr: user.wallet_balance ?? user.wallet_balance_inr } : null);
+}
 
-    set({
-      isAuthenticated: true,
-      user: data.user,
-      token: data.token,
-    });
-  },
-
-  /**
-   * Clear all authentication state.
-   * The backend's HTTP-only cookie is expected to be cleared via a separate
-   * logout API call by the UI layer if needed; this action handles the client
-   * in-memory state only (Requirement 24.4).
-   */
-  logout: (): void => {
-    set({
-      isAuthenticated: false,
-      user: null,
+export const useAuthStore = create<AuthStoreState>()(
+  persist(
+    (set, get) => ({
       token: null,
-    });
-  },
+      user: null,
+      isLoggedIn: false,
+      isAdmin: false,
+      hydrated: false,
 
-  /**
-   * Validate the current session by calling GET /api/auth/me.
-   * Sends the HTTP-only cookie automatically (credentials: 'include') and also
-   * attaches the in-memory Bearer token when available (Requirement 24.2, 24.6).
-   *
-   * @returns true if the session is active and valid, false otherwise.
-   *
-   * On validation failure (401, network error, etc.) all auth state is cleared
-   * so route guards can redirect to /login (Requirement 24.3).
-   */
-  checkAuth: async (): Promise<boolean> => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-    const { token } = get();
+      login: (token, user) => {
+        const isAdmin = user.role === 'admin';
+        set({ token, user, isLoggedIn: true, isAdmin });
+        syncAppStore(token, user);
+      },
 
-    try {
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      logout: () => {
+        set({ token: null, user: null, isLoggedIn: false, isAdmin: false });
+        syncAppStore(null, null);
+      },
 
-      const response = await fetch(`${apiBase}/api/auth/me`, {
-        method: 'GET',
-        headers,
-        credentials: 'include', // Forward HTTP-only cookie
-      });
+      setWallet: (balance) => {
+        const user = get().user;
+        if (!user) return;
+        set({ user: { ...user, wallet_balance: balance, wallet_balance_inr: balance } });
+      },
 
-      if (!response.ok) {
-        // Treat any non-OK status as unauthenticated
-        set({ isAuthenticated: false, user: null, token: null });
-        return false;
-      }
+      setHydrated: (v) => set({ hydrated: v }),
+    }),
+    {
+      name: 'sovereign-auth',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (s) => ({ token: s.token, user: s.user, isLoggedIn: s.isLoggedIn, isAdmin: s.isAdmin }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated(true);
+      },
+    },
+  ),
+);
 
-      const user: User = await response.json();
-
-      set({
-        isAuthenticated: true,
-        user,
-        // Preserve existing in-memory token; the cookie remains the
-        // authoritative source. A fresh token may optionally come back
-        // in the response headers, but that is handled at the API layer.
-        token: get().token,
-      });
-
-      return true;
-    } catch {
-      // Network error or unexpected exception — treat as unauthenticated
-      set({ isAuthenticated: false, user: null, token: null });
-      return false;
-    }
-  },
-}));
+/** Bearer header for API calls (empty object when logged out). */
+export function authHeader(): Record<string, string> {
+  const token = useAuthStore.getState().token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}

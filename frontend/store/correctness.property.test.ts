@@ -79,13 +79,13 @@ function mockResponse(body: unknown, status = 200): Response {
 
 /** Hard-reset auth store. */
 function resetAuthStore(): void {
-  useAuthStore.setState({ isAuthenticated: false, user: null, token: null });
+  useAuthStore.setState({ isLoggedIn: false, isAdmin: false, user: null, token: null });
 }
 
 /** Seed the store as if the user is already logged in. */
 function seedAuthenticated(): void {
   useAuthStore.setState({
-    isAuthenticated: true,
+    isLoggedIn: true,
     user: { id: "1", email: "trader@sovereign.io", role: "trader" },
     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.sig",
   });
@@ -513,249 +513,37 @@ describe("Property 19: Responsive Layout Integrity — Tailwind breakpoint class
 // **Validates: Requirements 1.3, 24.2, 24.3**
 // ============================================================================
 
-describe("Property 20: Authentication Boundary Enforcement", () => {
-  /**
-   * Dashboard routes must require authentication.
-   *
-   * When isAuthenticated=false: checkAuth() returns false, and the route guard
-   * should redirect to /login (Requirement 24.3).
-   *
-   * When isAuthenticated=true and the backend validates the token: checkAuth()
-   * returns true, the dashboard renders (Requirement 24.2).
-   *
-   * The full login→dashboard access→logout cycle is tested (Requirement 1.3).
-   */
-
-  const MOCK_USER = {
-    id: "usr-42",
-    email: "trader@sovereign.io",
-    role: "trader",
-  };
-  const MOCK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sovereign.sig";
-  const LOGIN_RESPONSE = { token: MOCK_TOKEN, user: MOCK_USER };
-
-  beforeEach(() => {
-    resetAuthStore();
+describe("Property 12: persisted auth store contract (login / logout / isAdmin)", () => {
+  it("login(token, user) sets isLoggedIn and isAdmin from the role", () => {
+    useAuthStore.getState().login("jwt-1", { id: "u1", email: "a@b.com", role: "user", name: "A", wallet_balance: 100000 });
+    const s = useAuthStore.getState();
+    expect(s.isLoggedIn).toBe(true);
+    expect(s.isAdmin).toBe(false);
+    expect(s.token).toBe("jwt-1");
+    expect(s.user?.wallet_balance).toBe(100000);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
+  it("admin role flips isAdmin", () => {
+    useAuthStore.getState().login("jwt-2", { id: "u2", email: "boss@b.com", role: "admin" });
+    expect(useAuthStore.getState().isAdmin).toBe(true);
   });
 
-  // ── Unauthenticated: checkAuth() returns false ───────────────────────────
-
-  it("checkAuth() returns false when the backend responds with 401 (unauthenticated)", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(
-        mockResponse({ detail: "Unauthorized" }, 401)
-      )
-    );
-
-    const result = await useAuthStore.getState().checkAuth();
-
-    expect(result).toBe(false);
-  });
-
-  it("isAuthenticated remains false after checkAuth() fails with 401", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(
-        mockResponse({ detail: "Unauthorized" }, 401)
-      )
-    );
-
-    await useAuthStore.getState().checkAuth();
-
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-  });
-
-  it("route guard sees false from checkAuth() → redirects to /login", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(
-        mockResponse({ detail: "Not logged in" }, 401)
-      )
-    );
-
-    // Simulate the dashboard layout.tsx route guard logic:
-    const shouldRenderDashboard = await useAuthStore.getState().checkAuth();
-
-    // When false → route guard redirects; dashboard does NOT render
-    expect(shouldRenderDashboard).toBe(false);
-  });
-
-  // ── Authenticated: checkAuth() returns true ──────────────────────────────
-
-  it("checkAuth() returns true when the backend validates the session (200)", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(mockResponse(MOCK_USER, 200))
-    );
-
-    const result = await useAuthStore.getState().checkAuth();
-
-    expect(result).toBe(true);
-  });
-
-  it("isAuthenticated becomes true after successful checkAuth()", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(mockResponse(MOCK_USER, 200))
-    );
-
-    await useAuthStore.getState().checkAuth();
-
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
-  });
-
-  it("route guard sees true from checkAuth() → dashboard renders", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(mockResponse(MOCK_USER, 200))
-    );
-
-    const shouldRenderDashboard = await useAuthStore.getState().checkAuth();
-
-    expect(shouldRenderDashboard).toBe(true);
-  });
-
-  // ── Login → dashboard access → logout cycle ──────────────────────────────
-
-  it("full login→dashboard access→logout cycle: isAuthenticated transitions correctly", async () => {
-    // Step 1: Login
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(mockResponse(LOGIN_RESPONSE, 200)) // login
-        .mockResolvedValueOnce(mockResponse(MOCK_USER, 200))      // checkAuth
-    );
-
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-
-    await useAuthStore.getState().login("trader@sovereign.io", "password123");
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
-
-    // Step 2: Dashboard route access — checkAuth() validates the session
-    const canAccess = await useAuthStore.getState().checkAuth();
-    expect(canAccess).toBe(true);
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
-
-    // Step 3: Logout
+  it("logout() clears everything", () => {
+    useAuthStore.getState().login("jwt-3", { id: "u3", email: "c@b.com", role: "user" });
     useAuthStore.getState().logout();
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-    expect(useAuthStore.getState().token).toBeNull();
-    expect(useAuthStore.getState().user).toBeNull();
+    const s = useAuthStore.getState();
+    expect(s.isLoggedIn).toBe(false);
+    expect(s.isAdmin).toBe(false);
+    expect(s.token).toBeNull();
+    expect(s.user).toBeNull();
   });
 
-  it("after logout, checkAuth() returns false (session no longer valid)", async () => {
-    seedAuthenticated();
+  it("setWallet updates the balance on the signed-in user only", () => {
     useAuthStore.getState().logout();
-
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(
-        mockResponse({ detail: "Unauthorized" }, 401)
-      )
-    );
-
-    const result = await useAuthStore.getState().checkAuth();
-
-    expect(result).toBe(false);
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-  });
-
-  it("expired token: checkAuth() clears all auth state so route guard redirects", async () => {
-    useAuthStore.setState({
-      isAuthenticated: true,
-      user: MOCK_USER,
-      token: "expired.jwt.token",
-    });
-
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValueOnce(
-        mockResponse({ detail: "Token expired" }, 401)
-      )
-    );
-
-    const result = await useAuthStore.getState().checkAuth();
-
-    expect(result).toBe(false);
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-    expect(useAuthStore.getState().token).toBeNull();
+    useAuthStore.getState().setWallet(5);
     expect(useAuthStore.getState().user).toBeNull();
-  });
-
-  it("network failure during checkAuth() clears auth state → route guard redirects", async () => {
-    seedAuthenticated();
-
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockRejectedValueOnce(new TypeError("Network request failed"))
-    );
-
-    const result = await useAuthStore.getState().checkAuth();
-
-    expect(result).toBe(false);
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-  });
-
-  // ── Seeded property sweep: auth boundary holds for multiple credentials ───
-
-  it("auth boundary invariant: unauthenticated users always get false from checkAuth()", async () => {
-    // Run 10 seeded iterations with 401 responses to confirm invariant holds
-    const rng = makeLcg(2048);
-
-    for (let i = 0; i < 10; i++) {
-      resetAuthStore();
-
-      const statusCode = rng.nextInt(0, 1) === 0 ? 401 : 403;
-
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockResolvedValueOnce(mockResponse({ detail: "Unauthorized" }, statusCode))
-      );
-
-      const result = await useAuthStore.getState().checkAuth();
-
-      expect(result).toBe(false);
-      expect(useAuthStore.getState().isAuthenticated).toBe(false);
-
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it("auth boundary invariant: authenticated users always get true from checkAuth() with valid backend", async () => {
-    // Run 10 seeded iterations with 200 responses to confirm invariant holds
-    const rng = makeLcg(65535);
-    const users = [
-      { id: "1", email: "alice@sovereign.io", role: "trader" },
-      { id: "2", email: "bob@sovereign.io", role: "admin" },
-      { id: "3", email: "carol@sovereign.io", role: "viewer" },
-    ];
-
-    for (let i = 0; i < 10; i++) {
-      resetAuthStore();
-
-      const user = users[rng.nextInt(0, users.length - 1)];
-
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockResolvedValueOnce(mockResponse(user, 200))
-      );
-
-      const result = await useAuthStore.getState().checkAuth();
-
-      expect(result).toBe(true);
-      expect(useAuthStore.getState().isAuthenticated).toBe(true);
-      expect(useAuthStore.getState().user).toEqual(user);
-
-      vi.unstubAllGlobals();
-    }
+    useAuthStore.getState().login("jwt-4", { id: "u4", email: "d@b.com", role: "user", wallet_balance: 100000 });
+    useAuthStore.getState().setWallet(99000.5);
+    expect(useAuthStore.getState().user?.wallet_balance).toBe(99000.5);
   });
 });

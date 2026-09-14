@@ -12,8 +12,8 @@
 
 <p>
   <img src="https://img.shields.io/badge/engine-10%20Hz-10b981?style=flat-square" alt="10 Hz" />
-  <img src="https://img.shields.io/badge/pytest-61%20passed-10b981?style=flat-square&logo=pytest&logoColor=white" alt="pytest" />
-  <img src="https://img.shields.io/badge/vitest-954%20passed-10b981?style=flat-square&logo=vitest&logoColor=white" alt="vitest" />
+  <img src="https://img.shields.io/badge/pytest-62%20passed-10b981?style=flat-square&logo=pytest&logoColor=white" alt="pytest" />
+  <img src="https://img.shields.io/badge/vitest-899%20passed-10b981?style=flat-square&logo=vitest&logoColor=white" alt="vitest" />
   <img src="https://img.shields.io/badge/next%20build-passing-10b981?style=flat-square&logo=nextdotjs&logoColor=white" alt="build" />
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="python" />
   <img src="https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="next" />

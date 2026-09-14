@@ -120,11 +120,13 @@ def resolve_role(email: str, stored_role: Optional[str]) -> str:
 
 
 def token_claims(user: Dict[str, Any]) -> Dict[str, Any]:
-    """Claims embedded in every access token: identity, role and grid scope."""
+    """Claims embedded in every access token: identity, role, wallet and grid scope."""
     return {
         "sub": user["email"],
         "uid": user["id"],
         "role": resolve_role(user["email"], user.get("role")),
+        "name": user.get("name") or "",
+        "wallet_balance": round(float(user.get("wallet_balance") or 0.0), 2),
         "grid_id": user.get("grid_id") or settings.DEMO_GRID_ID,
     }
 

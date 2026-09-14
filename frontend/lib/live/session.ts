@@ -13,6 +13,7 @@
  */
 
 import { useStore } from '@/lib/store';
+import { useAuthStore } from '@/store/authStore';
 import type { AuthUser } from '@/lib/types';
 
 const STORAGE_KEY = 'sovereign.session';
@@ -31,33 +32,23 @@ export const WS_BASE: string = (() => {
 })();
 
 
-interface StoredSession {
-  token: string | null;
-  user: AuthUser | null;
-}
+const LEGACY_KEY = 'sovereign.session';
 
-function readStored(): StoredSession | null {
+/** Legacy pre-authStore sessions are migrated once, then discarded. */
+function readLegacy(): { token: string; user: AuthUser } | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(LEGACY_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredSession & { demo?: boolean };
-    return parsed.demo ? null : parsed; // legacy guest sessions are discarded
+    window.localStorage.removeItem(LEGACY_KEY);
+    const parsed = JSON.parse(raw) as { token?: string | null; user?: AuthUser | null; demo?: boolean };
+    return parsed.token && parsed.user && !parsed.demo ? { token: parsed.token, user: parsed.user } : null;
   } catch {
     return null;
   }
 }
 
-function writeStored(s: StoredSession | null): void {
-  try {
-    if (s) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    else window.localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* private mode / quota — session simply won't persist */
-  }
-}
-
 export function authHeaders(): Record<string, string> {
-  const token = useStore.getState().jwtToken;
+  const token = useAuthStore.getState().token ?? useStore.getState().jwtToken;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -72,10 +63,9 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       ...(init.headers as Record<string, string> | undefined),
     },
   });
-  if (res.status === 401 && useStore.getState().jwtToken) {
-    // Token expired or revoked → drop back to Demo Mode.
-    useStore.getState().clearSession();
-    writeStored(null);
+  if (res.status === 401 && useAuthStore.getState().isLoggedIn) {
+    // Token expired or revoked → drop back to the Demo Sandbox.
+    useAuthStore.getState().logout();
   }
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
@@ -98,8 +88,7 @@ interface SessionResponse {
 }
 
 function commit(token: string, user: AuthUser): void {
-  useStore.getState().setSession(token, user);
-  writeStored({ token, user });
+  useAuthStore.getState().login(token, user);
 }
 
 export async function loginWithPassword(email: string, password: string): Promise<void> {
@@ -126,32 +115,40 @@ export async function signOut(): Promise<void> {
   } catch {
     /* backend offline — clear locally regardless */
   }
-  useStore.getState().clearSession();
-  writeStored(null);
+  useAuthStore.getState().logout();
 }
 
 /**
- * Restore a persisted session, validating the token against the backend.
- * Anything that fails validation leaves the visitor in Demo Mode.
+ * Restore the persisted session (zustand `persist` → localStorage), validating
+ * the token against GET /api/auth/me. Anything that fails validation leaves
+ * the visitor in the Demo Sandbox.
  */
 export async function bootstrapSession(): Promise<void> {
-  const stored = readStored();
-  if (stored?.token) {
+  const auth = useAuthStore.getState();
+  let token = auth.token;
+  let user: AuthUser | null = auth.user;
+  if (!token) {
+    const legacy = readLegacy();
+    if (legacy) {
+      token = legacy.token;
+      user = legacy.user;
+    }
+  }
+  if (token) {
     try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${stored.token}` },
-        credentials: 'include',
-      });
+      const res = await fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` }, credentials: 'include' });
       if (res.ok) {
-        const user = (await res.json()) as AuthUser;
-        commit(stored.token, user);
+        commit(token, (await res.json()) as AuthUser);
         return;
       }
-      writeStored(null);
-    } catch {
-      // Backend unreachable — keep the stored identity so the UI stays unlocked.
-      useStore.getState().setSession(stored.token, stored.user);
+      useAuthStore.getState().logout();
       return;
+    } catch {
+      // Backend unreachable — keep the stored identity so the UI stays signed in.
+      if (user) {
+        commit(token, user);
+        return;
+      }
     }
   }
   useStore.getState().setSession(null, null);

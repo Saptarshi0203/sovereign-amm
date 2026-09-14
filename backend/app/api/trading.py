@@ -45,12 +45,14 @@ def _mark() -> float:
 
 
 @router.get("/api/trading/portfolio")
+@router.get("/api/trade/portfolio", include_in_schema=False)
 def get_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
     return trading_book.get_or_create(uid, email).as_dict(_mark())
 
 
 @router.post("/api/trading/orders")
+@router.post("/api/trade/orders", include_in_schema=False)
 def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
     trading_book.get_or_create(uid, email)
@@ -76,6 +78,7 @@ def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(require_user))
 
 
 @router.delete("/api/trading/orders/{order_id}")
+@router.delete("/api/trade/orders/{order_id}", include_in_schema=False)
 def cancel_order(order_id: str, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, _ = _identity(user)
     order = trading_book.find_order(order_id)
@@ -86,6 +89,7 @@ def cancel_order(order_id: str, user: Dict[str, Any] = Depends(require_user)) ->
 
 
 @router.post("/api/trading/reset")
+@router.post("/api/trade/reset", include_in_schema=False)
 def reset_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
     for o in list(trading_book.get_or_create(uid, email).active_orders()):

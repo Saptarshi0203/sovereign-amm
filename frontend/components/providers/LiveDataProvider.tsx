@@ -20,6 +20,7 @@ import React, { useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { isGridSnapshot, isOrderbookSnapshot } from '@/lib/live/snapshots';
 import { GRID_ID, WS_BASE, bootstrapSession, fetchHistory, fetchPortfolio } from '@/lib/live/session';
+import { useAuthStore } from '@/store/authStore';
 import type { Portfolio } from '@/lib/types';
 
 /** Reconnect delay for attempt n: 1 s, 2 s, 4 s … capped at 15 s. */
@@ -173,7 +174,10 @@ function useUserSocket() {
       socket.onmessage = (event: MessageEvent) => {
         try {
           const msg = JSON.parse(event.data as string) as Portfolio & { type?: string };
-          if (msg.type === 'portfolio') setPortfolio(msg);
+          if (msg.type === 'portfolio') {
+            setPortfolio(msg);
+            useAuthStore.getState().setWallet(msg.wallet_balance_inr);
+          }
         } catch {
           /* ignore malformed frame */
         }

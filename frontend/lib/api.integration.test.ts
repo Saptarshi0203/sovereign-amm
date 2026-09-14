@@ -74,7 +74,7 @@ describe('apiCall', () => {
     vi.stubGlobal('window', windowStub);
 
     // Reset auth store to unauthenticated, no token
-    useAuthStore.setState({ isAuthenticated: false, user: null, token: null });
+    useAuthStore.setState({ isLoggedIn: false, isAdmin: false, user: null, token: null });
   });
 
   afterEach(() => {
@@ -153,7 +153,7 @@ describe('apiCall', () => {
   describe('401 Unauthorized response', () => {
     it('calls authStore.logout() on a 401', async () => {
       useAuthStore.setState({
-        isAuthenticated: true,
+        isLoggedIn: true,
         user: { id: '1', email: 'a@b.com', role: 'user' },
         token: 'old-token',
       });
@@ -162,8 +162,8 @@ describe('apiCall', () => {
       // Swallow the thrown error — the redirect sentinel is expected
       await apiCall('/api/parameters').catch(() => {});
 
-      const { isAuthenticated, user, token } = useAuthStore.getState();
-      expect(isAuthenticated).toBe(false);
+      const { isLoggedIn, user, token } = useAuthStore.getState();
+      expect(isLoggedIn).toBe(false);
       expect(user).toBeNull();
       expect(token).toBeNull();
     });

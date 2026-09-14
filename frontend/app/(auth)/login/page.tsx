@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { loginWithPassword } from '@/lib/live/session';
 
 /**
  * Login Page — (auth) route group
@@ -15,7 +15,6 @@ import { useAuthStore } from '@/store/authStore';
  */
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +27,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await loginWithPassword(email, password);
       router.push('/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');

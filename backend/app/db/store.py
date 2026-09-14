@@ -5,6 +5,7 @@ Schema
 ------
 users
     id                  TEXT PRIMARY KEY
+    google_id           TEXT     Google account subject (sub) — set on OAuth login
     email               TEXT UNIQUE
     name, picture       TEXT
     password_hash       TEXT
@@ -48,7 +49,7 @@ DEFAULT_AVG_COST_INR = 5.0
 DEFAULT_SOLAR_KW = 5.0
 
 USER_COLUMNS = [
-    "id", "email", "name", "picture", "password_hash", "role", "status",
+    "id", "google_id", "email", "name", "picture", "password_hash", "role", "status",
     "wallet_balance", "energy_inventory_kwh", "avg_cost_inr", "realized_pnl_inr",
     "savings_inr", "bought_kwh", "sold_kwh", "spent_inr", "earned_inr",
     "home_solar_capacity_kw", "grid_id", "consumer_no", "connection_type",
@@ -96,6 +97,7 @@ class SqliteUserStore:
                     """
                     CREATE TABLE IF NOT EXISTS users (
                         id TEXT PRIMARY KEY,
+                        google_id TEXT,
                         email TEXT UNIQUE NOT NULL,
                         name TEXT DEFAULT '',
                         picture TEXT DEFAULT '',
@@ -140,6 +142,10 @@ class SqliteUserStore:
                     """
                 )
                 con.execute("CREATE INDEX IF NOT EXISTS idx_trades_user_ts ON trades(user_id, ts);")
+                # Forward migration for databases created before google_id existed.
+                cols = {r[1] for r in con.execute("PRAGMA table_info(users)").fetchall()}
+                if "google_id" not in cols:
+                    con.execute("ALTER TABLE users ADD COLUMN google_id TEXT;")
                 con.commit()
                 self._import_legacy(con)
             finally:
