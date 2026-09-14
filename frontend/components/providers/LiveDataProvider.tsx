@@ -19,7 +19,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { isGridSnapshot, isOrderbookSnapshot } from '@/lib/live/snapshots';
-import { GRID_ID, WS_BASE, bootstrapSession, fetchHistory, fetchPortfolio } from '@/lib/live/session';
+import { GRID_ID, WS_BASE, bootstrapSession, fetchHistory, fetchPlaybackStatus, fetchPortfolio } from '@/lib/live/session';
 import { useAuthStore } from '@/store/authStore';
 import type { Portfolio } from '@/lib/types';
 
@@ -240,6 +240,37 @@ function useHistoryHydration() {
   }, [sessionReady, range, dataVersion, live]);
 }
 
+/**
+ * Demo Sandbox: the clock-synced playback status normally rides on the 1 Hz
+ * grid socket. Anonymous visitors have no socket, so poll the public REST
+ * status every 10 s (one dataset row) to keep the SYNCED badge and the
+ * 24 h profile's NOW marker alive.
+ */
+function useDemoPlaybackPolling() {
+  const sessionReady = useStore((s) => s.sessionReady);
+  const anonymous = useStore((s) => s.authState === 'anonymous');
+  const gridConnected = useStore((s) => s.gridConnected);
+
+  useEffect(() => {
+    if (!sessionReady || !anonymous || gridConnected) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const st = await fetchPlaybackStatus();
+        if (!cancelled) useStore.getState().setPlayback(st);
+      } catch {
+        /* backend asleep — the panel shows its offline copy */
+      }
+    };
+    void tick();
+    const id = setInterval(tick, 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [sessionReady, anonymous, gridConnected]);
+}
+
 function useSessionBootstrap() {
   useEffect(() => {
     let cancelled = false;
@@ -258,6 +289,7 @@ export function LiveDataProvider({ children }: { children: React.ReactNode }): R
   useEngineSocket('grid', `/ws/grid/${GRID_ID}`);
   useUserSocket();
   useHistoryHydration();
+  useDemoPlaybackPolling();
   return <>{children}</>;
 }
 

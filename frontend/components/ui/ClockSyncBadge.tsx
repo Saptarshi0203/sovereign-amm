@@ -33,7 +33,7 @@ export function ClockSyncBadge({ className = '' }: { className?: string }) {
     return () => clearInterval(id);
   }, [syncedTime]);
 
-  if (!live) return null;
+  if (!live && !playback) return null;
   const active = playback?.active && clock;
   return (
     <span
@@ -43,7 +43,7 @@ export function ClockSyncBadge({ className = '' }: { className?: string }) {
       title={active ? `Playback row ${playback?.index} of ${playback?.rows} · ${playback?.name}` : 'No dataset active — internal diurnal simulator'}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-sky-400 animate-pulse' : 'bg-slate-600'}`} />
-      {active ? `SYNCED · ${clock} ${playback?.tz_label ?? ''}` : 'NO DATASET'}
+      {active ? `SYNCED · ${clock} ${playback?.tz_label ?? ''}` : live ? 'NO DATASET' : 'DATASET OFFLINE'}
     </span>
   );
 }

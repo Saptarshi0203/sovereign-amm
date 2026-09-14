@@ -13,15 +13,16 @@ function hhmm(t: number): string {
 /**
  * The active dataset's 24 h profile (demand / solar MW, price ₹/kWh) with a
  * vertical "now" marker at the wall-clock row the engine is synced to.
+ * Works in the Demo Sandbox too: status + profile come from public REST
+ * endpoints (polled every 10 s), no socket required.
  */
 export function DayProfileChart({ height = 220 }: { height?: number }) {
   const playback = useStore((s) => s.playback);
-  const live = useStore((s) => s.dataSource === 'live');
   const [points, setPoints] = useState<DatasetRow[]>([]);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!live || !playback?.active || !playback.run_id) {
+    if (!playback?.active || !playback.run_id) {
       setPoints([]);
       setLoadedFor(null);
       return;
@@ -40,10 +41,14 @@ export function DayProfileChart({ height = 220 }: { height?: number }) {
     return () => {
       cancelled = true;
     };
-  }, [live, playback?.active, playback?.run_id, playback?.version, loadedFor]);
+  }, [playback?.active, playback?.run_id, playback?.version, loadedFor]);
 
   if (!playback?.active || points.length === 0) {
-    return <p className="text-xs font-mono text-slate-600 p-4">{live ? 'No dataset active.' : 'Sign in to stream the clock-synced dataset profile.'}</p>;
+    return (
+      <p className="text-xs font-mono text-slate-600 p-4">
+        {playback && !playback.active ? 'No dataset active — internal diurnal simulator running.' : 'Loading the clock-synced dataset profile…'}
+      </p>
+    );
   }
   const nowSec = playback.row?.t_sec ?? 0;
 
