@@ -3,13 +3,11 @@ import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { Panel } from '@/components/ui/Panel';
 import { TickerTape } from '@/components/landing/TickerTape';
-import { StatTile } from '@/components/ui/StatTile';
+import { TelemetryRibbon } from '@/components/ui/TelemetryRibbon';
 import { FeedStatus } from '@/components/ui/FeedStatus';
 import { PnlPanel } from '@/components/panels/PnlPanel';
 import { FillsTable } from '@/components/panels/FillsTable';
 import { DataInjector } from '@/components/panels/DataInjector';
-import { formatPrice, formatOBI } from '@/lib/utils';
-import { useTickFlash } from '@/lib/hooks/useTickFlash';
 
 const OrderBookLadder = dynamic(() => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder), { ssr: false });
 const PriceStateChart = dynamic(() => import('@/components/charts/PriceStateChart').then((m) => m.PriceStateChart), { ssr: false });
@@ -17,17 +15,9 @@ const BatteryGauge = dynamic(() => import('@/components/charts/BatteryGauge').th
 const ObiGauge = dynamic(() => import('@/components/charts/ObiGauge').then((m) => m.ObiGauge), { ssr: false });
 
 export default function DashboardPage() {
-  const microPrice = useStore((s) => s.microPrice);
-  const bestBid = useStore((s) => s.bestBid);
-  const bestAsk = useStore((s) => s.bestAsk);
-  const obi = useStore((s) => s.obi);
-  const ammBid = useStore((s) => s.ammBid);
-  const ammAsk = useStore((s) => s.ammAsk);
   const narration = useStore((s) => s.narration);
   const scenario = useStore((s) => s.scenario);
   const isAdmin = useStore((s) => s.isAdmin);
-  const microFlash = useTickFlash(microPrice);
-  const spreadFlash = useTickFlash(bestAsk.px - bestBid.px);
 
   return (
     <>
@@ -35,7 +25,7 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-white">Trading Dashboard</h1>
+            <h1 className="text-2xl font-display font-bold text-white tracking-display">Trading Dashboard</h1>
             <p className="text-xs text-slate-500 font-mono">MICROGRID-KWH · SPOT · 10 Hz</p>
           </div>
           <FeedStatus />
@@ -47,43 +37,31 @@ export default function DashboardPage() {
           </p>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatTile label="MICRO PRICE" value={formatPrice(microPrice, 4)} flashClass={microFlash} />
-          <StatTile label="BEST BID" value={formatPrice(bestBid.px, 3)} unit={`${bestBid.sz.toFixed(1)} kWh`} />
-          <StatTile label="BEST ASK" value={formatPrice(bestAsk.px, 3)} unit={`${bestAsk.sz.toFixed(1)} kWh`} />
-          <StatTile label="SPREAD" value={formatPrice(Math.max(0, bestAsk.px - bestBid.px), 4)} flashClass={spreadFlash} />
-          <StatTile label="OBI" value={formatOBI(obi)} flashClass={obi >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'} />
-          <StatTile
-            label="AMM QUOTE"
-            value={ammBid !== null && ammAsk !== null ? `${ammBid.toFixed(3)} / ${ammAsk.toFixed(3)}` : ammBid !== null ? `${ammBid.toFixed(3)} / —` : ammAsk !== null ? `— / ${ammAsk.toFixed(3)}` : '— / —'}
-            className="[&>div>span]:text-base"
-          />
-        </div>
+        {/* §3.2 telemetry ribbon */}
+        <TelemetryRibbon />
 
-        <div className="grid md:grid-cols-[1fr_2fr] gap-4">
-          <Panel className="p-4">
-            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">L2 Order Book</h2>
-            <OrderBookLadder height={320} />
+        {/* §3.2 12-column trading grid: L2 (5) · 24H (7) · PnL (4) · tape (8) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <Panel className="p-5 lg:col-span-5 min-w-0">
+            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3 font-mono">L2 Order Book</h2>
+            <OrderBookLadder height={340} />
           </Panel>
-          <Panel className="p-4">
-            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">Price &amp; SoC</h2>
-            <PriceStateChart />
+          <Panel className="p-5 lg:col-span-7 min-w-0">
+            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3 font-mono">24H Price &amp; SoC</h2>
+            <PriceStateChart height={320} />
           </Panel>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Panel className="p-4">
+          <Panel className="lg:col-span-4 min-w-0">
+            <PnlPanel />
+          </Panel>
+          <Panel className="lg:col-span-8 min-w-0">
+            <FillsTable rows={8} />
+          </Panel>
+          <Panel className="p-5 lg:col-span-6 min-w-0">
             <BatteryGauge />
           </Panel>
-          <Panel className="p-4">
+          <Panel className="p-5 lg:col-span-6 min-w-0">
             <ObiGauge />
           </Panel>
-          <Panel>
-<PnlPanel />
-</Panel>
-          <Panel>
-<FillsTable />
-</Panel>
         </div>
 
         {isAdmin && (

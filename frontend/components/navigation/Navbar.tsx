@@ -44,7 +44,7 @@ export function Navbar() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-950/70 backdrop-blur-2xl border-b border-white/5 supports-[backdrop-filter]:bg-slate-950/60">
+    <header className="sticky top-0 z-50 bg-canvas/70 backdrop-blur-xl border-b border-edge/30">
       <nav
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
         aria-label="Main navigation"

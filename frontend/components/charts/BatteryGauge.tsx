@@ -3,125 +3,71 @@
 import { useStore } from '@/lib/store';
 
 /**
- * Compute an SVG arc path for an arc centred at (cx, cy) with radius r,
- * sweeping from startDeg to endDeg (measured clockwise from the positive
- * x-axis, matching SVG coordinate conventions).
+ * §3.5 State-of-Charge ring: SVG circular progress, radius 44, stroke 6,
+ * rounded caps, emerald gradient stroke. The arc "draws in" on every value
+ * change through a stroke-dashoffset transition (static under
+ * prefers-reduced-motion via the global rule). Below it, the normalised
+ * inventory q ∈ [−1, +1] thumb.
  *
- * @param cx       - Arc centre x
- * @param cy       - Arc centre y
- * @param r        - Arc radius
- * @param startDeg - Start angle in degrees
- * @param endDeg   - End angle in degrees
- * @returns SVG path data string
- */
-function arcPath(
-  cx: number,
-  cy: number,
-  r: number,
-  startDeg: number,
-  endDeg: number,
-): string {
-  const rad = (d: number) => (d * Math.PI) / 180;
-  const x1 = cx + r * Math.cos(rad(startDeg));
-  const y1 = cy + r * Math.sin(rad(startDeg));
-  const x2 = cx + r * Math.cos(rad(endDeg));
-  const y2 = cy + r * Math.sin(rad(endDeg));
-  const large = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
-}
-
-/**
- * 270° SVG arc gauge showing battery State-of-Charge and the normalised
- * inventory parameter q.
- *
- * SoC is read from the Zustand store; color is emerald when SoC ∈ [30, 80],
- * amber otherwise (warns of deep discharge / near-full).
- *
- * The q-bar below the arc maps inventoryQ ∈ [−1, +1] to a horizontal
- * thumb position, coloured emerald (positive) or rose (negative).
+ * Reads `soc` and `inventoryQ` from the store — no props, no new fields.
  */
 export function BatteryGauge() {
   const soc = useStore((s) => s.soc);
   const inventoryQ = useStore((s) => s.inventoryQ);
 
-  const START = 135;
-  const SWEEP = 270;
-  const filled = (soc / 100) * SWEEP;
-  const color = soc >= 30 && soc <= 80 ? '#10b981' : '#f59e0b';
-
-  const bgPath = arcPath(100, 100, 75, START, START + SWEEP);
-  const fgPath = filled > 0 ? arcPath(100, 100, 75, START, START + filled) : null;
+  const R = 44;
+  const C = 2 * Math.PI * R;
+  const pct = Math.max(0, Math.min(100, soc));
+  const offset = C * (1 - pct / 100);
+  const warn = soc < 30 || soc > 80;
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg
-        viewBox="0 0 200 200"
-        className="w-40 h-40"
-        role="img"
-        aria-label={`Battery ${soc.toFixed(1)}%`}
-      >
-        {/* Background track */}
-        <path
-          d={bgPath}
+    <div className="flex flex-col items-center gap-3">
+      <p className="self-start text-xs uppercase tracking-widest text-slate-400 font-mono">State of charge</p>
+      <svg viewBox="0 0 120 120" className="w-40 h-40" role="img" aria-label={`Battery ${soc.toFixed(1)}%`}>
+        <defs>
+          <linearGradient id="soc-stroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={warn ? '#f59e0b' : '#34d399'} />
+            <stop offset="100%" stopColor={warn ? '#fb923c' : '#059669'} />
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r={R} fill="none" stroke="var(--chart-grid)" strokeWidth={6} />
+        <circle
+          cx="60"
+          cy="60"
+          r={R}
           fill="none"
-          stroke="var(--chart-grid)"
-          strokeWidth={12}
+          stroke="url(#soc-stroke)"
+          strokeWidth={6}
           strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={offset}
+          transform="rotate(-90 60 60)"
+          style={{ transition: 'stroke-dashoffset 600ms cubic-bezier(0.22, 1, 0.36, 1)' }}
         />
-        {/* Filled arc */}
-        {fgPath && (
-          <path
-            d={fgPath}
-            fill="none"
-            stroke={color}
-            strokeWidth={12}
-            strokeLinecap="round"
-            style={{ transition: 'stroke 300ms ease-out' }}
-          />
-        )}
-        {/* SoC value */}
-        <text
-          x="100"
-          y="96"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontFamily="'JetBrains Mono', monospace"
-          fontSize="22"
-          fontWeight="700"
-          fill="var(--chart-fg)"
-        >
+        <text x="60" y="58" textAnchor="middle" dominantBaseline="middle" className="font-mono" fontSize="20" fontWeight="600" fill="var(--chart-fg)">
           {soc.toFixed(1)}%
         </text>
-        {/* Label */}
-        <text
-          x="100"
-          y="116"
-          textAnchor="middle"
-          fontFamily="monospace"
-          fontSize="9"
-          fill="var(--chart-muted)"
-        >
-          STATE OF CHARGE
+        <text x="60" y="76" textAnchor="middle" className="font-mono" fontSize="7" letterSpacing="1.5" fill="var(--chart-muted)">
+          SOC
         </text>
       </svg>
 
-      {/* Inventory q bar */}
-      <div className="w-full px-4">
-        <div className="flex justify-between text-xs font-mono text-slate-500 mb-1">
+      <div className="w-full px-2">
+        <div className="flex justify-between text-[10px] font-mono text-slate-500 mb-1">
           <span>−1</span>
-          <span>INVENTORY q</span>
+          <span className="tracking-widest">INVENTORY q · {inventoryQ.toFixed(2)}</span>
           <span>+1</span>
         </div>
-        <div className="relative h-3 bg-slate-800 rounded-full">
-          {/* Centre tick */}
+        <div className="relative h-2 rounded-full bg-slate-800 overflow-visible">
           <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-600" />
-          {/* Thumb */}
           <div
-            className="absolute top-1/2 w-2 h-4 rounded-sm transition-all duration-300"
+            className="absolute top-1/2 w-2.5 h-4 rounded-sm transition-all duration-300"
             style={{
               left: `${((inventoryQ + 1) / 2) * 100}%`,
               transform: 'translateX(-50%) translateY(-50%)',
               backgroundColor: inventoryQ > 0 ? '#10b981' : '#e11d48',
+              boxShadow: `0 0 10px ${inventoryQ > 0 ? 'rgba(16,185,129,0.6)' : 'rgba(225,29,72,0.6)'}`,
             }}
           />
         </div>

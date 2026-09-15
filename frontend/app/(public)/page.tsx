@@ -4,6 +4,7 @@ import { Hero } from '@/components/landing/Hero';
 import { TickerTape } from '@/components/landing/TickerTape';
 import { RecentArticles } from '@/components/landing/RecentArticles';
 import { Showcase } from '@/components/landing/Showcase';
+import { SplitPreview } from '@/components/landing/SplitPreview';
 
 // Heavy components loaded client-side only to avoid SSR/hydration issues
 const TerminalCarousel = dynamic(
@@ -28,7 +29,10 @@ export default function HomePage() {
       {/* 2. Ticker Tape */}
       <TickerTape />
 
-      {/* 3. Feature showcase */}
+      {/* 3. Split preview (Dark | Light · Terminals) */}
+      <SplitPreview />
+
+      {/* 4. Feature showcase */}
       <Showcase />
 
       {/* 3. Carousel + Sidebar */}

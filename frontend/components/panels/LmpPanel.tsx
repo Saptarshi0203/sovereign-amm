@@ -28,7 +28,8 @@ export function LmpPanel() {
         <h2 className="text-xs uppercase tracking-widest text-slate-400 font-sans">LMP Shadow Costs</h2>
         <span className="text-[10px] font-mono text-slate-500">{live ? 'PTDF · 1 Hz' : 'simulated'}</span>
       </div>
-      <table className="w-full text-xs font-mono">
+      <div className="overflow-x-auto -mx-1 px-1">
+      <table className="w-full min-w-[420px] text-xs font-mono">
         <thead>
           <tr className="text-slate-500 border-b border-slate-800">
             <th className="py-1 text-left font-normal">RANK</th>
@@ -70,6 +71,7 @@ export function LmpPanel() {
           })}
         </tbody>
       </table>
+      </div>
       <div className="text-[10px] font-mono text-slate-500 flex flex-wrap gap-x-3 gap-y-1 pt-1">
         {bindingLines.length === 0 ? (
           <span>No binding line constraints — all μ_l = 0.</span>

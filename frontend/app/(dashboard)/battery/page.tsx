@@ -71,9 +71,6 @@ export default function BatteryPage() {
         </div>
         <div className="grid md:grid-cols-2 gap-4">
           <Panel className="p-4">
-            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3 font-mono">
-              State of Charge
-            </h2>
             <BatteryGauge />
           </Panel>
           <Panel className="p-4">

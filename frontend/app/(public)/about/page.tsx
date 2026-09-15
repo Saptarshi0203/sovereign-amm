@@ -21,7 +21,7 @@ interface TechPillProps {
 
 function TechPill({ label }: TechPillProps) {
   return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-medium bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-800/50">
+    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-medium tracking-data bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/30">
       {label}
     </span>
   );
@@ -35,14 +35,16 @@ interface SectionCardProps {
 
 function SectionCard({ icon, title, children }: SectionCardProps) {
   return (
-    <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
+    <div className="gradient-edge rounded-3xl">
+      <div className="glass group rounded-[23px] p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-700 dark:text-violet-300 [&_svg]:icon-draw">
           {icon}
         </div>
-        <h2 className="text-base font-semibold text-white">{title}</h2>
+        <h2 className="text-lg font-display font-semibold text-white tracking-display">{title}</h2>
       </div>
       {children}
+      </div>
     </div>
   );
 }
@@ -53,31 +55,36 @@ function SectionCard({ icon, title, children }: SectionCardProps) {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative border-b border-slate-800 overflow-hidden">
-        {/* Subtle grid background */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:32px_32px] opacity-60"
-        />
-        <div className="relative max-w-4xl mx-auto px-6 py-20 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-800/50 text-emerald-600 dark:text-emerald-400 text-xs font-mono tracking-widest uppercase mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            SIH-Grade Research Build
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
-            Sovereign-AMM
-          </h1>
-          <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
+      <section className="relative overflow-hidden">
+        <div aria-hidden="true" className="absolute inset-0 bg-hero-glow opacity-40 dark:opacity-100" />
+        <div className="relative max-w-7xl mx-auto px-6 py-20 grid lg:grid-cols-12 gap-8 items-end">
+          <div className="lg:col-span-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-emerald-600 dark:text-emerald-400 text-[11px] font-mono tracking-[0.14em] uppercase mb-6">
+              <span className="live-dot" />
+              SIH-grade research build
+            </div>
+            <h1 className="text-4xl sm:text-6xl font-display font-extrabold text-white tracking-display leading-[1.02] mb-4">
+              Sovereign-<span className="text-gradient">AMM</span>
+            </h1>
+            <p className="text-body text-slate-400 max-w-2xl">
             A high-frequency algorithmic market maker for physical microgrids.
             Treats the central battery as a deterministic exchange, not a predictor.
           </p>
+          </div>
+          <div className="lg:col-span-4 hidden lg:block">
+            <div className="glass rounded-2xl p-5 font-mono text-xs space-y-2">
+              {[['Engine rate', '10 Hz'], ['Buses / lines', '7 / 9'], ['Battery', '5 MWh'], ['Tests', '960+']].map(([k, v]) => (
+                <div key={k} className="flex justify-between border-b border-edge/30 pb-1"><span className="text-slate-500">{k}</span><span className="text-telemetry tabular-nums">{v}</span></div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ── Content ──────────────────────────────────────────────────────── */}
-      <div className="max-w-4xl mx-auto px-6 py-16 space-y-8">
+      <div className="max-w-5xl mx-auto px-6 py-16 space-y-8">
 
         {/* Project overview */}
         <SectionCard

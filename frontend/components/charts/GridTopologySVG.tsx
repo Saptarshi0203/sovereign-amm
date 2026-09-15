@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { useTheme } from 'next-themes';
+import { useReducedMotion } from 'framer-motion';
 
 /**
  * Fixed SVG coordinates for each bus node, matching the GRID_DATA bus
@@ -54,6 +55,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
   const lines = useStore((s) => s.lines);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const { theme } = useTheme();
+  const reduceMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -63,16 +65,11 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
   const isLight = mounted && theme === 'light';
 
   // Nominal lines are emerald; > 80 % loading turns amber, > 95 % pulses red.
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'amber':
-        return '#f59e0b';
-      case 'critical':
-        return '#e11d48';
-      case 'normal':
-      default:
-        return isLight ? '#059669' : '#10b981';
-    }
+  // §3.4 congestion states from live loading: green → amber (≥ 80 %) → crimson (≥ 100 %).
+  const getStatusColor = (utilizationPct: number) => {
+    if (utilizationPct >= 100) return '#dc2626';
+    if (utilizationPct >= 80) return '#f59e0b';
+    return isLight ? '#059669' : '#10b981';
   };
 
   const tooltipBg = isLight ? '#ffffff' : 'var(--chart-tooltip-bg)';
@@ -94,7 +91,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
           const to = NODE_POS[line.to];
           if (!from || !to) return null;
 
-          const color = getStatusColor(line.status);
+          const color = getStatusColor(line.utilizationPct);
           // Faster animation for higher loading, clamped to [0.5s, 2.2s]
           const dur = `${Math.max(0.5, 2.2 - (line.utilizationPct / 100) * 1.7)}s`;
           const width = line.status === 'critical' ? 3.5 : line.status === 'amber' ? 2.75 : 2;
@@ -120,16 +117,13 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
                 stroke={color}
                 strokeWidth={width}
                 strokeDasharray="6 4"
-                className={line.status === 'critical' ? 'animate-pulse' : line.status === 'amber' ? 'animate-[pulse_2.5s_ease-in-out_infinite]' : ''}
-              >
-                <animate
-                  attributeName="strokeDashoffset"
-                  from={line.flowMW >= 0 ? '0' : '20'}
-                  to={line.flowMW >= 0 ? '20' : '0'}
-                  dur={dur}
-                  repeatCount="indefinite"
-                />
-              </line>
+                style={{
+                  transition: 'stroke 250ms ease',
+                  animation: reduceMotion ? 'none' : `dashFlow ${dur} linear infinite`,
+                  animationDirection: line.flowMW >= 0 ? 'normal' : 'reverse',
+                }}
+                className={line.utilizationPct >= 100 ? 'animate-pulse' : ''}
+              />
               {/* Utilization label at midpoint */}
               <text
                 x={(from.x + to.x) / 2}
@@ -167,10 +161,17 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
               }
               onMouseLeave={interactive ? () => setTooltip(null) : undefined}
             >
-              {/* Halo */}
-              <circle cx={pos.x} cy={pos.y} r={r + 5} fill={color} opacity={0.1} />
-              {/* Main node */}
-              <circle cx={pos.x} cy={pos.y} r={r} fill={color} opacity={0.9} />
+              {/* §3.4 glowing node: radial halo + 8 px core */}
+              <defs>
+                <radialGradient id={`halo-${bus.id}`}>
+                  <stop offset="0%" stopColor={color} stopOpacity={0.55} />
+                  <stop offset="60%" stopColor={color} stopOpacity={0.12} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </radialGradient>
+              </defs>
+              <circle cx={pos.x} cy={pos.y} r={r + 14} fill={`url(#halo-${bus.id})`} />
+              <circle cx={pos.x} cy={pos.y} r={8} fill={color} opacity={0.95} style={{ transition: 'fill 250ms ease' }} />
+              <circle cx={pos.x} cy={pos.y} r={3} fill="#ffffff" opacity={0.85} />
               {/* Bus ID label */}
               <text
                 x={pos.x}

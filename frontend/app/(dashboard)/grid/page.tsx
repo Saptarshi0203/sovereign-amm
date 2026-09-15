@@ -56,7 +56,7 @@ export default function GridPage() {
         </div>
 
         <div className="grid lg:grid-cols-[2fr_1fr] gap-4">
-          <Panel className="p-4 space-y-3">
+          <Panel className="p-4 space-y-3 min-w-0">
             <GridTopologySVG interactive />
             <LineLoadingStrip />
           </Panel>
@@ -66,10 +66,10 @@ export default function GridPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <Panel>
+          <Panel className="min-w-0">
 <LmpPanel />
 </Panel>
-          <Panel>
+          <Panel className="min-w-0">
 <PtdfMatrix />
 </Panel>
         </div>

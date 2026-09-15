@@ -21,7 +21,7 @@ export default function TradePage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono mb-1">Household terminal</p>
-            <h1 className="text-2xl font-bold text-white">Trade Power with the Central Control Hub</h1>
+            <h1 className="text-2xl font-display font-bold text-white tracking-display">Trade Power with the Central Control Hub</h1>
             <p className="text-xs text-slate-500 font-mono">
               Buy when your home needs more than rooftop + storage · sell surplus into the 5 MWh hub · grid {freq.toFixed(3)} Hz
               {playback?.row ? ` · community demand ${playback.row.demand_mw.toFixed(2)} MW / solar ${playback.row.solar_mw.toFixed(2)} MW` : ''}

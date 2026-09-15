@@ -17,6 +17,16 @@
   --c-slate-100: 31 31 51;
   --c-slate-50: 16 16 36;
   --c-white: 15 15 30;          /* "white" text reads as deep slate in light */
+  /* §2.3 Sky/Violet Porcelain */
+  --t-canvas: 248 250 252;      /* #f8fafc */
+  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f8fafc 45%, #f1f5f9 100%);
+  --t-panel: 255 255 255;
+  --t-panel-alpha: 0.9;
+  --t-ink: 15 23 42;            /* #0f172a */
+  --t-edge: 226 232 240;        /* slate-200 */
+  --t-edge-alpha: 0.8;
+  --t-telemetry: 2 132 199;     /* azure #0284c7 */
+  --t-panel-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
   --chart-grid: #e6e6f0;
   --chart-axis: #d4d4e4;
   --chart-tick: #6b6b8a;
@@ -34,6 +44,48 @@
                radial-gradient(ellipse at 90% 10%, rgba(217, 70, 239, 0.10) 0%, transparent 50%);
 }
 
+.light-scope {
+  /* Light: airy neutrals, elevated white cards, deep slate text */
+  --c-slate-950: 246 246 251;   /* page background   #f6f6fb */
+  --c-slate-900: 255 255 255;   /* cards             #ffffff */
+  --c-slate-800: 241 241 247;   /* surfaces / inputs #f1f1f7 */
+  --c-slate-700: 226 226 238;   /* borders           #e2e2ee */
+  --c-slate-600: 201 201 219;
+  --c-slate-500: 107 107 138;   /* muted text        #6b6b8a */
+  --c-slate-400: 91 91 122;
+  --c-slate-300: 69 69 95;
+  --c-slate-200: 51 51 77;
+  --c-slate-100: 31 31 51;
+  --c-slate-50: 16 16 36;
+  --c-white: 15 15 30;          /* "white" text reads as deep slate in light */
+  /* §2.3 Sky/Violet Porcelain */
+  --t-canvas: 248 250 252;      /* #f8fafc */
+  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f8fafc 45%, #f1f5f9 100%);
+  --t-panel: 255 255 255;
+  --t-panel-alpha: 0.9;
+  --t-ink: 15 23 42;            /* #0f172a */
+  --t-edge: 226 232 240;        /* slate-200 */
+  --t-edge-alpha: 0.8;
+  --t-telemetry: 2 132 199;     /* azure #0284c7 */
+  --t-panel-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  --chart-grid: #e6e6f0;
+  --chart-axis: #d4d4e4;
+  --chart-tick: #6b6b8a;
+  --chart-muted: #8a8aa8;
+  --chart-fg: #0f0f1e;
+  --chart-tooltip-bg: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(76, 29, 149, 0.12);
+  --glass-border-hover: rgba(139, 92, 246, 0.45);
+  --glass-shadow: 0 10px 40px rgba(76, 29, 149, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --flash-up: rgba(16, 185, 129, 0.16);
+  --flash-down: rgba(225, 29, 72, 0.14);
+  --flash-new: rgba(139, 92, 246, 0.14);
+  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
+               radial-gradient(ellipse at 90% 10%, rgba(217, 70, 239, 0.10) 0%, transparent 50%);
+}
+
+
 .dark {
   /* Dark: deep space black → ultra-dark violet, lavender text */
   --c-slate-950: 5 5 5;         /* #050505 */
@@ -48,6 +100,16 @@
   --c-slate-100: 236 236 248;
   --c-slate-50: 247 247 255;
   --c-white: 255 255 255;
+  /* §2.2 Deep Midnight Violet */
+  --t-canvas: 7 7 13;           /* #07070d */
+  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #0c0a14 0%, #09080f 45%, #07070d 100%);
+  --t-panel: 18 16 30;          /* #12101e */
+  --t-panel-alpha: 0.7;
+  --t-ink: 247 247 255;
+  --t-edge: 88 28 135;          /* purple-900 */
+  --t-edge-alpha: 0.3;
+  --t-telemetry: 0 242 254;     /* cyan #00f2fe */
+  --t-panel-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
   --chart-grid: #1a1a2e;
   --chart-axis: #2a2a48;
   --chart-tick: #9d9dc2;
@@ -75,18 +137,23 @@
   }
 
   body {
-    @apply bg-slate-950 text-slate-100 antialiased min-h-screen;
-    background-image: var(--page-glow);
+    @apply bg-canvas text-slate-100 antialiased min-h-screen text-body;
+    background-image: var(--page-glow), var(--t-canvas-radial);
     background-attachment: fixed;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     transition: background-color 300ms ease, color 300ms ease;
   }
 
-  /* Ensure tabular numerics across all monospace number displays */
+  /* §2.1 — all data (prices, quantities, ticks, timers) is mono + tabular */
   .font-mono,
   [class*="font-mono"] {
     font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.01em;
   }
+  h1, h2, h3, .font-display {
+    letter-spacing: -0.02em;
+  }
+
 
   :focus-visible {
     outline: 2px solid #8b5cf6;
@@ -115,16 +182,44 @@
 
 @layer components {
   /* Frosted glass card — the default container across the app */
+  /* §2.2/2.3 panel: #12101e @ 70 % + blur-xl, purple-900/30 edge, ambient glow (dark);
+     white/90 with a soft diffused shadow, slate-200/80 edge (light) */
   .glass {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    position: relative;
+    background-color: rgb(var(--t-panel) / var(--t-panel-alpha));
+    background-image: linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, transparent 45%);
+    border: 1px solid rgb(var(--t-edge) / var(--t-edge-alpha));
+    box-shadow: var(--t-panel-shadow);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     transition: border-color 250ms ease, box-shadow 250ms ease, transform 250ms ease;
   }
   .glass:hover {
     border-color: var(--glass-border-hover);
+  }
+  /* Gradient-border card: wrap in .gradient-edge (p-px) and put a .glass inside */
+  .gradient-edge {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.7) 0%, rgba(0, 242, 254, 0.35) 50%, rgba(217, 70, 239, 0.6) 100%);
+    padding: 1px;
+  }
+  .text-telemetry {
+    color: rgb(var(--t-telemetry));
+  }
+  /* §3.1 animated inline SVG icons: stroke draw-in on hover */
+  .icon-draw path, .icon-draw circle, .icon-draw line, .icon-draw polyline, .icon-draw rect {
+    stroke-dasharray: 80;
+    stroke-dashoffset: 0;
+  }
+  .group:hover .icon-draw path, .group:hover .icon-draw circle, .group:hover .icon-draw line,
+  .group:hover .icon-draw polyline, .group:hover .icon-draw rect {
+    animation: iconDraw 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes iconDraw {
+    from { stroke-dashoffset: 80; }
+    to { stroke-dashoffset: 0; }
+  }
+  .live-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-dot;
   }
   .text-gradient {
     background: linear-gradient(135deg, #a78bfa 0%, #c084fc 40%, #e879f9 100%);
@@ -204,7 +299,20 @@
   0% { background-color: var(--flash-new); }
   100% { background-color: transparent; }
 }
-.ob-row[data-flash='up'] { animation: ob-flash-up 420ms ease-out; }
-.ob-row[data-flash='down'] { animation: ob-flash-down 420ms ease-out; }
-.ob-row[data-flash='new'] { animation: ob-flash-new 520ms ease-out; }
-.ob-bar { transition: width 90ms linear; will-change: width; }
+/* §3.3 execution flash: emerald when a bid level changes (buyer side),
+   rose when an ask level changes (seller side), 400 ms decay, keyed per row */
+.ob-row[data-flash][data-side='bid'] { animation: ob-flash-up 400ms ease-out; }
+.ob-row[data-flash][data-side='ask'] { animation: ob-flash-down 400ms ease-out; }
+.ob-bar { transition: width 300ms ease-out; will-change: width; }
+
+/* §2.4 — every animation has a static fallback. Kept outside Tailwind's layers
+   so it outranks utility classes such as .animate-pulse-dot. */
+@media (prefers-reduced-motion: reduce) {
+  /* (0,1,1) specificity — outranks single-class utilities like .animate-pulse-dot */
+  html *, html [class], html [class]::before, html [class]::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+}

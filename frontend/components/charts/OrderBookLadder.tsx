@@ -44,11 +44,12 @@ const Row = memo(function Row({ px, sz, cum, pct, side, flash, flashSeq, isAmm, 
         isBid ? 'grid-cols-[1fr_58px_64px] text-right' : 'grid-cols-[64px_58px_1fr] text-left'
       } ${isBest ? (isBid ? 'border-t border-emerald-800/40' : 'border-b border-rose-800/40') : ''}`}
       data-flash={flash ?? undefined}
+      data-side={side}
       title={`${isBid ? 'Bid' : 'Ask'} ₹${px.toFixed(4)} · ${sz.toFixed(3)} kWh · cum ${cum.toFixed(2)} kWh${isAmm ? ' · AMM quote' : ''}`}
     >
       {/* depth bar (mirrored) */}
       <div
-        className={`ob-bar absolute top-[2px] bottom-[2px] rounded-sm ${isBid ? 'right-0 bg-gradient-to-l from-emerald-500/35 to-emerald-500/5' : 'left-0 bg-gradient-to-r from-rose-500/35 to-rose-500/5'}`}
+        className={`ob-bar absolute top-[2px] bottom-[2px] rounded-sm ${isBid ? 'right-0 bg-emerald-500/10 dark:bg-emerald-500/15' : 'left-0 bg-rose-500/10 dark:bg-rose-500/15'}`}
         style={{ width: `${Math.max(1.5, pct)}%` }}
         aria-hidden="true"
       />
