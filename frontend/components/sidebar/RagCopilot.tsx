@@ -96,7 +96,7 @@ export function RagCopilot() {
   return (
     <div className="flex flex-col gap-4">
       {/* ── Section heading ───────────────────────────────────────────── */}
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider">
+      <h2 className="text-sm font-semibold text-white uppercase tracking-wider">
         RAG Copilot
       </h2>
 
@@ -108,7 +108,7 @@ export function RagCopilot() {
         aria-live="polite"
       >
         {messages.length === 0 && (
-          <p className="text-xs text-sky-700/80 dark:text-slate-400 text-center mt-4">
+          <p className="text-xs text-slate-400 text-center mt-4">
             Ask a question about the engine to get started.
           </p>
         )}
@@ -140,13 +140,13 @@ export function RagCopilot() {
                 className={`flex-1 rounded-lg px-3 py-2 text-xs leading-relaxed ${
                   isUser
                     ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 ml-6'
-                    : 'bg-sky-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 mr-6'
+                    : 'bg-slate-800 text-slate-200 mr-6'
                 }`}
               >
                 {msg.pending ? (
                   /* Loading indicator inside the pending assistant bubble */
                   <div
-                    className="flex items-center gap-2 text-slate-500 dark:text-slate-400"
+                    className="flex items-center gap-2 text-slate-400"
                     role="status"
                     aria-label="Generating response"
                   >
@@ -174,7 +174,7 @@ export function RagCopilot() {
       {/* ── Input area ────────────────────────────────────────────────── */}
       <form
         onSubmit={handleSubmit}
-        className="flex gap-2 pt-2 border-t border-sky-200 dark:border-slate-800"
+        className="flex gap-2 pt-2 border-t border-slate-800"
         aria-label="Send a message"
       >
         <input
@@ -183,14 +183,14 @@ export function RagCopilot() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about the engine..."
           disabled={loading}
-          className="flex-1 bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Message input"
         />
 
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg bg-sky-500 hover:bg-sky-400 dark:bg-emerald-600 dark:hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+          className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg bg-sky-500 hover:bg-emerald-600 dark:hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
           aria-label="Send message"
         >
           {loading ? (

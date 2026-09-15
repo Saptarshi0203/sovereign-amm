@@ -49,7 +49,7 @@ export function LmpPanel() {
                 <td className="py-1 text-slate-200" title={bus.label}>
                   {bus.id}
                 </td>
-                <td className="py-1 text-right tabular-nums text-sky-600 dark:text-sky-400">{bus.lmp.toFixed(3)}</td>
+                <td className="py-1 text-right tabular-nums text-sky-400">{bus.lmp.toFixed(3)}</td>
                 <td className={`py-1 text-right tabular-nums hidden sm:table-cell ${(bus.congestion ?? 0) > 0.0005 ? 'text-amber-600 dark:text-amber-400' : (bus.congestion ?? 0) < -0.0005 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
                   {bus.congestion !== undefined ? `${bus.congestion >= 0 ? '+' : ''}${bus.congestion.toFixed(3)}` : '—'}
                 </td>

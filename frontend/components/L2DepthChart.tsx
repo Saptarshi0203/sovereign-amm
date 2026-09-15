@@ -15,7 +15,7 @@ export function L2DepthChart() {
   return (
     <div className="flex-1 flex flex-col font-mono text-xs overflow-hidden tabular-nums w-full">
       {/* Header */}
-      <div className="flex justify-between text-sky-700/80 dark:text-slate-400 border-b border-sky-200 dark:border-white/10 pb-1 mb-1 px-2 font-sans tracking-widest text-[9px]">
+      <div className="flex justify-between text-slate-400 border-b border-white/10 pb-1 mb-1 px-2 font-sans tracking-widest text-[9px]">
         <span className="w-1/3 text-right">BID VOL</span>
         <span className="w-1/3 text-center">PRICE</span>
         <span className="w-1/3 text-left">ASK VOL</span>
@@ -30,15 +30,15 @@ export function L2DepthChart() {
             return (
               <div key={`ask-${i}`} className={`flex justify-between px-2 py-[2px] relative transition-colors ${isAmm ? 'bg-rose-500/20 font-bold border-l-2 border-rose-500 shadow-[inset_2px_0_10px_rgba(225,29,72,0.3)]' : ''}`}>
                 <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-rose-500/20 to-transparent" style={{ width: `${pct}%` }} />
-                <span className="w-1/3 text-right z-10 text-slate-400/80 dark:text-slate-500/50">-</span>
+                <span className="w-1/3 text-right z-10 text-slate-500/50">-</span>
                 <span className="w-1/3 text-center text-rose-600 dark:text-rose-500 z-10 drop-shadow-[0_0_2px_rgba(225,29,72,0.5)] dark:drop-shadow-[0_0_2px_rgba(255,0,85,0.8)]">{p.toFixed(4)}</span>
-                <span className="w-1/3 text-left z-10 text-slate-700 dark:text-slate-200">{v.toFixed(2)}</span>
+                <span className="w-1/3 text-left z-10 text-slate-200">{v.toFixed(2)}</span>
               </div>
             )
           })}
         </div>
         
-        <div className="h-4 flex items-center justify-center text-sky-500/80 dark:text-cyan-400/50 text-[10px] tracking-widest my-1 drop-shadow-[0_0_5px_rgba(14,165,233,0.3)] dark:drop-shadow-[0_0_5px_rgba(0,229,255,0.5)]">--- SPREAD ---</div>
+        <div className="h-4 flex items-center justify-center text-cyan-400/50 text-[10px] tracking-widest my-1 drop-shadow-[0_0_5px_rgba(14,165,233,0.3)] dark:drop-shadow-[0_0_5px_rgba(0,229,255,0.5)]">--- SPREAD ---</div>
         
         {/* Bids (Green, descending) */}
         <div className="flex flex-col gap-[1px]">
@@ -48,9 +48,9 @@ export function L2DepthChart() {
             return (
               <div key={`bid-${i}`} className={`flex justify-between px-2 py-[2px] relative transition-colors ${isAmm ? 'bg-emerald-500/20 font-bold border-l-2 border-emerald-500 shadow-[inset_2px_0_10px_rgba(16,185,129,0.3)]' : ''}`}>
                 <div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-emerald-500/20 to-transparent" style={{ width: `${pct}%` }} />
-                <span className="w-1/3 text-right z-10 text-slate-700 dark:text-slate-200">{v.toFixed(2)}</span>
+                <span className="w-1/3 text-right z-10 text-slate-200">{v.toFixed(2)}</span>
                 <span className="w-1/3 text-center text-emerald-600 dark:text-emerald-500 z-10 drop-shadow-[0_0_2px_rgba(16,185,129,0.5)] dark:drop-shadow-[0_0_2px_rgba(0,255,102,0.8)]">{p.toFixed(4)}</span>
-                <span className="w-1/3 text-left z-10 text-slate-400/80 dark:text-slate-500/50">-</span>
+                <span className="w-1/3 text-left z-10 text-slate-500/50">-</span>
               </div>
             )
           })}

@@ -18,7 +18,7 @@ function fmtTime(ts: number): string {
 }
 
 const STATUS_COLOR: Record<UserOrder['status'], string> = {
-  OPEN: 'text-sky-600 dark:text-sky-400',
+  OPEN: 'text-sky-400',
   ARMED: 'text-violet-600 dark:text-violet-400',
   FILLED: 'text-emerald-600 dark:text-emerald-400',
   PARTIAL: 'text-amber-600 dark:text-amber-400',

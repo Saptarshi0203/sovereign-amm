@@ -121,7 +121,7 @@ export function RagCopilot(): React.ReactElement {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-xs uppercase tracking-widest text-sky-700/80 dark:text-slate-400 font-sans">
+      <h2 className="text-xs uppercase tracking-widest text-slate-400 font-sans">
         RAG Copilot
       </h2>
 
@@ -139,7 +139,7 @@ export function RagCopilot(): React.ReactElement {
               <button
                 key={q}
                 onClick={() => void submit(q)}
-                className="text-xs px-2.5 py-1 bg-sky-100 dark:bg-slate-800 hover:bg-sky-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full border border-sky-200 dark:border-slate-700 transition-colors"
+                className="text-xs px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full border border-slate-700 transition-colors"
                 type="button"
               >
                 {q}
@@ -157,14 +157,14 @@ export function RagCopilot(): React.ReactElement {
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-sky-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100'
-                  : 'bg-slate-900 border border-sky-200 dark:border-slate-800 text-slate-800 dark:text-slate-200'
+                  ? 'bg-slate-800 text-slate-100'
+                  : 'bg-slate-900 border border-slate-800 text-slate-200'
               }`}
             >
               {msg.pending ? (
                 /* Typing / loading indicator */
                 <div
-                  className="flex gap-1 items-center text-sky-600 dark:text-slate-500"
+                  className="flex gap-1 items-center text-slate-500"
                   aria-label="Loading response"
                 >
                   <span className="animate-bounce">·</span>
@@ -191,7 +191,7 @@ export function RagCopilot(): React.ReactElement {
                       {msg.sources.map((src, si) => (
                         <span
                           key={si}
-                          className="text-xs px-1.5 py-0.5 bg-sky-100 dark:bg-emerald-900/30 text-sky-700 dark:text-emerald-400 rounded border border-sky-200 dark:border-emerald-800/50 font-mono"
+                          className="text-xs px-1.5 py-0.5 bg-emerald-900/30 text-emerald-400 rounded border border-emerald-800/50 font-mono"
                         >
                           {src}
                         </span>
@@ -211,7 +211,7 @@ export function RagCopilot(): React.ReactElement {
       {/* Input form */}
       <form
         onSubmit={handleSubmit}
-        className="flex gap-2 border-t border-sky-200 dark:border-slate-800 pt-3"
+        className="flex gap-2 border-t border-slate-800 pt-3"
       >
         <input
           type="text"
@@ -220,13 +220,13 @@ export function RagCopilot(): React.ReactElement {
           placeholder="Ask about the engine..."
           disabled={loading}
           aria-label="Query input"
-          className="flex-1 bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:focus:ring-emerald-500 disabled:opacity-50"
+          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
           aria-label="Send query"
-          className="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-500 hover:bg-sky-400 dark:bg-emerald-600 dark:hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-500 hover:bg-emerald-600 dark:hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
         >
           <Send className="w-3.5 h-3.5 text-white" aria-hidden="true" />
         </button>
