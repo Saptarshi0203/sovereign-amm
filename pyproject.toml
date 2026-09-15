@@ -1,0 +1,32 @@
+[project]
+name = "sovereign-amm"
+version = "0.1.0"
+description = "Sovereign-AMM: energy matching engine"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "mypy>=1.9.0",
+    "ruff>=0.3.0",
+    "hypothesis>=6.100.0"
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]

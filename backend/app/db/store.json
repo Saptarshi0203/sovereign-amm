@@ -1,0 +1,32 @@
+{
+    "users": {
+        "admin@sovereign.amm": {
+            "id": "admin-000",
+            "email": "admin@sovereign.amm",
+            "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$yplTSmkN4XyvdQ7hXCulNA$ev1/s83YuDzeTU1PYLOnXooxl2QP0HxZPyaEFe54S3U",
+            "role": "admin",
+            "status": "approved",
+            "consumer_no": "",
+            "connection_type": "",
+            "sanctioned_load_kw": 0,
+            "solar_kwp": 0,
+            "inverter_rating_kw": 0,
+            "assigned_bus_id": null,
+            "bank_account_masked": "XXXXXX0000"
+        },
+        "riturajtrades25@gmail.com": {
+            "id": "admin-b6a7dc62",
+            "email": "riturajtrades25@gmail.com",
+            "password_hash": "$argon2id$v=19$m=65536,t=3,p=4$zhmDECLkPKeU8p5zzpmT0g$J6PGlDJvOjZP+NOzh6f9bzwGvhuE/BDEBdpTWsfyHZw",
+            "role": "admin",
+            "status": "approved",
+            "consumer_no": "MASTER-000",
+            "connection_type": "grid_operator",
+            "sanctioned_load_kw": 0.0,
+            "solar_kwp": 0.0,
+            "inverter_rating_kw": 0.0,
+            "assigned_bus_id": 0,
+            "bank_account_masked": "SYSTEM"
+        }
+    }
+}
