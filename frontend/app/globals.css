@@ -4,130 +4,149 @@
 
 /* ── Dual-theme palette (consumed by tailwind.config.ts via rgb(var(--…))) ── */
 :root {
-  /* Light: airy neutrals, elevated white cards, deep slate text */
-  --c-slate-950: 246 246 251;   /* page background   #f6f6fb */
-  --c-slate-900: 255 255 255;   /* cards             #ffffff */
-  --c-slate-800: 241 241 247;   /* surfaces / inputs #f1f1f7 */
-  --c-slate-700: 226 226 238;   /* borders           #e2e2ee */
-  --c-slate-600: 201 201 219;
-  --c-slate-500: 107 107 138;   /* muted text        #6b6b8a */
-  --c-slate-400: 91 91 122;
-  --c-slate-300: 69 69 95;
-  --c-slate-200: 51 51 77;
-  --c-slate-100: 31 31 51;
-  --c-slate-50: 16 16 36;
-  --c-white: 15 15 30;          /* "white" text reads as deep slate in light */
-  /* §2.3 Sky/Violet Porcelain */
-  --t-canvas: 248 250 252;      /* #f8fafc */
-  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f8fafc 45%, #f1f5f9 100%);
+  --c-slate-950: 247 248 250;   /* #f7f8fa canvas */
+  --c-slate-900: 255 255 255;   /* panel */
+  --c-slate-800: 241 243 246;   /* surfaces / inputs */
+  --c-slate-700: 224 227 233;   /* borders */
+  --c-slate-600: 196 201 211;
+  --c-slate-500: 91 100 117;    /* muted #5b6475 */
+  --c-slate-400: 76 84 100;
+  --c-slate-300: 58 65 80;
+  --c-slate-200: 40 46 60;
+  --c-slate-100: 20 25 38;
+  --c-slate-50: 11 15 26;
+  --c-white: 11 15 26;          /* ink #0b0f1a */
+  --t-canvas: 247 248 250;
+  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f9fafb 45%, #f7f8fa 100%);
   --t-panel: 255 255 255;
-  --t-panel-alpha: 0.9;
-  --t-ink: 15 23 42;            /* #0f172a */
-  --t-edge: 226 232 240;        /* slate-200 */
-  --t-edge-alpha: 0.8;
-  --t-telemetry: 2 132 199;     /* azure #0284c7 */
+  --t-panel-alpha: 0.92;
+  --t-ink: 11 15 26;
+  --t-muted: 91 100 117;
+  --t-edge: 10 15 30;
+  --t-edge-alpha: 0.10;
+  --hairline: rgba(10, 15, 30, 0.12);
+  --t-telemetry: 2 132 199;     /* #0284c7 */
+  --t-bid: 22 163 74;
+  --t-ask: 225 29 72;
+  --t-warn: 217 119 6;
+  --t-brand-a: 124 58 237;
+  --t-brand-b: 192 38 211;
   --t-panel-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-  --chart-grid: #e6e6f0;
-  --chart-axis: #d4d4e4;
-  --chart-tick: #6b6b8a;
-  --chart-muted: #8a8aa8;
-  --chart-fg: #0f0f1e;
+  --chart-grid: #e6e8ec;
+  --chart-axis: #d5d8de;
+  --chart-tick: #5b6475;
+  --chart-muted: #8a94a6;
+  --chart-fg: #0b0f1a;
   --chart-tooltip-bg: #ffffff;
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(76, 29, 149, 0.12);
-  --glass-border-hover: rgba(139, 92, 246, 0.45);
-  --glass-shadow: 0 10px 40px rgba(76, 29, 149, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --flash-up: rgba(16, 185, 129, 0.16);
+  --glass-bg: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(10, 15, 30, 0.10);
+  --glass-border-hover: rgba(2, 132, 199, 0.45);
+  --glass-shadow: 0 10px 40px rgba(10, 15, 30, 0.06), 0 1px 3px rgba(10, 15, 30, 0.05);
+  --flash-up: rgba(22, 163, 74, 0.16);
   --flash-down: rgba(225, 29, 72, 0.14);
-  --flash-new: rgba(139, 92, 246, 0.14);
-  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
-               radial-gradient(ellipse at 90% 10%, rgba(217, 70, 239, 0.10) 0%, transparent 50%);
+  --flash-new: rgba(2, 132, 199, 0.14);
+  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(2, 132, 199, 0.06) 0%, transparent 55%),
+               radial-gradient(ellipse at 90% 10%, rgba(124, 58, 237, 0.06) 0%, transparent 50%);
 }
 
 .light-scope {
-  /* Light: airy neutrals, elevated white cards, deep slate text */
-  --c-slate-950: 246 246 251;   /* page background   #f6f6fb */
-  --c-slate-900: 255 255 255;   /* cards             #ffffff */
-  --c-slate-800: 241 241 247;   /* surfaces / inputs #f1f1f7 */
-  --c-slate-700: 226 226 238;   /* borders           #e2e2ee */
-  --c-slate-600: 201 201 219;
-  --c-slate-500: 107 107 138;   /* muted text        #6b6b8a */
-  --c-slate-400: 91 91 122;
-  --c-slate-300: 69 69 95;
-  --c-slate-200: 51 51 77;
-  --c-slate-100: 31 31 51;
-  --c-slate-50: 16 16 36;
-  --c-white: 15 15 30;          /* "white" text reads as deep slate in light */
-  /* §2.3 Sky/Violet Porcelain */
-  --t-canvas: 248 250 252;      /* #f8fafc */
-  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f8fafc 45%, #f1f5f9 100%);
+  --c-slate-950: 247 248 250;   /* #f7f8fa canvas */
+  --c-slate-900: 255 255 255;   /* panel */
+  --c-slate-800: 241 243 246;   /* surfaces / inputs */
+  --c-slate-700: 224 227 233;   /* borders */
+  --c-slate-600: 196 201 211;
+  --c-slate-500: 91 100 117;    /* muted #5b6475 */
+  --c-slate-400: 76 84 100;
+  --c-slate-300: 58 65 80;
+  --c-slate-200: 40 46 60;
+  --c-slate-100: 20 25 38;
+  --c-slate-50: 11 15 26;
+  --c-white: 11 15 26;          /* ink #0b0f1a */
+  --t-canvas: 247 248 250;
+  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #ffffff 0%, #f9fafb 45%, #f7f8fa 100%);
   --t-panel: 255 255 255;
-  --t-panel-alpha: 0.9;
-  --t-ink: 15 23 42;            /* #0f172a */
-  --t-edge: 226 232 240;        /* slate-200 */
-  --t-edge-alpha: 0.8;
-  --t-telemetry: 2 132 199;     /* azure #0284c7 */
+  --t-panel-alpha: 0.92;
+  --t-ink: 11 15 26;
+  --t-muted: 91 100 117;
+  --t-edge: 10 15 30;
+  --t-edge-alpha: 0.10;
+  --hairline: rgba(10, 15, 30, 0.12);
+  --t-telemetry: 2 132 199;     /* #0284c7 */
+  --t-bid: 22 163 74;
+  --t-ask: 225 29 72;
+  --t-warn: 217 119 6;
+  --t-brand-a: 124 58 237;
+  --t-brand-b: 192 38 211;
   --t-panel-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-  --chart-grid: #e6e6f0;
-  --chart-axis: #d4d4e4;
-  --chart-tick: #6b6b8a;
-  --chart-muted: #8a8aa8;
-  --chart-fg: #0f0f1e;
+  --chart-grid: #e6e8ec;
+  --chart-axis: #d5d8de;
+  --chart-tick: #5b6475;
+  --chart-muted: #8a94a6;
+  --chart-fg: #0b0f1a;
   --chart-tooltip-bg: #ffffff;
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(76, 29, 149, 0.12);
-  --glass-border-hover: rgba(139, 92, 246, 0.45);
-  --glass-shadow: 0 10px 40px rgba(76, 29, 149, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --flash-up: rgba(16, 185, 129, 0.16);
+  --glass-bg: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(10, 15, 30, 0.10);
+  --glass-border-hover: rgba(2, 132, 199, 0.45);
+  --glass-shadow: 0 10px 40px rgba(10, 15, 30, 0.06), 0 1px 3px rgba(10, 15, 30, 0.05);
+  --flash-up: rgba(22, 163, 74, 0.16);
   --flash-down: rgba(225, 29, 72, 0.14);
-  --flash-new: rgba(139, 92, 246, 0.14);
-  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
-               radial-gradient(ellipse at 90% 10%, rgba(217, 70, 239, 0.10) 0%, transparent 50%);
+  --flash-new: rgba(2, 132, 199, 0.14);
+  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(2, 132, 199, 0.06) 0%, transparent 55%),
+               radial-gradient(ellipse at 90% 10%, rgba(124, 58, 237, 0.06) 0%, transparent 50%);
 }
 
 
 .dark {
-  /* Dark: deep space black → ultra-dark violet, lavender text */
-  --c-slate-950: 5 5 5;         /* #050505 */
-  --c-slate-900: 11 11 20;      /* #0b0b14 */
-  --c-slate-800: 21 21 40;      /* #151528 */
-  --c-slate-700: 38 38 68;      /* #262644 */
-  --c-slate-600: 58 58 92;
-  --c-slate-500: 122 122 163;   /* muted lavender */
-  --c-slate-400: 157 157 194;
-  --c-slate-300: 195 195 224;
-  --c-slate-200: 220 220 240;
-  --c-slate-100: 236 236 248;
-  --c-slate-50: 247 247 255;
-  --c-white: 255 255 255;
-  /* §2.2 Deep Midnight Violet */
-  --t-canvas: 7 7 13;           /* #07070d */
-  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #0c0a14 0%, #09080f 45%, #07070d 100%);
-  --t-panel: 18 16 30;          /* #12101e */
-  --t-panel-alpha: 0.7;
-  --t-ink: 247 247 255;
-  --t-edge: 88 28 135;          /* purple-900 */
-  --t-edge-alpha: 0.3;
-  --t-telemetry: 0 242 254;     /* cyan #00f2fe */
+  /* Dark: deep navy-black editorial terminal */
+  --c-slate-950: 7 9 15;        /* #07090f canvas */
+  --c-slate-900: 12 16 24;      /* #0c1018 panel */
+  --c-slate-800: 18 23 34;      /* surfaces */
+  --c-slate-700: 32 39 54;      /* borders */
+  --c-slate-600: 52 60 78;
+  --c-slate-500: 138 148 166;   /* muted #8a94a6 */
+  --c-slate-400: 165 174 190;
+  --c-slate-300: 196 203 215;
+  --c-slate-200: 219 224 232;
+  --c-slate-100: 237 241 247;   /* ink */
+  --c-slate-50: 247 249 252;
+  --c-white: 237 241 247;       /* #edf1f7 */
+  --t-canvas: 7 9 15;
+  --t-canvas-radial: radial-gradient(ellipse at 50% -10%, #0b0f18 0%, #090c14 45%, #07090f 100%);
+  --t-panel: 12 16 24;
+  --t-panel-alpha: 0.85;
+  --t-ink: 237 241 247;
+  --t-muted: 138 148 166;
+  --t-edge: 255 255 255;
+  --t-edge-alpha: 0.08;
+  --hairline: rgba(255, 255, 255, 0.10);
+  --t-telemetry: 0 229 255;     /* #00e5ff */
+  --t-bid: 34 197 94;
+  --t-ask: 244 63 94;
+  --t-warn: 245 158 11;
+  --t-brand-a: 139 92 246;
+  --t-brand-b: 217 70 239;
   --t-panel-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
-  --chart-grid: #1a1a2e;
-  --chart-axis: #2a2a48;
-  --chart-tick: #9d9dc2;
-  --chart-muted: #6e6e96;
-  --chart-fg: #f7f7ff;
-  --chart-tooltip-bg: #12121f;
-  --glass-bg: rgba(0, 0, 0, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.05);
-  --glass-border-hover: rgba(139, 92, 246, 0.35);
+  --chart-grid: #151b27;
+  --chart-axis: #202736;
+  --chart-tick: #8a94a6;
+  --chart-muted: #5b6475;
+  --chart-fg: #edf1f7;
+  --chart-tooltip-bg: #0c1018;
+  --glass-bg: rgba(12, 16, 24, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(0, 229, 255, 0.35);
   --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --flash-up: rgba(16, 185, 129, 0.32);
-  --flash-down: rgba(225, 29, 72, 0.32);
-  --flash-new: rgba(139, 92, 246, 0.3);
-  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(124, 58, 237, 0.22) 0%, transparent 55%),
-               radial-gradient(ellipse at 90% 15%, rgba(217, 70, 239, 0.12) 0%, transparent 50%);
+  --flash-up: rgba(34, 197, 94, 0.28);
+  --flash-down: rgba(244, 63, 94, 0.28);
+  --flash-new: rgba(0, 229, 255, 0.2);
+  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(0, 229, 255, 0.06) 0%, transparent 55%),
+               radial-gradient(ellipse at 90% 15%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
 }
 
 @layer base {
+  .dark .text-gradient {
+    background-image: linear-gradient(135deg, #a78bfa 0%, #c084fc 40%, #e879f9 100%);
+  }
   html {
     background-color: rgb(var(--c-slate-950));
     color-scheme: light;
@@ -222,13 +241,13 @@
     @apply inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-dot;
   }
   .text-gradient {
-    background: linear-gradient(135deg, #a78bfa 0%, #c084fc 40%, #e879f9 100%);
+    background: linear-gradient(135deg, #6d28d9 0%, #a21caf 60%, #c026d3 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .btn-brand {
-    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all duration-200;
+    @apply inline-flex items-center justify-center rounded-full px-7 py-3.5 text-sm font-semibold text-white transition-all duration-200;
     --c-white: 255 255 255;
     background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #d946ef 100%);
     background-size: 200% 200%;
@@ -240,7 +259,7 @@
     animation: shimmer 3s linear infinite;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-colors duration-200 border;
+    @apply inline-flex items-center justify-center rounded-full px-7 py-3.5 text-sm font-semibold transition-colors duration-200 border;
     color: rgb(var(--c-slate-200));
     border-color: var(--glass-border-hover);
     background: var(--glass-bg);
@@ -329,3 +348,37 @@
 .rag-md .katex { font-size: 1.02em; color: rgb(var(--c-white)); }
 .rag-md-compact .katex-display { margin: 0.5em 0; }
 .rag-md-compact .katex { font-size: 0.95em; }
+
+/* ── Editorial primitives ─────────────────────────────────────────────── */
+.hairline { height: 1px; background: var(--hairline); }
+.label-caps { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: rgb(var(--t-muted)); }
+.text-muted { color: rgb(var(--t-muted)); }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track { display: flex; width: max-content; animation: marquee 48s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes pixel-idle { 0%, 49% { transform: translateY(0); } 50%, 100% { transform: translateY(-2px); } }
+.pixel-idle { animation: pixel-idle 1.2s steps(1) infinite; }
+@keyframes hairline-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.hairline-draw { transform-origin: left; animation: hairline-draw .9s cubic-bezier(.22,1,.36,1) both; }
+/* ── Landing intro ────────────────────────────────────────────────────── */
+@keyframes intro-token { from { opacity: 0; transform: translateY(6px); } to { opacity: .4; transform: none; } }
+@keyframes intro-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes intro-grid { from { opacity: 0; } to { opacity: .06; } }
+@keyframes intro-word { from { clip-path: inset(0 100% 0 0); letter-spacing: .35em; opacity: 0; } to { clip-path: inset(0 0 0 0); letter-spacing: .12em; opacity: 1; } }
+@keyframes intro-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes intro-dash { to { stroke-dashoffset: 0; } }
+@keyframes intro-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes intro-out-top { to { transform: translateY(-100%); } }
+@keyframes intro-out-bottom { to { transform: translateY(100%); } }
+@keyframes intro-shrink { to { opacity: 0; transform: scale(.98); } }
+.intro-token { animation: intro-token .4s cubic-bezier(.22,1,.36,1) both; }
+.intro-line { transform-origin: center; animation: intro-line .6s cubic-bezier(.22,1,.36,1) .15s both; }
+.intro-grid { animation: intro-grid .5s ease-out both; }
+.intro-word { animation: intro-word .9s cubic-bezier(.22,1,.36,1) .55s both; }
+.intro-sub { animation: intro-fade-up .5s cubic-bezier(.22,1,.36,1) 1.05s both; }
+.intro-tag { animation: intro-fade-up .5s cubic-bezier(.22,1,.36,1) 1.55s both; }
+.intro-dash { stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: intro-dash .8s cubic-bezier(.22,1,.36,1) 1.5s forwards; }
+.intro-pulse { animation: intro-pulse 1s ease-in-out infinite; }
+.intro-half-top { will-change: transform; animation: intro-out-top .6s cubic-bezier(.65,0,.35,1) 2.35s forwards; }
+.intro-half-bottom { will-change: transform; animation: intro-out-bottom .6s cubic-bezier(.65,0,.35,1) 2.35s forwards; }
+.intro-content { animation: intro-shrink .45s ease-in 2.3s forwards; }

@@ -50,6 +50,10 @@ const config: Config = {
         edge: "rgb(var(--t-edge) / <alpha-value>)",
         // Primary telemetry accent: electric cyan (dark) / azure (light)
         telemetry: "rgb(var(--t-telemetry) / <alpha-value>)",
+        muted: "rgb(var(--t-muted) / <alpha-value>)",
+        bid: "rgb(var(--t-bid) / <alpha-value>)",
+        ask: "rgb(var(--t-ask) / <alpha-value>)",
+        warn: "rgb(var(--t-warn) / <alpha-value>)",
         cyan: {
           300: "#67e8f9", 400: "#22d3ee", 500: "#00f2fe", 600: "#0891b2", 700: "#0e7490",
         },
@@ -89,9 +93,9 @@ const config: Config = {
         "card-glow": "linear-gradient(180deg, rgba(139,92,246,0.06) 0%, transparent 45%)",
         "gradient-edge": "linear-gradient(135deg, rgba(139,92,246,0.7) 0%, rgba(0,242,254,0.35) 50%, rgba(217,70,239,0.6) 100%)",
         "accent-track": "linear-gradient(90deg, #8b5cf6 0%, #00f2fe 100%)",
-        "brand-gradient": "linear-gradient(135deg, #7c3aed 0%, #a855f7 45%, #d946ef 100%)",
+        "brand-gradient": "linear-gradient(135deg, rgb(var(--t-brand-a)) 0%, rgb(var(--t-brand-b)) 100%)",
         "brand-gradient-soft": "linear-gradient(135deg, rgba(124,58,237,0.25) 0%, rgba(217,70,239,0.15) 100%)",
-        "hero-glow": "radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.35) 0%, rgba(139,92,246,0.08) 35%, transparent 70%)",
+        "hero-glow": "radial-gradient(ellipse at 50% 0%, rgba(0,229,255,0.10) 0%, rgba(139,92,246,0.06) 35%, transparent 70%)",
         "grid-dots": "radial-gradient(circle, rgb(var(--c-slate-500)) 1px, transparent 1px)",
       },
       fontFamily: {

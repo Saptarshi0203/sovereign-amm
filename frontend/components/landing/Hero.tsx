@@ -25,11 +25,11 @@ const fade = (delay: number) => ({
 /** §3.1 word-by-word headline reveal (40 ms stagger, static under reduced motion). */
 function Words({ text, className, start = 0, reduce = false }: { text: string; className?: string; start?: number; reduce?: boolean }) {
   return (
-    <span className={className}>
+    <span>
       {text.split(' ').map((w, i) => (
         <motion.span
           key={`${w}-${i}`}
-          className="inline-block mr-[0.25em]"
+          className={`inline-block mr-[0.25em] ${className ?? ''}`}
           initial={reduce ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: start + i * 0.04 }}
