@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { Hero } from '@/components/landing/Hero';
 import { TickerTape } from '@/components/landing/TickerTape';
 import { RecentArticles } from '@/components/landing/RecentArticles';
+import { Showcase } from '@/components/landing/Showcase';
 
 // Heavy components loaded client-side only to avoid SSR/hydration issues
 const TerminalCarousel = dynamic(
@@ -27,6 +28,9 @@ export default function HomePage() {
       {/* 2. Ticker Tape */}
       <TickerTape />
 
+      {/* 3. Feature showcase */}
+      <Showcase />
+
       {/* 3. Carousel + Sidebar */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-[1fr_400px] gap-6">
@@ -35,10 +39,10 @@ export default function HomePage() {
 
           {/* Right: sidebar stack */}
           <aside className="flex flex-col gap-6">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm p-5">
+            <div className="glass rounded-2xl p-5">
               <RecentArticles />
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm p-5">
+            <div className="glass rounded-2xl p-5">
               <RagCopilot />
             </div>
           </aside>

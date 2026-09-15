@@ -116,7 +116,7 @@ export function AuthDrawer(): React.ReactElement {
                 Don&apos;t have an account?{' '}
                 <button
                   onClick={() => openAuth('signup')}
-                  className="text-emerald-400 hover:text-emerald-300 font-medium"
+                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 font-medium"
                 >
                   Sign Up Now
                 </button>
@@ -126,7 +126,7 @@ export function AuthDrawer(): React.ReactElement {
                 Already have an account?{' '}
                 <button
                   onClick={() => openAuth('signin')}
-                  className="text-emerald-400 hover:text-emerald-300 font-medium"
+                  className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 font-medium"
                 >
                   Sign In
                 </button>
@@ -195,7 +195,7 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-xs text-rose-400 font-mono">{error}</p>}
+      {error && <p className="text-xs text-rose-600 dark:text-rose-400 font-mono">{error}</p>}
       <div className="flex flex-col gap-1.5">
         <label
           className="text-xs text-slate-400 uppercase tracking-wider"
@@ -268,7 +268,7 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {status && <p className="text-xs text-emerald-400 font-mono">{status}</p>}
+      {status && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">{status}</p>}
       <div className="flex flex-col gap-1.5">
         <label
           className="text-xs text-slate-400 uppercase tracking-wider"
@@ -325,7 +325,7 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <button
         type="submit"
-        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg transition-colors mt-2"
+        className="btn-brand w-full mt-2"
       >
         Create Account
       </button>

@@ -23,7 +23,7 @@ export function PnlMetrics() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-sm">
         <div>
           <p className="text-xs text-slate-500">Net PnL</p>
-          <p className={`font-bold tabular-nums ${pnl.net >= 0 ? 'text-emerald-400' : 'text-rose-500'} ${flash}`}>{inr(pnl.net)}</p>
+          <p className={`font-bold tabular-nums ${pnl.net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'} ${flash}`}>{inr(pnl.net)}</p>
         </div>
         <div>
           <p className="text-xs text-slate-500">Realised / Unrealised</p>
@@ -37,15 +37,15 @@ export function PnlMetrics() {
         </div>
         <div>
           <p className="text-xs text-slate-500">Avg Spread</p>
-          <p className="text-sky-400 font-bold tabular-nums">₹{pnl.avgSpread.toFixed(4)}/kWh</p>
+          <p className="text-sky-600 dark:text-sky-400 font-bold tabular-nums">₹{pnl.avgSpread.toFixed(4)}/kWh</p>
         </div>
         <div>
           <p className="text-xs text-slate-500">C_deg (marginal)</p>
-          <p className="text-amber-400 font-bold tabular-nums">₹{cDeg.toFixed(4)}/kWh</p>
+          <p className="text-amber-600 dark:text-amber-400 font-bold tabular-nums">₹{cDeg.toFixed(4)}/kWh</p>
         </div>
         <div>
           <p className="text-xs text-slate-500">Wear cost accrued</p>
-          <p className="text-amber-400 font-bold tabular-nums">₹{pnl.wearCost.toFixed(2)}</p>
+          <p className="text-amber-600 dark:text-amber-400 font-bold tabular-nums">₹{pnl.wearCost.toFixed(2)}</p>
         </div>
       </div>
     </div>
@@ -84,11 +84,11 @@ export function RiskParams() {
         </div>
         <div>
           <p className="text-xs text-slate-500">SoC floor</p>
-          <p className="text-rose-400 font-bold tabular-nums">{risk.socFloorPct.toFixed(1)}%</p>
+          <p className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">{risk.socFloorPct.toFixed(1)}%</p>
         </div>
         <div>
           <p className="text-xs text-slate-500">SoC ceiling</p>
-          <p className="text-emerald-400 font-bold tabular-nums">{risk.socCeilingPct.toFixed(1)}%</p>
+          <p className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">{risk.socCeilingPct.toFixed(1)}%</p>
         </div>
         <div>
           <p className="text-xs text-slate-500">δ_bid / δ_ask (now)</p>

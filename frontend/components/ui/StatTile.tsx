@@ -34,7 +34,7 @@ interface StatTileProps {
   /**
    * Tailwind colour class injected into the value element for tick flashing.
    * Comes from `useTickFlash(numericValue)`.
-   * Example: `"text-emerald-400"` | `"text-rose-500"` | `"text-slate-50"`.
+   * Example: `"text-emerald-600 dark:text-emerald-400"` | `"text-rose-500"` | `"text-slate-50"`.
    */
   flashClass?: string;
   /** Additional Tailwind classes for the outer wrapper. */
@@ -62,7 +62,7 @@ export function StatTile({
   return (
     <div
       className={cn(
-        'flex flex-col gap-1 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm p-4',
+        'glass flex flex-col gap-1 rounded-2xl p-4',
         className,
       )}
     >

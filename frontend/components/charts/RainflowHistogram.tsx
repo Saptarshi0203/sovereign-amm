@@ -40,16 +40,16 @@ export function RainflowHistogram() {
       <div className="flex justify-between text-[10px] font-mono text-slate-500">
         <span>{live ? `${totalCycles.toFixed(1)} weighted cycles (engine)` : `${total.toFixed(1)} weighted cycles (client)`}</span>
         <span>
-          C_deg now <span className="text-amber-400">₹{cDeg.toFixed(4)}/kWh</span>
+          C_deg now <span className="text-amber-600 dark:text-amber-400">₹{cDeg.toFixed(4)}/kWh</span>
         </span>
       </div>
       <ResponsiveContainer width="100%" height={190}>
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-          <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 10 }} />
-          <YAxis tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 10 }} allowDecimals={false} scale="sqrt" domain={[0, 'auto']} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+          <XAxis dataKey="label" tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 10 }} />
+          <YAxis tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 10 }} allowDecimals={false} scale="sqrt" domain={[0, 'auto']} />
           <Tooltip
-            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontFamily: 'monospace', fontSize: 11, color: '#e2e8f0' }}
+            contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid #334155', fontFamily: 'monospace', fontSize: 11, color: 'var(--chart-fg)' }}
             formatter={(v: number) => [`${v} cycles`, 'DoD bucket']}
           />
           <Bar dataKey="count" isAnimationActive={false} radius={[2, 2, 0, 0]}>

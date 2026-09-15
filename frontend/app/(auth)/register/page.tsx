@@ -77,7 +77,7 @@ export default function RegisterPage() {
           {error && (
             <div
               role="alert"
-              className="mb-6 p-3 bg-rose-900/30 border border-rose-700 rounded-md text-rose-300 text-sm"
+              className="mb-6 p-3 bg-rose-900/30 border border-rose-700 rounded-md text-rose-700 dark:text-rose-300 text-sm"
             >
               {error}
             </div>
@@ -159,7 +159,7 @@ export default function RegisterPage() {
             Already have an account?{' '}
             <Link
               href="/login"
-              className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+              className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
             >
               Sign In
             </Link>

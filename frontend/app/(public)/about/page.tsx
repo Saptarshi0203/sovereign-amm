@@ -21,7 +21,7 @@ interface TechPillProps {
 
 function TechPill({ label }: TechPillProps) {
   return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-800/50">
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-medium bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-800/50">
       {label}
     </span>
   );
@@ -37,7 +37,7 @@ function SectionCard({ icon, title, children }: SectionCardProps) {
   return (
     <div className="bg-slate-900 rounded-lg border border-slate-800 p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-400">
+        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
           {icon}
         </div>
         <h2 className="text-base font-semibold text-white">{title}</h2>
@@ -62,7 +62,7 @@ export default function AboutPage() {
           className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:32px_32px] opacity-60"
         />
         <div className="relative max-w-4xl mx-auto px-6 py-20 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-800/50 text-emerald-400 text-xs font-mono tracking-widest uppercase mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-800/50 text-emerald-600 dark:text-emerald-400 text-xs font-mono tracking-widest uppercase mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             SIH-Grade Research Build
           </div>
@@ -182,7 +182,7 @@ export default function AboutPage() {
                 key={title}
                 className="bg-slate-800/50 rounded-md p-4 border border-slate-700/50"
               >
-                <h3 className="text-sm font-semibold text-emerald-400 mb-1">{title}</h3>
+                <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1">{title}</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
               </div>
             ))}

@@ -27,10 +27,10 @@ interface SparklineProps {
  * Animation is disabled so it can update at the 10 Hz tick rate without lag.
  *
  * @param data   - Array of `{ v: number }` data points.
- * @param color  - Line stroke colour hex string (default `'#38bdf8'`).
+ * @param color  - Line stroke colour hex string (default `'#a78bfa'`).
  * @param height - Component height in px (default `40`).
  */
-export function Sparkline({ data, color = '#38bdf8', height = 40 }: SparklineProps) {
+export function Sparkline({ data, color = '#a78bfa', height = 40 }: SparklineProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>

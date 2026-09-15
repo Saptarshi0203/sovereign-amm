@@ -49,14 +49,14 @@ export function TimeAndSales() {
                 </td>
                 <td
                   className={`py-0.5 font-semibold ${
-                    t.side === 'buy' ? 'text-emerald-400' : 'text-rose-500'
+                    t.side === 'buy' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
                   }`}
                 >
                   {formatSide(t.side)}
                 </td>
                 <td
                   className={`py-0.5 text-right tabular-nums ${
-                    t.side === 'buy' ? 'text-emerald-400' : 'text-rose-500'
+                    t.side === 'buy' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
                   }`}
                 >
                   {formatPrice(t.px, 4)}

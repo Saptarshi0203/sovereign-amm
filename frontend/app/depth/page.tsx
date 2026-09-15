@@ -56,7 +56,7 @@ export default function DepthPage() {
           </p>
           <h1 className="text-2xl font-bold text-white">L2 Order Book Depth</h1>
         </div>
-        <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-900/30 border border-emerald-700/50 rounded-full text-xs font-mono text-emerald-400">
+        <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-900/30 border border-emerald-700/50 rounded-full text-xs font-mono text-emerald-600 dark:text-emerald-400">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           10 Hz
         </span>

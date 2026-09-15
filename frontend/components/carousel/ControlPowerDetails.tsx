@@ -158,7 +158,7 @@ export default function ControlPowerDetails(): JSX.Element {
               cx={node.x}
               cy={node.y}
               r={24}
-              fill="#1e293b"
+              fill="var(--chart-grid)"
               stroke="#3b82f6"
               strokeWidth={2}
             />

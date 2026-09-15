@@ -21,7 +21,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
   return (
     <main className="max-w-xl mx-auto px-4 py-24 text-center">
-      <ShieldAlert className="w-10 h-10 mx-auto text-rose-400 mb-4" />
+      <ShieldAlert className="w-10 h-10 mx-auto text-rose-600 dark:text-rose-400 mb-4" />
       <h1 className="text-2xl font-bold text-white mb-2">Admin access required</h1>
       <p className="text-sm text-slate-400 mb-6">
         The Control Room (live data feed upload, grid injections, scenarios) is restricted to administrator accounts.
@@ -29,7 +29,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
       </p>
       <div className="flex justify-center gap-3">
         {authState === 'anonymous' && (
-          <button onClick={() => openAuth('signin')} className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold">
+          <button onClick={() => openAuth('signin')} className="px-5 py-2 rounded-lg btn-brand text-sm font-semibold">
             Sign In
           </button>
         )}

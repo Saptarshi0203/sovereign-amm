@@ -144,7 +144,7 @@ export default function ContactPage() {
 
                 {/* Address */}
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-400 mt-0.5">
+                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 mt-0.5">
                     <MapPin className="w-4 h-4" aria-hidden="true" />
                   </div>
                   <div>
@@ -156,14 +156,14 @@ export default function ContactPage() {
 
                 {/* Email */}
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-400 mt-0.5">
+                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 mt-0.5">
                     <Mail className="w-4 h-4" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-300">Email</p>
                     <a
                       href="mailto:@sovereign-amm.com"
-                      className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors font-mono"
+                      className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 transition-colors font-mono"
                     >
                       @sovereign-amm.com
                     </a>
@@ -172,7 +172,7 @@ export default function ContactPage() {
 
                 {/* Phone */}
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-400 mt-0.5">
+                  <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 mt-0.5">
                     <Phone className="w-4 h-4" aria-hidden="true" />
                   </div>
                   <div>

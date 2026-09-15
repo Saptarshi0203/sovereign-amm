@@ -237,7 +237,7 @@ export function JudgeControls(): React.ReactElement {
       {!isConnected && (
         <p
           role="alert"
-          className="text-xs text-amber-400 font-mono bg-amber-900/20 border border-amber-800 rounded px-3 py-2"
+          className="text-xs text-amber-600 dark:text-amber-400 font-mono bg-amber-900/20 border border-amber-800 rounded px-3 py-2"
         >
           WebSocket disconnected — sliders are disabled
         </p>
@@ -267,7 +267,7 @@ export function JudgeControls(): React.ReactElement {
                   <span
                     role="status"
                     aria-live="polite"
-                    className="text-xs text-emerald-400 font-mono"
+                    className="text-xs text-emerald-600 dark:text-emerald-400 font-mono"
                   >
                     Updating…
                   </span>
@@ -325,7 +325,7 @@ export function JudgeControls(): React.ReactElement {
               <p
                 role="alert"
                 aria-live="assertive"
-                className="text-xs text-rose-400 font-mono mt-1"
+                className="text-xs text-rose-600 dark:text-rose-400 font-mono mt-1"
               >
                 {errorMsg}
               </p>

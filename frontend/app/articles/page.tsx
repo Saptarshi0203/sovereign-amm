@@ -43,7 +43,7 @@ export default function ArticlesPage() {
             </div>
             <h2 className="text-sm font-semibold text-slate-100 group-hover:text-emerald-400 transition-colors leading-snug">{article.title}</h2>
             <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">{article.summary}</p>
-            <span className="text-xs text-emerald-400 font-mono mt-auto">Read →</span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono mt-auto">Read →</span>
           </Link>
         ))}
       </div>

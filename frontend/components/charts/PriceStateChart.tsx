@@ -87,10 +87,10 @@ export function PriceStateChart({ range, showRangeSelector = true, height = 300 
     return timeseries.slice(-pts);
   }, [timeseries, historyRange, live]);
 
-  const gridColor = isLight ? '#e0f2fe' : '#1e293b';
-  const tickColor = isLight ? '#64748b' : '#94a3b8';
+  const gridColor = isLight ? 'var(--chart-grid)' : 'var(--chart-grid)';
+  const tickColor = isLight ? 'var(--chart-muted)' : 'var(--chart-tick)';
   const refAreaColor = isLight ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.08)';
-  const priceColor = isLight ? '#0ea5e9' : '#38bdf8';
+  const priceColor = isLight ? '#8b5cf6' : '#a78bfa';
   const socColor = isLight ? '#059669' : '#10b981';
 
   return (
@@ -104,7 +104,7 @@ export function PriceStateChart({ range, showRangeSelector = true, height = 300 
                 type="button"
                 onClick={() => setHistoryRange(r)}
                 className={`px-2 py-0.5 rounded text-[11px] font-mono border transition-colors ${
-                  historyRange === r ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-500 hover:text-slate-200'
+                  historyRange === r ? 'border-sky-500 text-sky-700 dark:text-sky-300' : 'border-slate-700 text-slate-500 hover:text-slate-200'
                 }`}
               >
                 {r}

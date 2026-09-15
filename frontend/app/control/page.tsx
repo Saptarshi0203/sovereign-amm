@@ -26,7 +26,7 @@ export default function ControlPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500 font-mono">POWER CONTROL · TRADING · PLAYBACK</p>
-          <h1 className="text-2xl font-bold text-white">Control Room <span className="text-xs font-mono text-violet-300 border border-violet-700/50 rounded px-1.5 py-0.5 align-middle">ADMIN</span></h1>
+          <h1 className="text-2xl font-bold text-white">Control Room <span className="text-xs font-mono text-violet-700 dark:text-violet-300 border border-violet-700/50 rounded px-1.5 py-0.5 align-middle">ADMIN</span></h1>
           <p className="text-sm text-slate-400 mt-1">Upload real city telemetry to override the synthetic generator, inject load, run scenarios, and trade against the hub.</p>
         </div>
         <FeedStatus />

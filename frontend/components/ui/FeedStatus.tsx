@@ -18,7 +18,7 @@ export function FeedStatus({ className = '' }: { className?: string }) {
     <div className={`flex items-center gap-3 text-xs font-mono ${className}`}>
       <span
         className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 ${
-          live ? 'border-emerald-700/50 text-emerald-400' : 'border-amber-700/50 text-amber-400'
+          live ? 'border-emerald-700/50 text-emerald-600 dark:text-emerald-400' : 'border-amber-700/50 text-amber-600 dark:text-amber-400'
         }`}
         title={
           live
@@ -36,7 +36,7 @@ export function FeedStatus({ className = '' }: { className?: string }) {
       </span>
       <ClockSyncBadge />
       {emergency && (
-        <span className="inline-flex items-center rounded-md border border-rose-700/60 text-rose-400 px-2 py-1 animate-pulse">
+        <span className="inline-flex items-center rounded-md border border-rose-700/60 text-rose-600 dark:text-rose-400 px-2 py-1 animate-pulse">
           EMERGENCY OVERRIDE
         </span>
       )}

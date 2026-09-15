@@ -2,16 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Dual-theme palette (consumed by tailwind.config.ts via rgb(var(--…))) ── */
+:root {
+  /* Light: airy neutrals, elevated white cards, deep slate text */
+  --c-slate-950: 246 246 251;   /* page background   #f6f6fb */
+  --c-slate-900: 255 255 255;   /* cards             #ffffff */
+  --c-slate-800: 241 241 247;   /* surfaces / inputs #f1f1f7 */
+  --c-slate-700: 226 226 238;   /* borders           #e2e2ee */
+  --c-slate-600: 201 201 219;
+  --c-slate-500: 107 107 138;   /* muted text        #6b6b8a */
+  --c-slate-400: 91 91 122;
+  --c-slate-300: 69 69 95;
+  --c-slate-200: 51 51 77;
+  --c-slate-100: 31 31 51;
+  --c-slate-50: 16 16 36;
+  --c-white: 15 15 30;          /* "white" text reads as deep slate in light */
+  --chart-grid: #e6e6f0;
+  --chart-axis: #d4d4e4;
+  --chart-tick: #6b6b8a;
+  --chart-muted: #8a8aa8;
+  --chart-fg: #0f0f1e;
+  --chart-tooltip-bg: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(76, 29, 149, 0.12);
+  --glass-border-hover: rgba(139, 92, 246, 0.45);
+  --glass-shadow: 0 10px 40px rgba(76, 29, 149, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --flash-up: rgba(16, 185, 129, 0.16);
+  --flash-down: rgba(225, 29, 72, 0.14);
+  --flash-new: rgba(139, 92, 246, 0.14);
+  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
+               radial-gradient(ellipse at 90% 10%, rgba(217, 70, 239, 0.10) 0%, transparent 50%);
+}
+
+.dark {
+  /* Dark: deep space black → ultra-dark violet, lavender text */
+  --c-slate-950: 5 5 5;         /* #050505 */
+  --c-slate-900: 11 11 20;      /* #0b0b14 */
+  --c-slate-800: 21 21 40;      /* #151528 */
+  --c-slate-700: 38 38 68;      /* #262644 */
+  --c-slate-600: 58 58 92;
+  --c-slate-500: 122 122 163;   /* muted lavender */
+  --c-slate-400: 157 157 194;
+  --c-slate-300: 195 195 224;
+  --c-slate-200: 220 220 240;
+  --c-slate-100: 236 236 248;
+  --c-slate-50: 247 247 255;
+  --c-white: 255 255 255;
+  --chart-grid: #1a1a2e;
+  --chart-axis: #2a2a48;
+  --chart-tick: #9d9dc2;
+  --chart-muted: #6e6e96;
+  --chart-fg: #f7f7ff;
+  --chart-tooltip-bg: #12121f;
+  --glass-bg: rgba(0, 0, 0, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-border-hover: rgba(139, 92, 246, 0.35);
+  --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --flash-up: rgba(16, 185, 129, 0.32);
+  --flash-down: rgba(225, 29, 72, 0.32);
+  --flash-new: rgba(139, 92, 246, 0.3);
+  --page-glow: radial-gradient(ellipse at 20% 0%, rgba(124, 58, 237, 0.22) 0%, transparent 55%),
+               radial-gradient(ellipse at 90% 15%, rgba(217, 70, 239, 0.12) 0%, transparent 50%);
+}
+
 @layer base {
-  /* Primary dark background: bg-slate-950 (#020617) */
   html {
-    background-color: theme("colors.slate.950");
+    background-color: rgb(var(--c-slate-950));
+    color-scheme: light;
+  }
+  html.dark {
     color-scheme: dark;
   }
 
   body {
     @apply bg-slate-950 text-slate-100 antialiased min-h-screen;
+    background-image: var(--page-glow);
+    background-attachment: fixed;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 300ms ease, color 300ms ease;
   }
 
   /* Ensure tabular numerics across all monospace number displays */
@@ -20,41 +88,73 @@
     font-variant-numeric: tabular-nums lining-nums;
   }
 
-  /* Focus ring: emerald-500 (#10b981), contrast ≥ 3:1 against slate-950.
-     Native outline is set for browsers that don't honour box-shadow as a
-     focus indicator (e.g. Safari < 16). Tailwind ring is kept as an
-     additional visual layer for browsers that support it. */
   :focus-visible {
-    outline: 2px solid #10b981;
+    outline: 2px solid #8b5cf6;
     outline-offset: 2px;
-    @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-slate-950;
+    @apply ring-2 ring-violet-500 ring-offset-2 ring-offset-slate-950;
   }
 
-  /* Scrollbar styling for dark theme */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-
   ::-webkit-scrollbar-track {
     @apply bg-slate-900;
   }
-
   ::-webkit-scrollbar-thumb {
     @apply bg-slate-600 rounded-full;
   }
-
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-slate-500;
   }
 
-  /* Range/slider thumb styles for JudgeControls */
   input[type="range"] {
-    @apply accent-emerald-500;
+    @apply accent-violet-500;
   }
 }
 
 @layer components {
+  /* Frosted glass card — the default container across the app */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    transition: border-color 250ms ease, box-shadow 250ms ease, transform 250ms ease;
+  }
+  .glass:hover {
+    border-color: var(--glass-border-hover);
+  }
+  .text-gradient {
+    background: linear-gradient(135deg, #a78bfa 0%, #c084fc 40%, #e879f9 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .btn-brand {
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all duration-200;
+    --c-white: 255 255 255;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #d946ef 100%);
+    background-size: 200% 200%;
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35);
+  }
+  .btn-brand:hover {
+    box-shadow: 0 10px 40px rgba(217, 70, 239, 0.45);
+    transform: translateY(-1px);
+    animation: shimmer 3s linear infinite;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition-colors duration-200 border;
+    color: rgb(var(--c-slate-200));
+    border-color: var(--glass-border-hover);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+  }
+  .btn-ghost:hover {
+    background: rgba(139, 92, 246, 0.12);
+  }
+
   /* Standard card component matching spec's card styling */
   .card {
     @apply bg-slate-900 border border-slate-800 rounded-lg shadow-card;
@@ -93,15 +193,15 @@
 
 /* ── L2 order-book ladder micro-animations ──────────────────────────────── */
 @keyframes ob-flash-up {
-  0% { background-color: rgba(16, 185, 129, 0.32); }
+  0% { background-color: var(--flash-up); }
   100% { background-color: transparent; }
 }
 @keyframes ob-flash-down {
-  0% { background-color: rgba(225, 29, 72, 0.32); }
+  0% { background-color: var(--flash-down); }
   100% { background-color: transparent; }
 }
 @keyframes ob-flash-new {
-  0% { background-color: rgba(56, 189, 248, 0.3); }
+  0% { background-color: var(--flash-new); }
   100% { background-color: transparent; }
 }
 .ob-row[data-flash='up'] { animation: ob-flash-up 420ms ease-out; }

@@ -43,7 +43,7 @@ const TICK_STYLE = {
 // ---------------------------------------------------------------------------
 
 const TOOLTIP_CONTENT_STYLE = {
-  backgroundColor: '#1e293b',
+  backgroundColor: 'var(--chart-tooltip-bg)',
   border: '1px solid #475569',
   color: '#cbd5e1',
 } as const;
@@ -89,19 +89,19 @@ export default function PriceChart() {
           margin={{ top: 8, right: 16, bottom: 8, left: 16 }}
         >
           {/* Grid — dark stroke */}
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-axis)" />
 
           {/* X-axis: tick counter */}
           <XAxis
             dataKey="tick"
             tick={TICK_STYLE}
-            tickLine={{ stroke: '#475569' }}
-            axisLine={{ stroke: '#475569' }}
+            tickLine={{ stroke: 'var(--chart-axis)' }}
+            axisLine={{ stroke: 'var(--chart-axis)' }}
             label={{
               value: 'Tick',
               position: 'insideBottom',
               offset: -4,
-              fill: '#94a3b8',
+              fill: 'var(--chart-tick)',
               fontFamily: 'monospace',
               fontSize: 11,
             }}
@@ -112,8 +112,8 @@ export default function PriceChart() {
             yAxisId="left"
             orientation="left"
             tick={TICK_STYLE}
-            tickLine={{ stroke: '#475569' }}
-            axisLine={{ stroke: '#475569' }}
+            tickLine={{ stroke: 'var(--chart-axis)' }}
+            axisLine={{ stroke: 'var(--chart-axis)' }}
             tickFormatter={(v: number) => formatPrice(v, 8)}
             width={110}
             label={{
@@ -121,7 +121,7 @@ export default function PriceChart() {
               angle: -90,
               position: 'insideLeft',
               offset: 10,
-              fill: '#94a3b8',
+              fill: 'var(--chart-tick)',
               fontFamily: 'monospace',
               fontSize: 11,
             }}
@@ -132,8 +132,8 @@ export default function PriceChart() {
             yAxisId="right"
             orientation="right"
             tick={TICK_STYLE}
-            tickLine={{ stroke: '#475569' }}
-            axisLine={{ stroke: '#475569' }}
+            tickLine={{ stroke: 'var(--chart-axis)' }}
+            axisLine={{ stroke: 'var(--chart-axis)' }}
             tickFormatter={(v: number) => formatPercentage(v, 2)}
             width={90}
             label={{
@@ -141,7 +141,7 @@ export default function PriceChart() {
               angle: 90,
               position: 'insideRight',
               offset: 10,
-              fill: '#94a3b8',
+              fill: 'var(--chart-tick)',
               fontFamily: 'monospace',
               fontSize: 11,
             }}
@@ -150,7 +150,7 @@ export default function PriceChart() {
           {/* Tooltip — dark styling with per-series formatters */}
           <Tooltip
             contentStyle={TOOLTIP_CONTENT_STYLE}
-            labelStyle={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: 12 }}
+            labelStyle={{ color: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 12 }}
             itemStyle={{ fontFamily: 'monospace', fontSize: 12 }}
             formatter={(value: number, name: string) => {
               if (name === 'microPrice') {

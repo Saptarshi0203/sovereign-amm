@@ -60,17 +60,17 @@ export function DayProfileChart({ height = 220 }: { height?: number }) {
       </div>
       <ResponsiveContainer width="100%" height={height}>
         <ComposedChart data={points} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-          <XAxis dataKey="t_sec" type="number" domain={[0, 86400]} ticks={[0, 21600, 43200, 64800, 86400]} tickFormatter={hhmm} tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 9 }} />
-          <YAxis yAxisId="mw" tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 9 }} width={36} tickFormatter={(v: number) => `${v}MW`} />
-          <YAxis yAxisId="px" orientation="right" tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 9 }} width={36} domain={['auto', 'auto']} tickFormatter={(v: number) => `₹${v.toFixed(1)}`} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+          <XAxis dataKey="t_sec" type="number" domain={[0, 86400]} ticks={[0, 21600, 43200, 64800, 86400]} tickFormatter={hhmm} tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 9 }} />
+          <YAxis yAxisId="mw" tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 9 }} width={36} tickFormatter={(v: number) => `${v}MW`} />
+          <YAxis yAxisId="px" orientation="right" tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 9 }} width={36} domain={['auto', 'auto']} tickFormatter={(v: number) => `₹${v.toFixed(1)}`} />
           <Tooltip
-            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontFamily: 'monospace', fontSize: 10 }}
+            contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid #334155', fontFamily: 'monospace', fontSize: 10 }}
             labelFormatter={(t) => hhmm(Number(t))}
           />
-          <Area yAxisId="mw" type="monotone" dataKey="demand_mw" name="demand MW" stroke="#38bdf8" fill="rgba(56,189,248,0.12)" strokeWidth={1.5} isAnimationActive={false} dot={false} />
+          <Area yAxisId="mw" type="monotone" dataKey="demand_mw" name="demand MW" stroke="#a78bfa" fill="rgba(56,189,248,0.12)" strokeWidth={1.5} isAnimationActive={false} dot={false} />
           <Area yAxisId="mw" type="monotone" dataKey="solar_mw" name="solar MW" stroke="#f59e0b" fill="rgba(245,158,11,0.15)" strokeWidth={1.5} isAnimationActive={false} dot={false} />
-          <Line yAxisId="px" type="monotone" dataKey="micro_price" name="price ₹/kWh" stroke="#e2e8f0" strokeWidth={1.25} strokeDasharray="3 2" isAnimationActive={false} dot={false} />
+          <Line yAxisId="px" type="monotone" dataKey="micro_price" name="price ₹/kWh" stroke="var(--chart-fg)" strokeWidth={1.25} strokeDasharray="3 2" isAnimationActive={false} dot={false} />
           <ReferenceLine yAxisId="mw" x={nowSec} stroke="#10b981" strokeWidth={2} label={{ value: 'NOW', fill: '#10b981', fontSize: 9, position: 'top' }} />
         </ComposedChart>
       </ResponsiveContainer>

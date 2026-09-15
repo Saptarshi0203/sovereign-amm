@@ -19,10 +19,10 @@ function LineLoadingStrip() {
           key={l.id}
           className={`px-2 py-1 rounded border ${
             l.status === 'critical'
-              ? 'border-rose-700/60 text-rose-400 animate-pulse'
+              ? 'border-rose-700/60 text-rose-600 dark:text-rose-400 animate-pulse'
               : l.status === 'amber'
-                ? 'border-amber-700/60 text-amber-400'
-                : 'border-emerald-800/50 text-emerald-400'
+                ? 'border-amber-700/60 text-amber-600 dark:text-amber-400'
+                : 'border-emerald-800/50 text-emerald-600 dark:text-emerald-400'
           }`}
           title={`${l.from} → ${l.to} · ${l.flowMW.toFixed(2)} / ${l.capacityMW.toFixed(1)} MW`}
         >
@@ -41,7 +41,7 @@ export default function GridPage() {
     <>
       <div className="bg-gradient-to-b from-slate-900 to-transparent border-b border-slate-800 py-12 px-4">
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-xs uppercase tracking-widest text-emerald-400 font-mono mb-2">PTDF · DC Power Flow</p>
+          <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono mb-2">PTDF · DC Power Flow</p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white">Physical Physics, Meet Financial Markets.</h1>
           <p className="text-slate-400 mt-3 max-w-xl mx-auto text-sm">
             7-bus campus microgrid with PTDF screening. O(L) congestion checks before every trade.

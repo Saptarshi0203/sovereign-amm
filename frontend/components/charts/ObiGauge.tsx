@@ -43,7 +43,7 @@ export function ObiGauge() {
         <path
           d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
           fill="none"
-          stroke="#1e293b"
+          stroke="var(--chart-grid)"
           strokeWidth={10}
           strokeLinecap="round"
         />
@@ -73,13 +73,13 @@ export function ObiGauge() {
         />
         <circle cx={cx} cy={cy} r={4} fill={needleColor} />
         {/* Axis labels */}
-        <text x="28" y="105" fontFamily="monospace" fontSize="9" fill="#64748b">
+        <text x="28" y="105" fontFamily="monospace" fontSize="9" fill="var(--chart-muted)">
           −1
         </text>
-        <text x="162" y="105" fontFamily="monospace" fontSize="9" fill="#64748b">
+        <text x="162" y="105" fontFamily="monospace" fontSize="9" fill="var(--chart-muted)">
           +1
         </text>
-        <text x="96" y="18" fontFamily="monospace" fontSize="9" fill="#64748b">
+        <text x="96" y="18" fontFamily="monospace" fontSize="9" fill="var(--chart-muted)">
           0
         </text>
         {/* Numeric readout */}

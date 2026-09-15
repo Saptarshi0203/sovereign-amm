@@ -129,7 +129,7 @@ export function InjectionOverride() {
         </button>
       </div>
 
-      {error && <p className="text-xs text-rose-400 font-mono">{error}</p>}
+      {error && <p className="text-xs text-rose-600 dark:text-rose-400 font-mono">{error}</p>}
 
       {/* Active indicator */}
       {active && (

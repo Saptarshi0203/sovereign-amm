@@ -158,7 +158,7 @@ export function RagCopilot(): React.ReactElement {
               className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-sky-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100'
-                  : 'bg-white dark:bg-slate-900 border border-sky-200 dark:border-slate-800 text-slate-800 dark:text-slate-200'
+                  : 'bg-slate-900 border border-sky-200 dark:border-slate-800 text-slate-800 dark:text-slate-200'
               }`}
             >
               {msg.pending ? (
@@ -220,7 +220,7 @@ export function RagCopilot(): React.ReactElement {
           placeholder="Ask about the engine..."
           disabled={loading}
           aria-label="Query input"
-          className="flex-1 bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:focus:ring-emerald-500 disabled:opacity-50"
+          className="flex-1 bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:focus:ring-emerald-500 disabled:opacity-50"
         />
         <button
           type="submit"

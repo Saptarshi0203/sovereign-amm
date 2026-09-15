@@ -81,23 +81,23 @@ export function DepthChart() {
         data={chartData}
         margin={{ top: 8, right: 16, bottom: 8, left: 72 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
         <XAxis
           type="number"
-          tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 11 }}
-          tickLine={{ stroke: '#334155' }}
-          axisLine={{ stroke: '#334155' }}
+          tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 11 }}
+          tickLine={{ stroke: 'var(--chart-axis)' }}
+          axisLine={{ stroke: 'var(--chart-axis)' }}
           tickFormatter={(v: number) => Math.abs(v).toFixed(1)}
         />
         <YAxis
           dataKey="price"
           type="category"
           width={72}
-          tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 10 }}
-          tickLine={{ stroke: '#334155' }}
-          axisLine={{ stroke: '#334155' }}
+          tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 10 }}
+          tickLine={{ stroke: 'var(--chart-axis)' }}
+          axisLine={{ stroke: 'var(--chart-axis)' }}
         />
-        <ReferenceLine x={0} stroke="#475569" strokeWidth={1} />
+        <ReferenceLine x={0} stroke="var(--chart-axis)" strokeWidth={1} />
         {ammBidLabel && chartData.some((r) => r.price === ammBidLabel) && (
           <ReferenceLine y={ammBidLabel} stroke="#10b981" strokeDasharray="2 2" label={{ value: 'AMM', fill: '#10b981', fontSize: 9, position: 'left' }} />
         )}
@@ -107,12 +107,12 @@ export function DepthChart() {
         <Tooltip
           cursor={{ fill: 'rgba(100,116,139,0.1)' }}
           contentStyle={{
-            backgroundColor: '#1e293b',
+            backgroundColor: 'var(--chart-tooltip-bg)',
             border: '1px solid #334155',
             borderRadius: 6,
             fontFamily: 'monospace',
             fontSize: 11,
-            color: '#e2e8f0',
+            color: 'var(--chart-fg)',
           }}
           formatter={(v: number, name: string) => [
             Math.abs(v).toFixed(2) + ' kWh',

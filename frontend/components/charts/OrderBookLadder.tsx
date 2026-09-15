@@ -48,7 +48,7 @@ const Row = memo(function Row({ px, sz, cum, pct, side, flash, flashSeq, isAmm, 
     >
       {/* depth bar (mirrored) */}
       <div
-        className={`ob-bar absolute top-[2px] bottom-[2px] ${isBid ? 'right-0 bg-emerald-500/20' : 'left-0 bg-rose-500/20'}`}
+        className={`ob-bar absolute top-[2px] bottom-[2px] rounded-sm ${isBid ? 'right-0 bg-gradient-to-l from-emerald-500/35 to-emerald-500/5' : 'left-0 bg-gradient-to-r from-rose-500/35 to-rose-500/5'}`}
         style={{ width: `${Math.max(1.5, pct)}%` }}
         aria-hidden="true"
       />
@@ -56,11 +56,11 @@ const Row = memo(function Row({ px, sz, cum, pct, side, flash, flashSeq, isAmm, 
         <>
           <span className="relative z-10 pr-2 text-slate-500">{cum.toFixed(2)}</span>
           <span className="relative z-10 pr-2 text-slate-300">{sz.toFixed(2)}</span>
-          <span className={`relative z-10 pr-2 font-semibold ${isAmm ? 'text-emerald-200 underline decoration-dotted underline-offset-2' : 'text-emerald-400'}`}>{px.toFixed(3)}</span>
+          <span className={`relative z-10 pr-2 font-semibold ${isAmm ? 'text-emerald-200 underline decoration-dotted underline-offset-2' : 'text-emerald-600 dark:text-emerald-400'}`}>{px.toFixed(3)}</span>
         </>
       ) : (
         <>
-          <span className={`relative z-10 pl-2 font-semibold ${isAmm ? 'text-rose-200 underline decoration-dotted underline-offset-2' : 'text-rose-400'}`}>{px.toFixed(3)}</span>
+          <span className={`relative z-10 pl-2 font-semibold ${isAmm ? 'text-rose-200 underline decoration-dotted underline-offset-2' : 'text-rose-600 dark:text-rose-400'}`}>{px.toFixed(3)}</span>
           <span className="relative z-10 pl-2 text-slate-300">{sz.toFixed(2)}</span>
           <span className="relative z-10 pl-2 text-slate-500">{cum.toFixed(2)}</span>
         </>
@@ -152,14 +152,14 @@ export function OrderBookLadder({ height = 320, depth = 12 }: OrderBookLadderPro
       </div>
 
       {/* ladder */}
-      <div className="grid grid-cols-2 gap-px bg-slate-800/60 rounded-lg overflow-hidden" style={{ maxHeight: height }}>
-        <div className="bg-slate-950/60 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-px bg-slate-700/60 rounded-xl overflow-hidden border border-white/5" style={{ maxHeight: height }}>
+        <div className="bg-slate-900/80 overflow-y-auto">
           {bidRows.length === 0 && <p className="text-[11px] font-mono text-slate-600 p-2">no bids</p>}
           {bidRows.map((r) => (
             <Row key={`${r.id}:${r.flashSeq}`} {...r} pct={(r.cum / maxCum) * 100} />
           ))}
         </div>
-        <div className="bg-slate-950/60 overflow-y-auto">
+        <div className="bg-slate-900/80 overflow-y-auto">
           {askRows.length === 0 && <p className="text-[11px] font-mono text-slate-600 p-2">no asks</p>}
           {askRows.map((r) => (
             <Row key={`${r.id}:${r.flashSeq}`} {...r} pct={(r.cum / maxCum) * 100} />
@@ -177,7 +177,7 @@ export function OrderBookLadder({ height = 320, depth = 12 }: OrderBookLadderPro
             spread <span className="text-slate-100">₹{spread.toFixed(4)}</span>
           </span>
           <span>
-            OBI <span className={obi >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{obi >= 0 ? '+' : ''}{obi.toFixed(3)}</span>
+            OBI <span className={obi >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>{obi >= 0 ? '+' : ''}{obi.toFixed(3)}</span>
           </span>
         </div>
         <div className="h-1.5 rounded-full bg-rose-500/30 overflow-hidden" title={`${bidTotal.toFixed(1)} kWh bid · ${askTotal.toFixed(1)} kWh ask`}>

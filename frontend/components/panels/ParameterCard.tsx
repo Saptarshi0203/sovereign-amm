@@ -49,7 +49,7 @@ export function ParameterCard({
   delta,
   sparklineData,
   unit  = '',
-  color = '#38bdf8',
+  color = '#a78bfa',
 }: ParameterCardProps) {
   const isUp = delta > 0;
 
@@ -63,8 +63,8 @@ export function ParameterCard({
         <span
           className={`text-xs font-mono px-1.5 py-0.5 rounded ${
             isUp
-              ? 'bg-emerald-900/30 text-emerald-400'
-              : 'bg-rose-900/30 text-rose-400'
+              ? 'bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+              : 'bg-rose-900/30 text-rose-600 dark:text-rose-400'
           }`}
         >
           {isUp ? '+' : ''}

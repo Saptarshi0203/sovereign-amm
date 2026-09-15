@@ -20,7 +20,7 @@ export default function TradePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-widest text-emerald-400 font-mono mb-1">Household terminal</p>
+            <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono mb-1">Household terminal</p>
             <h1 className="text-2xl font-bold text-white">Trade Power with the Central Control Hub</h1>
             <p className="text-xs text-slate-500 font-mono">
               Buy when your home needs more than rooftop + storage · sell surplus into the 5 MWh hub · grid {freq.toFixed(3)} Hz

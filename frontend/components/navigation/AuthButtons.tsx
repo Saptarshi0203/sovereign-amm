@@ -72,12 +72,12 @@ export function AuthButtons() {
           )}
           <span className="hidden lg:flex flex-col items-start leading-tight">
             <span className="text-xs text-slate-200 max-w-[140px] truncate">{user.name || user.email}</span>
-            <span className="text-[10px] font-mono text-emerald-400 tabular-nums">
+            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
               <Wallet className="inline w-3 h-3 mr-0.5 -mt-0.5" />
               {inr(wallet)}
             </span>
           </span>
-          {isAdmin && <span className="text-[10px] font-mono text-violet-300 border border-violet-700/50 rounded px-1 py-0.5">ADMIN</span>}
+          {isAdmin && <span className="text-[10px] font-mono text-violet-700 dark:text-violet-300 border border-violet-700/50 rounded px-1 py-0.5">ADMIN</span>}
           <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
@@ -88,11 +88,11 @@ export function AuthButtons() {
               <p className="text-xs text-slate-400 truncate">{user.email}</p>
               <div className="mt-2 flex items-center justify-between text-xs font-mono">
                 <span className="text-slate-500">Paper wallet</span>
-                <span className="text-emerald-400 tabular-nums">{inr(wallet)}</span>
+                <span className="text-emerald-600 dark:text-emerald-400 tabular-nums">{inr(wallet)}</span>
               </div>
               <div className="mt-1 flex items-center justify-between text-xs font-mono">
                 <span className="text-slate-500">Role</span>
-                <span className={isAdmin ? 'text-violet-300' : 'text-slate-300'}>
+                <span className={isAdmin ? 'text-violet-700 dark:text-violet-300' : 'text-slate-300'}>
                   {isAdmin && <ShieldCheck className="inline w-3 h-3 mr-1 -mt-0.5" />}
                   {user.role}
                 </span>
@@ -143,7 +143,7 @@ export function AuthButtons() {
             text="signin_with"
             useOneTap={false}
           />
-          {error && <span className="text-[10px] text-rose-400 font-mono mt-0.5">{error}</span>}
+          {error && <span className="text-[10px] text-rose-600 dark:text-rose-400 font-mono mt-0.5">{error}</span>}
         </div>
       ) : (
         <button

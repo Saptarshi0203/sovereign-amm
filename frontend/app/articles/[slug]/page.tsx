@@ -49,7 +49,7 @@ export default function ArticleDetailPage({ params }: ArticlePageProps) {
             <p className="text-slate-300 text-sm leading-relaxed">
               {section.content.split(/`([^`]+)`/).map((part, pi) =>
                 pi % 2 === 1 ? (
-                  <code key={pi} className="font-mono text-xs bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded border border-slate-700">{part}</code>
+                  <code key={pi} className="font-mono text-xs bg-slate-800 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-slate-700">{part}</code>
                 ) : part
               )}
             </p>

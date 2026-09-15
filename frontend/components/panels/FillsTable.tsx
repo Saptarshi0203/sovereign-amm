@@ -32,11 +32,11 @@ export function FillsTable({ rows = 6 }: { rows?: number }) {
         {items.map((f, i) => (
           <div key={`${f.ts}-${i}`} className="grid grid-cols-[52px_40px_1fr_1fr_28px] items-center gap-1">
             <span className="text-slate-600 tabular-nums">{fmtTime(f.ts)}</span>
-            <span className={f.side === 'buy' ? 'text-emerald-400' : 'text-rose-500'}>{f.side.toUpperCase()}</span>
+            <span className={f.side === 'buy' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}>{f.side.toUpperCase()}</span>
             <span className="text-right tabular-nums text-slate-200">₹{f.px.toFixed(4)}</span>
             <span className="text-right tabular-nums">{f.sz.toFixed(2)} kWh</span>
             <span className="text-right text-[10px]">
-              {f.amm ? <span className={f.amm === 'BID' ? 'text-emerald-500' : 'text-rose-400'} title="AMM battery was counterparty">AMM</span> : ''}
+              {f.amm ? <span className={f.amm === 'BID' ? 'text-emerald-500' : 'text-rose-600 dark:text-rose-400'} title="AMM battery was counterparty">AMM</span> : ''}
             </span>
           </div>
         ))}

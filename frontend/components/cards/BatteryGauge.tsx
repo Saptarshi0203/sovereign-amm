@@ -144,7 +144,7 @@ export function BatteryGauge(): JSX.Element {
         <path
           d={backgroundArcPath}
           fill="none"
-          stroke="#334155"
+          stroke="var(--chart-axis)"
           strokeWidth="12"
           strokeLinecap="round"
         />

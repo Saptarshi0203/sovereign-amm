@@ -44,7 +44,7 @@ export function Navbar() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-sky-200 dark:border-slate-800">
+    <header className="sticky top-0 z-50 bg-slate-950/70 backdrop-blur-2xl border-b border-white/5 supports-[backdrop-filter]:bg-slate-950/60">
       <nav
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
         aria-label="Main navigation"
@@ -53,10 +53,11 @@ export function Navbar() {
         <div className="flex items-center gap-6 min-w-0">
           <Link
             href="/"
-            className="text-lg font-bold tracking-widest text-slate-900 dark:text-white uppercase font-display whitespace-nowrap"
+            className="flex items-center gap-2 text-lg font-bold tracking-widest text-white uppercase font-display whitespace-nowrap"
             aria-label="Sovereign-AMM home"
           >
-            SOVEREIGN-AMM
+            <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-sm bg-brand-gradient shadow-glow-violet" />
+            <span>SOVEREIGN-<span className="text-gradient">AMM</span></span>
           </Link>
 
           {/* ── Desktop tabs (hidden on mobile) ───────────────────────────── */}
@@ -72,8 +73,8 @@ export function Navbar() {
                   href={tab.href}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-sky-100 dark:bg-slate-800 text-sky-900 dark:text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 hover:text-sky-900 dark:hover:text-white'
+                      ? 'bg-violet-500/15 text-white border border-violet-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/70 border border-transparent'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >

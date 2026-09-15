@@ -48,11 +48,11 @@ export function LmpPanel() {
                 <td className="py-1 text-slate-200" title={bus.label}>
                   {bus.id}
                 </td>
-                <td className="py-1 text-right tabular-nums text-sky-400">{bus.lmp.toFixed(3)}</td>
-                <td className={`py-1 text-right tabular-nums hidden sm:table-cell ${(bus.congestion ?? 0) > 0.0005 ? 'text-amber-400' : (bus.congestion ?? 0) < -0.0005 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                <td className="py-1 text-right tabular-nums text-sky-600 dark:text-sky-400">{bus.lmp.toFixed(3)}</td>
+                <td className={`py-1 text-right tabular-nums hidden sm:table-cell ${(bus.congestion ?? 0) > 0.0005 ? 'text-amber-600 dark:text-amber-400' : (bus.congestion ?? 0) < -0.0005 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>
                   {bus.congestion !== undefined ? `${bus.congestion >= 0 ? '+' : ''}${bus.congestion.toFixed(3)}` : '—'}
                 </td>
-                <td className={`py-1 text-right tabular-nums ${bus.injectionMW >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+                <td className={`py-1 text-right tabular-nums ${bus.injectionMW >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                   {bus.injectionMW >= 0 ? '+' : ''}
                   {bus.injectionMW.toFixed(2)}
                 </td>
@@ -75,7 +75,7 @@ export function LmpPanel() {
           <span>No binding line constraints — all μ_l = 0.</span>
         ) : (
           bindingLines.map((l) => (
-            <span key={l.id} className={l.status === 'critical' ? 'text-rose-400' : 'text-amber-400'}>
+            <span key={l.id} className={l.status === 'critical' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}>
               {l.id} {l.utilizationPct}% · μ=₹{(l.shadowPrice ?? 0).toFixed(3)}
             </span>
           ))

@@ -174,7 +174,7 @@ export function TickerTape() {
           <div className="flex items-center gap-2 ml-auto" aria-hidden="true">
             {/* STALE badge — shown when connected but feed is silent >5 s */}
             {isStale && isConnected && (
-              <span className="text-[10px] font-bold tracking-widest text-amber-400 uppercase select-none">
+              <span className="text-[10px] font-bold tracking-widest text-amber-600 dark:text-amber-400 uppercase select-none">
                 STALE
               </span>
             )}

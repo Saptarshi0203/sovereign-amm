@@ -50,7 +50,7 @@ export function HeroSection() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32 text-center">
 
         {/* Badge / eyebrow */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono font-semibold tracking-widest uppercase">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-semibold tracking-widest uppercase">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-slow" />
           10 Hz Matching Engine · Live
         </div>
@@ -65,7 +65,7 @@ export function HeroSection() {
         {/* Subtitle */}
         <p className="text-2xl sm:text-3xl font-semibold text-slate-300 mb-6">
           Powered by{" "}
-          <span className="text-emerald-400">Grid Physics</span>
+          <span className="text-emerald-600 dark:text-emerald-400">Grid Physics</span>
         </p>
 
         {/* Descriptive subheading */}

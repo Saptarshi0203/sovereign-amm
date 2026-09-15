@@ -120,14 +120,14 @@ export function L2DepthChart() {
         data={chartData}
         margin={{ top: 8, right: 16, bottom: 8, left: 80 }}
       >
-        <CartesianGrid stroke="#334155" strokeDasharray="3 3" />
+        <CartesianGrid stroke="var(--chart-axis)" strokeDasharray="3 3" />
 
         {/* Y-axis: price levels as category labels in monospace */}
         <YAxis
           dataKey="price"
           type="category"
           width={80}
-          tick={{ fontFamily: "monospace", fontSize: 11, fill: "#94a3b8" }}
+          tick={{ fontFamily: "monospace", fontSize: 11, fill: "var(--chart-tick)" }}
           tickFormatter={(value: string) =>
             formatPrice(Number(value), 6)
           }
@@ -136,19 +136,19 @@ export function L2DepthChart() {
         {/* X-axis: volume as absolute integers */}
         <XAxis
           type="number"
-          tick={{ fontSize: 11, fill: "#94a3b8" }}
+          tick={{ fontSize: 11, fill: "var(--chart-tick)" }}
           tickFormatter={(v: number) => Math.abs(v).toString()}
         />
 
         <Tooltip
           cursor={{ fill: "rgba(100,116,139,0.15)" }}
           contentStyle={{
-            backgroundColor: "#1e293b", // bg-slate-800
+            backgroundColor: "var(--chart-grid)", // bg-slate-800
             border: "1px solid #475569", // border slate-600
             borderRadius: 6,
             fontFamily: "monospace",
             fontSize: 12,
-            color: "#e2e8f0",
+            color: "var(--chart-fg)",
           }}
           formatter={(value: number, name: string) => [
             Math.abs(value).toString(),

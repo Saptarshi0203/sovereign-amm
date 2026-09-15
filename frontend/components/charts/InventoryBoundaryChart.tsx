@@ -53,7 +53,7 @@ export function InventoryBoundaryChart() {
       <div className="flex flex-wrap justify-between text-[10px] font-mono text-slate-500 gap-x-3">
         <span>
           base <span className="text-slate-300">{base.toFixed(4)}</span> · spread <span className="text-slate-300">{spread.toFixed(4)}</span> · C_deg{' '}
-          <span className="text-amber-400">{cDeg.toFixed(4)}</span>
+          <span className="text-amber-600 dark:text-amber-400">{cDeg.toFixed(4)}</span>
         </span>
         <span>
           σ={risk.sigma.toFixed(2)} γ={risk.gamma.toFixed(2)} k={risk.k.toFixed(1)} A={risk.A.toFixed(1)} {live ? '' : '(sim)'}
@@ -61,24 +61,24 @@ export function InventoryBoundaryChart() {
       </div>
       <ResponsiveContainer width="100%" height={190}>
         <LineChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
           <XAxis
             dataKey="q"
             type="number"
             domain={[-1, 1]}
             ticks={[-1, -0.5, 0, 0.5, 1]}
-            tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 9 }}
-            label={{ value: 'inventory q', fill: '#64748b', fontSize: 9, position: 'insideBottomRight', offset: -2 }}
+            tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 9 }}
+            label={{ value: 'inventory q', fill: 'var(--chart-muted)', fontSize: 9, position: 'insideBottomRight', offset: -2 }}
           />
-          <YAxis tick={{ fill: '#94a3b8', fontFamily: 'monospace', fontSize: 9 }} domain={['auto', 'auto']} tickFormatter={(v: number) => v.toFixed(2)} width={44} />
+          <YAxis tick={{ fill: 'var(--chart-tick)', fontFamily: 'monospace', fontSize: 9 }} domain={['auto', 'auto']} tickFormatter={(v: number) => v.toFixed(2)} width={44} />
           <ReferenceArea x1={-1} x2={qFloor} fill="rgba(225,29,72,0.08)" label={{ value: 'ask off', fill: '#e11d48', fontSize: 8 }} />
           <ReferenceArea x1={qCeil} x2={1} fill="rgba(16,185,129,0.08)" label={{ value: 'bid off', fill: '#10b981', fontSize: 8 }} />
-          <ReferenceLine x={+inventoryQ.toFixed(3)} stroke="#f8fafc" strokeDasharray="4 2" label={{ value: `q=${inventoryQ.toFixed(2)}`, fill: '#f8fafc', fontSize: 9, position: 'top' }} />
+          <ReferenceLine x={+inventoryQ.toFixed(3)} stroke="var(--chart-fg)" strokeDasharray="4 2" label={{ value: `q=${inventoryQ.toFixed(2)}`, fill: 'var(--chart-fg)', fontSize: 9, position: 'top' }} />
           <Tooltip
-            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', fontFamily: 'monospace', fontSize: 10 }}
+            contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '1px solid #334155', fontFamily: 'monospace', fontSize: 10 }}
             labelFormatter={(q) => `q = ${q}`}
           />
-          <Line type="monotone" dataKey="mid" stroke="#64748b" strokeWidth={1} strokeDasharray="2 3" dot={false} isAnimationActive={false} name="μ (ref)" />
+          <Line type="monotone" dataKey="mid" stroke="var(--chart-muted)" strokeWidth={1} strokeDasharray="2 3" dot={false} isAnimationActive={false} name="μ (ref)" />
           <Line type="monotone" dataKey="bid" stroke="#10b981" strokeWidth={1.75} dot={false} isAnimationActive={false} name="Bid μ−δ_bid(q)" />
           <Line type="monotone" dataKey="ask" stroke="#e11d48" strokeWidth={1.75} dot={false} isAnimationActive={false} name="Ask μ+δ_ask(q)+C_deg" />
         </LineChart>

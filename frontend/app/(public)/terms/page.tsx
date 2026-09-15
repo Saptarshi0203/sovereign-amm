@@ -54,7 +54,7 @@ export default function TermsOfServicePage() {
           <p>
             In order to resolve a complaint regarding the site or to receive further information regarding use of the site, please contact us at:
             <br />
-            Email: <a href="mailto:@sovereign-amm.com" className="text-emerald-400 hover:text-emerald-300">@sovereign-amm.com</a>
+            Email: <a href="mailto:@sovereign-amm.com" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-300">@sovereign-amm.com</a>
             <br />
             Phone: +91 99074 18830
           </p>

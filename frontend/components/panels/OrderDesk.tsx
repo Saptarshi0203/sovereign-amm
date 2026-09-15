@@ -17,13 +17,13 @@ function fmtTime(ts: number): string {
 }
 
 const STATUS_COLOR: Record<UserOrder['status'], string> = {
-  OPEN: 'text-sky-400',
-  ARMED: 'text-violet-400',
-  FILLED: 'text-emerald-400',
-  PARTIAL: 'text-amber-400',
+  OPEN: 'text-sky-600 dark:text-sky-400',
+  ARMED: 'text-violet-600 dark:text-violet-400',
+  FILLED: 'text-emerald-600 dark:text-emerald-400',
+  PARTIAL: 'text-amber-600 dark:text-amber-400',
   CANCELLED: 'text-slate-500',
   REJECTED: 'text-rose-500',
-  TRIGGERED: 'text-emerald-300',
+  TRIGGERED: 'text-emerald-700 dark:text-emerald-300',
 };
 
 /**
@@ -162,7 +162,7 @@ export function OrderDesk() {
                 setType(t);
                 if (t === 'AUTO_CHARGE') setSide('BUY');
               }}
-              className={`flex-1 py-1.5 rounded border ${type === t ? 'border-sky-500 text-sky-300 bg-sky-900/20' : 'border-slate-700 text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-1.5 rounded border ${type === t ? 'border-sky-500 text-sky-700 dark:text-sky-300 bg-sky-900/20' : 'border-slate-700 text-slate-400 hover:text-white'}`}
             >
               {t === 'AUTO_CHARGE' ? 'AUTO-CHARGE' : t}
             </button>
@@ -202,7 +202,7 @@ export function OrderDesk() {
         {type === 'AUTO_CHARGE' && (
           <label className="flex items-center justify-between gap-3 text-xs font-mono text-slate-400">
             <span>
-              <Zap className="inline w-3.5 h-3.5 mr-1 text-violet-400" />
+              <Zap className="inline w-3.5 h-3.5 mr-1 text-violet-600 dark:text-violet-400" />
               Buy when ask ≤ (₹/kWh)
             </span>
             <input
@@ -247,7 +247,7 @@ export function OrderDesk() {
         </button>
 
         {feedback && (
-          <p className={`text-xs font-mono ${feedback.tone === 'ok' ? 'text-emerald-400' : feedback.tone === 'warn' ? 'text-amber-400' : 'text-rose-400'}`}>{feedback.text}</p>
+          <p className={`text-xs font-mono ${feedback.tone === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : feedback.tone === 'warn' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>{feedback.text}</p>
         )}
       </div>
 
@@ -281,7 +281,7 @@ export function OrderDesk() {
             <div className="text-[11px] font-mono space-y-1">
               {portfolio.active_orders.map((o) => (
                 <div key={o.order_id} className="grid grid-cols-[44px_1fr_1fr_1fr_40px] items-center gap-2">
-                  <span className={o.side === 'BUY' ? 'text-emerald-400' : 'text-rose-400'}>{o.side}</span>
+                  <span className={o.side === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>{o.side}</span>
                   <span className="text-slate-300">
                     {o.type === 'AUTO_CHARGE' ? `auto ≤ ₹${o.trigger_price?.toFixed(2)}` : `limit ₹${o.limit_price?.toFixed(3)}`}
                   </span>
@@ -307,7 +307,7 @@ export function OrderDesk() {
               {portfolio.fills.slice(0, 12).map((f, i) => (
                 <div key={`${f.ts}-${i}`} className="grid grid-cols-[56px_40px_1fr_1fr_1fr] gap-2">
                   <span className="text-slate-600">{fmtTime(f.ts)}</span>
-                  <span className={f.side === 'BUY' ? 'text-emerald-400' : 'text-rose-400'}>{f.side}</span>
+                  <span className={f.side === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>{f.side}</span>
                   <span className="text-slate-200 text-right">₹{f.price.toFixed(4)}</span>
                   <span className="text-slate-400 text-right">{f.qty_kwh.toFixed(2)} kWh</span>
                   <span className="text-slate-500 truncate" title={f.counterparty}>
@@ -329,7 +329,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'go
   return (
     <div className="rounded-md border border-slate-800 p-2">
       <p className="text-[10px] text-slate-500">{label}</p>
-      <p className={`tabular-nums ${tone === 'good' ? 'text-emerald-400' : tone === 'bad' ? 'text-rose-400' : 'text-slate-100'}`}>{value}</p>
+      <p className={`tabular-nums ${tone === 'good' ? 'text-emerald-600 dark:text-emerald-400' : tone === 'bad' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-100'}`}>{value}</p>
     </div>
   );
 }

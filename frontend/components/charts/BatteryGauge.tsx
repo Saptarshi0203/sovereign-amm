@@ -64,7 +64,7 @@ export function BatteryGauge() {
         <path
           d={bgPath}
           fill="none"
-          stroke="#1e293b"
+          stroke="var(--chart-grid)"
           strokeWidth={12}
           strokeLinecap="round"
         />
@@ -88,7 +88,7 @@ export function BatteryGauge() {
           fontFamily="'JetBrains Mono', monospace"
           fontSize="22"
           fontWeight="700"
-          fill="#f8fafc"
+          fill="var(--chart-fg)"
         >
           {soc.toFixed(1)}%
         </text>
@@ -99,7 +99,7 @@ export function BatteryGauge() {
           textAnchor="middle"
           fontFamily="monospace"
           fontSize="9"
-          fill="#64748b"
+          fill="var(--chart-muted)"
         >
           STATE OF CHARGE
         </text>

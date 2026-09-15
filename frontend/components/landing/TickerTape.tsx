@@ -91,15 +91,15 @@ function TickerFields() {
   const lmpSpreadFlash  = useTickFlash(lmpSpread);
 
   // C_deg: amber override when > 0.02, otherwise use tick flash
-  const cDegClass = cDeg > 0.02 ? 'text-amber-400' : cDegFlash;
+  const cDegClass = cDeg > 0.02 ? 'text-amber-600 dark:text-amber-400' : cDegFlash;
 
   // OBI: sign-driven colour
-  const obiClass = obi >= 0 ? 'text-emerald-400' : 'text-rose-500';
+  const obiClass = obi >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500';
 
   return (
     <>
       <TickerField label="MICRO PRICE" value={formatPrice(microPrice, 4)}       colorClass={microPriceFlash} />
-      <TickerField label="BEST BID"    value={formatPrice(bestBid.px, 3)}        colorClass="text-emerald-400" />
+      <TickerField label="BEST BID"    value={formatPrice(bestBid.px, 3)}        colorClass="text-emerald-600 dark:text-emerald-400" />
       <TickerField label="BEST ASK"    value={formatPrice(bestAsk.px, 3)}        colorClass="text-rose-500" />
       <TickerField label="SPREAD"      value={spread.toFixed(4)}                 colorClass={spreadFlash} />
       <TickerField label="SoC"         value={soc.toFixed(1) + '%'}              colorClass={socFlash} />
@@ -107,7 +107,7 @@ function TickerFields() {
       <TickerField label="σ"           value={volatility.toFixed(4)}             colorClass="text-slate-400" />
       <TickerField label="C_deg"       value={cDeg.toFixed(4)}                   colorClass={cDegClass} />
       <TickerField label="LMP SPREAD"  value={lmpSpread.toFixed(3)}              colorClass={lmpSpreadFlash} />
-      <TickerField label="ENGINE"      value="10 Hz"                             colorClass="text-emerald-400" />
+      <TickerField label="ENGINE"      value="10 Hz"                             colorClass="text-emerald-600 dark:text-emerald-400" />
     </>
   );
 }
@@ -157,7 +157,7 @@ export function TickerTape() {
 
   return (
     <div
-      className="w-full h-12 border-y border-slate-800 bg-slate-900/50 flex items-center overflow-hidden"
+      className="w-full h-12 border-y border-white/5 bg-slate-900/50 backdrop-blur-xl flex items-center overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-label="Market ticker tape"

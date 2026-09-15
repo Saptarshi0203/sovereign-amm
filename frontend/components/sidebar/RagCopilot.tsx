@@ -129,7 +129,7 @@ export function RagCopilot() {
                 aria-hidden="true"
               >
                 {isUser ? (
-                  <User className="h-3.5 w-3.5 text-emerald-400" />
+                  <User className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                   <Bot className="h-3.5 w-3.5 text-blue-400" />
                 )}
@@ -183,7 +183,7 @@ export function RagCopilot() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about the engine..."
           disabled={loading}
-          className="flex-1 bg-white dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Message input"
         />
 

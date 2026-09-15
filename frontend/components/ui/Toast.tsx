@@ -95,8 +95,8 @@ export function Toast({
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
         // Colour scheme
         isSuccess
-          ? 'bg-slate-900 border-emerald-700 text-emerald-400'
-          : 'bg-slate-900 border-rose-700 text-rose-400',
+          ? 'bg-slate-900 border-emerald-700 text-emerald-600 dark:text-emerald-400'
+          : 'bg-slate-900 border-rose-700 text-rose-600 dark:text-rose-400',
       )}
     >
       {/* Message */}
@@ -109,7 +109,7 @@ export function Toast({
         onClick={onDismiss}
         className={cn(
           'shrink-0 text-lg leading-none transition-opacity hover:opacity-70',
-          isSuccess ? 'text-emerald-400' : 'text-rose-400',
+          isSuccess ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
         )}
       >
         ×

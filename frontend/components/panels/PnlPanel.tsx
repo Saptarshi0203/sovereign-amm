@@ -41,7 +41,7 @@ export function PnlPanel() {
         <p className="text-xs uppercase tracking-widest text-slate-400 font-mono">Your P&amp;L</p>
         <span className="text-[10px] font-mono text-slate-500">{portfolio.role === 'demo' ? 'demo wallet' : connected ? 'live' : 'polling'} · {portfolio.fills.length} trades</span>
       </div>
-      <p className={`text-2xl font-bold font-mono tabular-nums ${total >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+      <p className={`text-2xl font-bold font-mono tabular-nums ${total >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
         {inr(total)}
         <span className={`ml-2 text-sm ${flash}`}>{flash === 'text-emerald-400' ? '▲' : flash === 'text-rose-500' ? '▼' : ''}</span>
       </p>
@@ -51,9 +51,9 @@ export function PnlPanel() {
         <span>Entry cost</span>
         <span className="text-right tabular-nums text-slate-200">₹{portfolio.entry_cost_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         <span>Unrealised</span>
-        <span className={`text-right tabular-nums ${portfolio.unrealized_pnl_inr >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{inr(portfolio.unrealized_pnl_inr)}</span>
+        <span className={`text-right tabular-nums ${portfolio.unrealized_pnl_inr >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{inr(portfolio.unrealized_pnl_inr)}</span>
         <span>Realised</span>
-        <span className={`text-right tabular-nums ${portfolio.realized_pnl_inr >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{inr(portfolio.realized_pnl_inr)}</span>
+        <span className={`text-right tabular-nums ${portfolio.realized_pnl_inr >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{inr(portfolio.realized_pnl_inr)}</span>
         <span>Wallet</span>
         <span className="text-right tabular-nums text-slate-200">₹{portfolio.wallet_balance_inr.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
         <span>Inventory</span>

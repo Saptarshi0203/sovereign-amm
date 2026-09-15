@@ -62,7 +62,7 @@ export function PtdfMatrix() {
                 ))}
                 <td
                   className={`pl-3 tabular-nums text-right whitespace-nowrap ${
-                    line?.status === 'critical' ? 'text-rose-400' : line?.status === 'amber' ? 'text-amber-400' : 'text-emerald-400'
+                    line?.status === 'critical' ? 'text-rose-600 dark:text-rose-400' : line?.status === 'amber' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                   }`}
                 >
                   {line ? `${line.flowMW.toFixed(2)} / ${line.capacityMW.toFixed(1)} MW (${line.utilizationPct}%)` : '—'}

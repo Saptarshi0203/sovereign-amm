@@ -33,11 +33,11 @@ export type BadgeColor = 'emerald' | 'amber' | 'sky' | 'slate' | 'violet';
  * design spec's dark-glass badge treatment.
  */
 const COLOR_MAP: Record<BadgeColor, string> = {
-  emerald: 'bg-emerald-900/30 text-emerald-400 border border-emerald-800/50',
-  amber:   'bg-amber-900/30   text-amber-400   border border-amber-800/50',
-  sky:     'bg-sky-900/30     text-sky-400     border border-sky-800/50',
+  emerald: 'bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-800/50',
+  amber:   'bg-amber-900/30   text-amber-600 dark:text-amber-400   border border-amber-800/50',
+  sky:     'bg-sky-900/30     text-sky-600 dark:text-sky-400     border border-sky-800/50',
   slate:   'bg-slate-800/60   text-slate-400   border border-slate-700/50',
-  violet:  'bg-violet-900/30  text-violet-400  border border-violet-800/50',
+  violet:  'bg-violet-900/30  text-violet-600 dark:text-violet-400  border border-violet-800/50',
 };
 
 // ---------------------------------------------------------------------------

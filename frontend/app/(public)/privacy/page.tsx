@@ -55,7 +55,7 @@ export default function PrivacyPolicyPage() {
           <h2 className="text-2xl font-semibold text-white">5. Contact Us</h2>
           <p>
             If you have questions or comments about this notice, you may email us at 
-            <a href="mailto:@sovereign-amm.com" className="text-emerald-400 hover:text-emerald-300 ml-1">
+            <a href="mailto:@sovereign-amm.com" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 ml-1">
               @sovereign-amm.com
             </a>
           </p>

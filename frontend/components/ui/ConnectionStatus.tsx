@@ -101,8 +101,8 @@ export function ConnectionStatus() {
       className={[
         'mb-6 p-4 rounded-lg border flex items-start gap-3',
         isStaleOnly
-          ? 'bg-amber-900/20 border-amber-700 text-amber-300'
-          : 'bg-rose-900/20 border-rose-700 text-rose-300',
+          ? 'bg-amber-900/20 border-amber-700 text-amber-700 dark:text-amber-300'
+          : 'bg-rose-900/20 border-rose-700 text-rose-700 dark:text-rose-300',
       ].join(' ')}
       role="alert"
       aria-live="assertive"

@@ -16,12 +16,12 @@ export function Sidebar() {
   return (
     <aside className="w-full lg:w-[30%] flex flex-col gap-6">
       {/* ── Recent Articles ─────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-slate-900 rounded-lg border border-sky-200 dark:border-slate-800 shadow-sm dark:shadow-none p-6">
+      <section className="bg-slate-900 rounded-lg border border-sky-200 dark:border-slate-800 shadow-sm dark:shadow-none p-6">
         <RecentArticles />
       </section>
 
       {/* ── RAG Copilot ─────────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-slate-900 rounded-lg border border-sky-200 dark:border-slate-800 shadow-sm dark:shadow-none p-6">
+      <section className="bg-slate-900 rounded-lg border border-sky-200 dark:border-slate-800 shadow-sm dark:shadow-none p-6">
         <RagCopilot />
       </section>
     </aside>

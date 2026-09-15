@@ -75,7 +75,7 @@ export default function PricingPage() {
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-widest text-emerald-400 font-mono mb-2">PRICING</p>
+        <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono mb-2">PRICING</p>
         <h1 className="text-3xl sm:text-4xl font-bold text-white">
           Scale Your Energy Alpha.
         </h1>
@@ -105,7 +105,7 @@ export default function PricingPage() {
             <ul className="flex flex-col gap-2 mb-8 flex-1">
               {tier.features.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   {f}
                 </li>
               ))}

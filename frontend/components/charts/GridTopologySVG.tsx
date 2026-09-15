@@ -21,9 +21,9 @@ const NODE_POS: Record<string, { x: number; y: number }> = {
 /** Node fill colour keyed by bus asset type. */
 const TYPE_COLOR: Record<string, string> = {
   solar: '#f59e0b',
-  load: '#38bdf8',
+  load: '#a78bfa',
   storage: '#10b981',
-  slack: '#94a3b8',
+  slack: 'var(--chart-tick)',
 };
 
 interface TooltipState {
@@ -75,10 +75,10 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
     }
   };
 
-  const tooltipBg = isLight ? '#ffffff' : '#0f172a';
-  const tooltipBorder = isLight ? '#bae6fd' : '#334155';
-  const tooltipTextPrimary = isLight ? '#0f172a' : '#f8fafc';
-  const tooltipTextSecondary = isLight ? '#64748b' : '#94a3b8';
+  const tooltipBg = isLight ? '#ffffff' : 'var(--chart-tooltip-bg)';
+  const tooltipBorder = isLight ? 'var(--chart-axis)' : 'var(--chart-axis)';
+  const tooltipTextPrimary = isLight ? 'var(--chart-tooltip-bg)' : 'var(--chart-fg)';
+  const tooltipTextSecondary = isLight ? 'var(--chart-muted)' : 'var(--chart-tick)';
 
   return (
     <div className="relative w-full">
@@ -152,7 +152,7 @@ export function GridTopologySVG({ interactive = false }: GridTopologySVGProps) {
           const pos = NODE_POS[bus.id];
           if (!pos) return null;
 
-          const color = TYPE_COLOR[bus.type] ?? '#94a3b8';
+          const color = TYPE_COLOR[bus.type] ?? 'var(--chart-tick)';
           // Node radius scales slightly with |injection| to encode magnitude
           const r = 8 + Math.min(6, Math.abs(bus.injectionMW) * 0.4);
 

@@ -52,7 +52,7 @@ export default function BatteryPage() {
     <>
       <div className="bg-gradient-to-b from-slate-900 to-transparent border-b border-slate-800 py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <p className="text-xs uppercase tracking-widest text-emerald-400 font-mono mb-2">
+          <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono mb-2">
             BATTERY MARKET MAKER
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white">

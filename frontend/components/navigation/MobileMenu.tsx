@@ -23,7 +23,7 @@ interface MobileMenuProps {
  */
 export function MobileMenu({ tabs, currentPath, onClose }: MobileMenuProps) {
   return (
-    <div className="md:hidden bg-white dark:bg-slate-900 border-t border-sky-200 dark:border-slate-800 animate-slide-down">
+    <div className="md:hidden bg-slate-900 border-t border-sky-200 dark:border-slate-800 animate-slide-down">
       <div className="px-2 pt-2 pb-3 space-y-1">
         {tabs.map((tab) => {
           const isActive =

@@ -17,9 +17,9 @@ export function TimeSeriesChart() {
   const isLight = mounted && theme === 'light';
 
   const gridColor = isLight ? "rgba(14, 165, 233, 0.1)" : "rgba(255,255,255,0.05)";
-  const axisColor = isLight ? "#64748b" : "#8b949e";
-  const priceStroke = isLight ? "#475569" : "#E0E5EC";
-  const socStroke = isLight ? "#0ea5e9" : "#00E5FF";
+  const axisColor = isLight ? "var(--chart-muted)" : "#8b949e";
+  const priceStroke = isLight ? "var(--chart-axis)" : "#E0E5EC";
+  const socStroke = isLight ? "#8b5cf6" : "#00E5FF";
   const tooltipBg = isLight ? "rgba(255,255,255,0.9)" : "rgba(20,20,30,0.8)";
   const tooltipBorder = isLight ? "rgba(186, 230, 253, 0.5)" : "rgba(255,255,255,0.1)";
 

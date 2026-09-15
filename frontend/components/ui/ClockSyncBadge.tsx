@@ -38,7 +38,7 @@ export function ClockSyncBadge({ className = '' }: { className?: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-mono ${
-        active ? 'border-sky-700/60 text-sky-300' : 'border-slate-700 text-slate-500'
+        active ? 'border-sky-700/60 text-sky-700 dark:text-sky-300' : 'border-slate-700 text-slate-500'
       } ${className}`}
       title={active ? `Playback row ${playback?.index} of ${playback?.rows} · ${playback?.name}` : 'No dataset active — internal diurnal simulator'}
     >

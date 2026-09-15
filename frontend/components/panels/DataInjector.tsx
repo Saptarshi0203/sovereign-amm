@@ -131,7 +131,7 @@ export function DataInjector() {
               type="button"
               disabled={!live || busy}
               onClick={() => void run(() => triggerScenario(s.id), (r) => (r as { narration: string }).narration)}
-              className={`px-2 py-1 rounded border ${scenario === s.id ? 'border-emerald-500 text-emerald-300' : 'border-slate-700 text-slate-400 hover:text-white'} disabled:opacity-50`}
+              className={`px-2 py-1 rounded border ${scenario === s.id ? 'border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'border-slate-700 text-slate-400 hover:text-white'} disabled:opacity-50`}
             >
               {s.label}
             </button>

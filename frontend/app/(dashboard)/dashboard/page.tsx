@@ -42,7 +42,7 @@ export default function DashboardPage() {
         </div>
 
         {narration && scenario !== 'normal' && (
-          <p className="text-xs font-mono text-amber-300 border border-amber-800/50 bg-amber-900/10 rounded-lg px-3 py-2">
+          <p className="text-xs font-mono text-amber-700 dark:text-amber-300 border border-amber-800/50 bg-amber-900/10 rounded-lg px-3 py-2">
             SCENARIO · {scenario.replace('_', ' ').toUpperCase()} — {narration}
           </p>
         )}
@@ -52,7 +52,7 @@ export default function DashboardPage() {
           <StatTile label="BEST BID" value={formatPrice(bestBid.px, 3)} unit={`${bestBid.sz.toFixed(1)} kWh`} />
           <StatTile label="BEST ASK" value={formatPrice(bestAsk.px, 3)} unit={`${bestAsk.sz.toFixed(1)} kWh`} />
           <StatTile label="SPREAD" value={formatPrice(Math.max(0, bestAsk.px - bestBid.px), 4)} flashClass={spreadFlash} />
-          <StatTile label="OBI" value={formatOBI(obi)} flashClass={obi >= 0 ? 'text-emerald-400' : 'text-rose-500'} />
+          <StatTile label="OBI" value={formatOBI(obi)} flashClass={obi >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'} />
           <StatTile
             label="AMM QUOTE"
             value={ammBid !== null && ammAsk !== null ? `${ammBid.toFixed(3)} / ${ammAsk.toFixed(3)}` : ammBid !== null ? `${ammBid.toFixed(3)} / —` : ammAsk !== null ? `— / ${ammAsk.toFixed(3)}` : '— / —'}

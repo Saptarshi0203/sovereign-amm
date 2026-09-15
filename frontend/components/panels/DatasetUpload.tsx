@@ -85,7 +85,7 @@ export function DatasetUpload({ compact = false, title = 'Playback dataset' }: {
       >
         {playback?.active ? (
           <>
-            <span className="text-sky-400">ACTIVE</span> · {playback.name} · {playback.rows.toLocaleString()} rows @ {playback.step_s}s · row {playback.index + 1} ({playback.row?.timestamp})
+            <span className="text-sky-600 dark:text-sky-400">ACTIVE</span> · {playback.name} · {playback.rows.toLocaleString()} rows @ {playback.step_s}s · row {playback.index + 1} ({playback.row?.timestamp})
             {playback.row && (
               <span className="block text-[10px] text-slate-400 mt-0.5">
                 demand {playback.row.demand_mw.toFixed(2)} MW · solar {playback.row.solar_mw.toFixed(2)} MW · ₹{playback.row.micro_price.toFixed(3)} · SoC {playback.row.battery_soc_pct.toFixed(1)}% · {playback.row.grid_frequency_hz.toFixed(3)} Hz
@@ -128,13 +128,13 @@ export function DatasetUpload({ compact = false, title = 'Playback dataset' }: {
           <div className="space-y-1 max-h-32 overflow-y-auto">
             {runs.map((r) => (
               <div key={r.run_id} className="flex items-center gap-2">
-                <span className={r.active ? 'text-sky-400' : 'text-slate-600'}>●</span>
+                <span className={r.active ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600'}>●</span>
                 <span className="text-slate-200 truncate flex-1" title={r.run_id}>
                   {r.name}
                 </span>
                 <span className="text-slate-500">{r.rows.toLocaleString()} rows</span>
                 {!r.active && (
-                  <button type="button" disabled={busy} onClick={() => void run(() => activateRun(r.run_id), `Activated "${r.name}"`)} className="text-sky-400 hover:text-sky-300">
+                  <button type="button" disabled={busy} onClick={() => void run(() => activateRun(r.run_id), `Activated "${r.name}"`)} className="text-sky-600 dark:text-sky-400 hover:text-sky-300">
                     activate
                   </button>
                 )}

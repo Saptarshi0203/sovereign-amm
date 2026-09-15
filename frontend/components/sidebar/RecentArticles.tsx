@@ -108,7 +108,7 @@ export function RecentArticles() {
       <div className="pt-2 border-t border-slate-800">
         <Link
           href="/articles"
-          className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+          className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-300 transition-colors"
         >
           View All Articles →
         </Link>
