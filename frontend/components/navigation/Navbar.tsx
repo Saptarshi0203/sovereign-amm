@@ -17,6 +17,7 @@ const navigationTabs: { label: string; href: string; adminOnly?: boolean }[] = [
   { label: 'Grid', href: '/grid' },
   { label: 'Battery', href: '/battery' },
   { label: 'Trade', href: '/trade' },
+  { label: 'Copilot', href: '/copilot' },
   { label: 'Control', href: '/control', adminOnly: true },
   { label: 'Pricing', href: '/pricing' },
   { label: 'About', href: '/about' },

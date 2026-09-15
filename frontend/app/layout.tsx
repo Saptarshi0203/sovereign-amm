@@ -6,6 +6,7 @@ import { Footer } from "@/components/footer/Footer";
 import { MarketClockProvider } from "@/components/providers/MarketClockProvider";
 import { LiveDataProvider } from "@/components/providers/LiveDataProvider";
 import { AuthDrawer } from "@/components/layout/AuthDrawer";
+import { RAGCopilotDrawer } from "@/components/RAGCopilotDrawer";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
 
               <Footer />
               <AuthDrawer />
+              <RAGCopilotDrawer />
             </MarketClockProvider>
             </LiveDataProvider>
           </ThemeProvider>

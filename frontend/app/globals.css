@@ -316,3 +316,16 @@
     scroll-behavior: auto;
   }
 }
+
+/* ── RAG Copilot: markdown + KaTeX ─────────────────────────────────────── */
+.rag-md > * + * { margin-top: 0.6em; }
+.rag-md h1, .rag-md h2, .rag-md h3 { font-family: var(--font-display), ui-sans-serif, system-ui; font-weight: 700; color: rgb(var(--c-white)); }
+.rag-md h1 { font-size: 1.15em; } .rag-md h2 { font-size: 1.08em; } .rag-md h3 { font-size: 1em; }
+.rag-md ul, .rag-md ol { padding-left: 1.25em; }
+.rag-md ul { list-style: disc; } .rag-md ol { list-style: decimal; }
+.rag-md li + li { margin-top: 0.25em; }
+.rag-md strong { color: rgb(var(--c-white)); font-weight: 600; }
+.rag-md .katex-display { margin: 0.75em 0; overflow-x: auto; overflow-y: hidden; padding: 0.35em 0.5em; border-radius: 0.5rem; background: rgb(var(--c-slate-800) / 0.35); }
+.rag-md .katex { font-size: 1.02em; color: rgb(var(--c-white)); }
+.rag-md-compact .katex-display { margin: 0.5em 0; }
+.rag-md-compact .katex { font-size: 0.95em; }
