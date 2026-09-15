@@ -48,35 +48,40 @@ export function SystemBlueprint() {
         </div>
         <div>
           <p className="label-caps mb-6 lg:text-center">02 — Operating &amp; learning loop</p>
-          <svg viewBox="0 0 520 520" className="mx-auto w-full max-w-[520px] text-white" role="img" aria-label="Order, GLFT quote, PTDF screen, fill, Rainflow loop">
-            <circle cx="260" cy="260" r="200" fill="none" stroke="currentColor" strokeOpacity=".7" strokeWidth="1" />
-            <circle cx="260" cy="260" r="180" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="1" strokeDasharray="4 6" className={reduce ? '' : '[animation:intro-dash_12s_linear_infinite]'} style={{ strokeDashoffset: reduce ? 0 : (tick % 600) * -1 }} />
+          {/* B3 FIX: viewBox 640×640 for label space, ring-spin CSS animation, labels at r=270 with smart textAnchor */}
+          <svg viewBox="0 0 640 640" className="mx-auto w-full max-w-[520px] text-white" role="img" aria-label="Order, GLFT quote, PTDF screen, fill, Rainflow loop">
+            <circle cx="320" cy="320" r="200" fill="none" stroke="currentColor" strokeOpacity=".7" strokeWidth="1" />
+            {/* B3 FIX: ring-spin class drives continuous rotation via CSS, not tick-based */}
+            <circle cx="320" cy="320" r="180" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="1" strokeDasharray="4 6" className={reduce ? '' : 'ring-spin'} />
             {LOOP.map(([name, sub], i) => {
               const a = (-90 + i * 72) * (Math.PI / 180);
-              const x = 260 + 200 * Math.cos(a);
-              const y = 260 + 200 * Math.sin(a);
-              const tx = 260 + 250 * Math.cos(a);
-              const ty = 260 + 250 * Math.sin(a);
+              const x = 320 + 200 * Math.cos(a);
+              const y = 320 + 200 * Math.sin(a);
+              const tx = 320 + 270 * Math.cos(a); // B3 FIX: r=270 for labels
+              const ty = 320 + 270 * Math.sin(a);
+              // B3 FIX: textAnchor by quadrant to prevent clipping
+              const anchor = tx < 315 ? 'end' : tx > 325 ? 'start' : 'middle';
               return (
                 <g key={name}>
                   <rect x={x - 5} y={y - 5} width="10" height="10" fill="currentColor" />
-                  <text x={tx} y={ty} textAnchor="middle" className="fill-current font-mono" fontSize="11" letterSpacing="2">
+                  <text x={tx} y={ty} textAnchor={anchor} className="fill-current font-mono" fontSize="11" letterSpacing="2">
                     {name}
                   </text>
-                  <text x={tx} y={ty + 14} textAnchor="middle" fill="currentColor" fillOpacity=".55" fontSize="10">
+                  <text x={tx} y={ty + 14} textAnchor={anchor} fill="currentColor" fillOpacity=".55" fontSize="10">
                     {sub}
                   </text>
                 </g>
               );
             })}
-            <rect x="150" y="205" width="220" height="110" fill="currentColor" />
-            <text x="260" y="245" textAnchor="middle" fontSize="11" letterSpacing="3" className="fill-canvas font-mono">
+            {/* B3 FIX: Central box 260×120 */}
+            <rect x="190" y="260" width="260" height="120" fill="currentColor" />
+            <text x="320" y="300" textAnchor="middle" fontSize="11" letterSpacing="3" className="fill-canvas font-mono">
               10 Hz ENGINE
             </text>
-            <text x="260" y="275" textAnchor="middle" fontSize="20" fontWeight="700" className="fill-canvas font-display">
+            <text x="320" y="330" textAnchor="middle" fontSize="20" fontWeight="700" className="fill-canvas font-display">
               MATCH · SCREEN · SETTLE
             </text>
-            <text x="260" y="298" textAnchor="middle" fontSize="10" className="fill-canvas font-mono">
+            <text x="320" y="353" textAnchor="middle" fontSize="10" className="fill-canvas font-mono">
               tick {tick.toLocaleString()}
             </text>
           </svg>

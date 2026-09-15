@@ -9,6 +9,8 @@ import { AuthDrawer } from "@/components/layout/AuthDrawer";
 import { RAGCopilotDrawer } from "@/components/RAGCopilotDrawer";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ScrollProgress } from "@/components/ui/ScrollProgress";
+import { CursorDot } from "@/components/ui/CursorDot";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -50,6 +52,11 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
             <LiveDataProvider>
             <MarketClockProvider>
+              {/* Global scroll progress hairline (1px, telemetry colour) */}
+              <ScrollProgress />
+              {/* Custom cursor dot (pointer:fine devices only) */}
+              <CursorDot />
+
               <Navbar />
 
               <main id="main-content" className="flex-1">

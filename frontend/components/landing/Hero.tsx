@@ -12,9 +12,10 @@
 
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { formatOBI, formatPrice } from '@/lib/utils';
+import { isIntroActive } from '@/lib/introState';
 
 const fade = (delay: number) => ({
   initial: { opacity: 0, y: 8 },
@@ -24,6 +25,8 @@ const fade = (delay: number) => ({
 
 /** §3.1 word-by-word headline reveal (40 ms stagger, static under reduced motion). */
 function Words({ text, className, start = 0, reduce = false }: { text: string; className?: string; start?: number; reduce?: boolean }) {
+  // B3 FIX: Delay stagger start if intro is still active
+  const introDelay = isIntroActive() ? 2.5 : 0;
   return (
     <span>
       {text.split(' ').map((w, i) => (
@@ -32,7 +35,7 @@ function Words({ text, className, start = 0, reduce = false }: { text: string; c
           className={`inline-block mr-[0.25em] ${className ?? ''}`}
           initial={reduce ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: start + i * 0.04 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: introDelay + start + i * 0.04 }}
         >
           {w}
         </motion.span>
@@ -75,10 +78,11 @@ export function Hero() {
 
   return (
     <section className="relative w-full overflow-hidden" aria-label="Hero section">
-      {/* radial violet glow + dotted grid */}
-      <div aria-hidden="true" className="absolute inset-0 bg-hero-glow opacity-40 dark:opacity-100" />
+      {/* B5 FIX: Faint cyan/navy radial glow + subtle dot grid (not crypto-magenta) */}
+      <div aria-hidden="true" className="absolute inset-0 opacity-40 dark:opacity-100" style={{
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(0, 229, 255, 0.08) 0%, rgba(7, 9, 15, 0) 55%)'
+      }} />
       <div aria-hidden="true" className="absolute inset-0 bg-grid-dots [background-size:36px_36px] opacity-[0.07] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
-      <div aria-hidden="true" className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[520px] rounded-full blur-3xl opacity-20 dark:opacity-40 bg-brand-gradient-soft" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 sm:pt-32 sm:pb-28">
         <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 items-center">
@@ -127,18 +131,14 @@ export function Hero() {
             </motion.p>
           </div>
 
-          {/* ── Floating glass panes ── */}
+          {/* ── Floating glass panes (B5: no magenta/brand blobs) ── */}
           <div className="relative h-[360px] hidden lg:block" aria-hidden="true">
-            <div className="absolute inset-0 rounded-[32px] bg-brand-gradient-soft blur-2xl opacity-30 dark:opacity-70" />
+            {/* Subtle cyan haze behind the tiles — ≤8 % opacity */}
+            <div className="absolute inset-0 rounded-[32px] opacity-20 dark:opacity-40"
+              style={{ background: 'radial-gradient(ellipse at 60% 40%, rgba(0,229,255,0.12) 0%, transparent 70%)' }} />
             <GlassPane label="Micro-price" value={formatPrice(microPrice, 4)} sub="₹ / kWh · volume-weighted mid" tone="violet" className="absolute left-2 top-4" delay={0.2} />
             <GlassPane label="Battery SoC" value={`${soc.toFixed(1)}%`} sub="5 MWh community hub" tone="emerald" className="absolute right-0 top-28" delay={0.35} />
             <GlassPane label="Order imbalance" value={formatOBI(obi)} sub={obi >= 0 ? 'buy pressure' : 'sell pressure'} tone={obi >= 0 ? 'emerald' : 'rose'} className="absolute left-16 bottom-2" delay={0.5} />
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7, duration: 1 }}
-              className="absolute right-10 bottom-10 w-28 h-28 rounded-full bg-brand-gradient opacity-80 blur-[2px] shadow-glow-magenta motion-safe:animate-float-slow"
-            />
           </div>
         </div>
       </div>

@@ -1,56 +1,89 @@
 'use client';
+
 import dynamic from 'next/dynamic';
-import { Panel } from '@/components/ui/Panel';
-import { FeedStatus } from '@/components/ui/FeedStatus';
-import { OrderDesk } from '@/components/panels/OrderDesk';
-import { DatasetUpload } from '@/components/panels/DatasetUpload';
-import { TickerTape } from '@/components/landing/TickerTape';
 import { useStore } from '@/lib/store';
+import { LiveRibbon } from '@/components/layout/LiveRibbon';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { TerminalPanel } from '@/components/ui/TerminalPanel';
+import { OrderDesk } from '@/components/panels/OrderDesk';
+import { FillsTable } from '@/components/panels/FillsTable';
+import { PnlPanel } from '@/components/panels/PnlPanel';
 
-const DayProfileChart = dynamic(() => import('@/components/charts/DayProfileChart').then((m) => m.DayProfileChart), { ssr: false });
-const OrderBookLadder = dynamic(() => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder), { ssr: false });
+const DayProfileChart = dynamic(
+  () => import('@/components/charts/DayProfileChart').then((m) => m.DayProfileChart),
+  { ssr: false },
+);
+const OrderBookLadder = dynamic(
+  () => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder),
+  { ssr: false },
+);
 
-export default function TradePage() {
-  const freq = useStore((s) => s.gridFrequencyHz);
-  const playback = useStore((s) => s.playback);
-  const isAdmin = useStore((s) => s.isAdmin);
+function TradeBadges() {
+  const live = useStore((s) => s.dataSource === 'live');
+  const hz = useStore((s) => s.gridFrequencyHz);
+  const emergency = useStore((s) => s.emergency?.active);
   return (
     <>
-      <TickerTape />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono mb-1">Household terminal</p>
-            <h1 className="text-2xl font-display font-bold text-white tracking-display">Trade Power with the Central Control Hub</h1>
-            <p className="text-xs text-slate-500 font-mono">
-              Buy when your home needs more than rooftop + storage · sell surplus into the 5 MWh hub · grid {freq.toFixed(3)} Hz
-              {playback?.row ? ` · community demand ${playback.row.demand_mw.toFixed(2)} MW / solar ${playback.row.solar_mw.toFixed(2)} MW` : ''}
-            </p>
-          </div>
-          <FeedStatus />
-        </div>
+      {emergency ? (
+        <span className="flex items-center gap-1.5 rounded-full border border-rose-500/60 bg-rose-500/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-rose-500">
+          Emergency halt
+        </span>
+      ) : (
+        <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+          <span className="live-dot" aria-hidden="true" />
+          {live ? 'Live' : 'Demo sandbox'}
+        </span>
+      )}
+      <span className="rounded-full border border-edge/50 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+        Grid {hz.toFixed(3)} Hz
+      </span>
+    </>
+  );
+}
 
-        <Panel>
-<OrderDesk />
-</Panel>
+export default function TradePage() {
+  return (
+    <>
+      <LiveRibbon />
 
-        <div className="grid lg:grid-cols-2 gap-4">
-          <Panel className="p-4">
-            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">24 h profile · clock-synced playback</h2>
+      <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-10">
+        <PageHeader
+          label="03 — TRADE"
+          title="Order Desk"
+          subtitle="Household terminal · buy from or sell into the 5 MWh community battery hub"
+        >
+          <TradeBadges />
+        </PageHeader>
+
+        <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-12">
+
+          {/* 01 — ORDER DESK  (7 cols) */}
+          <TerminalPanel label="01 — ORDER DESK" className="lg:col-span-7">
+            <OrderDesk />
+          </TerminalPanel>
+
+          {/* 02 — L2 BOOK (compact)  (5 cols) */}
+          <TerminalPanel label="02 — L2 BOOK" className="lg:col-span-5">
+            <OrderBookLadder height={300} depth={10} />
+          </TerminalPanel>
+
+          {/* 03 — RECENT FILLS  (8 cols) */}
+          <TerminalPanel label="03 — RECENT FILLS" className="lg:col-span-8">
+            <FillsTable rows={10} />
+          </TerminalPanel>
+
+          {/* 04 — P&L  (4 cols) */}
+          <TerminalPanel label="04 — P&L" className="lg:col-span-4">
+            <PnlPanel />
+          </TerminalPanel>
+
+          {/* 05 — 24H PROFILE  (12 cols) */}
+          <TerminalPanel label="05 — 24H PROFILE" className="lg:col-span-12">
+            <p className="mb-3 label-caps">Clock-synced playback</p>
             <DayProfileChart />
-          </Panel>
-          <Panel className="p-4">
-            <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-2 font-mono">L2 Order Book</h2>
-            <OrderBookLadder height={300} />
-          </Panel>
+          </TerminalPanel>
         </div>
-
-        {isAdmin && (
-          <Panel>
-            <DatasetUpload title="Admin live data feed · city telemetry" />
-          </Panel>
-        )}
-      </main>
+      </div>
     </>
   );
 }

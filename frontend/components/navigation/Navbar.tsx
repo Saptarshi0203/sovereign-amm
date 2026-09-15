@@ -18,7 +18,8 @@ const navigationTabs: { label: string; href: string; adminOnly?: boolean; second
   { label: 'Battery', href: '/battery' },
   { label: 'Trade', href: '/trade' },
   { label: 'Copilot', href: '/copilot' },
-  { label: 'Control', href: '/control', adminOnly: true },
+  { label: 'Control', href: '/control', adminOnly: true }, // Shows in both navbar (when admin) and overlay
+  // B4 FIX: These live in overlay menu only to prevent 1440px collision
   { label: 'Pricing', href: '/pricing', secondary: true },
   { label: 'About', href: '/about', secondary: true },
   { label: 'Contact', href: '/contact', secondary: true },
@@ -39,7 +40,11 @@ export function Navbar() {
   const pathname = usePathname();
   // The Control tab renders strictly for admin JWTs held in the persisted auth store.
   const isAdmin = useAuthStore((s) => s.isAdmin);
-  const visibleTabs = navigationTabs.filter((t) => !t.adminOnly || isAdmin);
+  // B4 FIX: Primary tabs exclude secondary (which live in overlay only)
+  const primaryTabs = navigationTabs.filter((t) => !t.secondary);
+  const visibleTabs = primaryTabs.filter((t) => !t.adminOnly || isAdmin);
+  // Overlay menu gets all tabs (including secondary)
+  const allTabs = navigationTabs.filter((t) => !t.adminOnly || isAdmin);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -79,7 +84,7 @@ export function Navbar() {
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`px-3 py-2 text-sm font-medium transition-colors border-b ${tab.secondary ? 'hidden xl:inline-block' : ''} ${
+                  className={`px-3 py-2 text-sm font-medium transition-colors border-b ${
                     isActive ? 'text-white border-white/70' : 'text-slate-400 hover:text-white border-transparent'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
@@ -119,7 +124,7 @@ export function Navbar() {
         </div>
       </nav>
 
-      <OverlayMenu open={mobileMenuOpen} onClose={closeMobileMenu} tabs={visibleTabs} currentPath={pathname} />
+      <OverlayMenu open={mobileMenuOpen} onClose={closeMobileMenu} tabs={allTabs} currentPath={pathname} />
     </header>
   );
 }

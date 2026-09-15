@@ -41,7 +41,7 @@ export function RagCopilot(): React.ReactElement {
           }
         />
       </div>
-      <RagComposer compact />
+      <RagComposer compact autoFocus={false} />
     </div>
   );
 }

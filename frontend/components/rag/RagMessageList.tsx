@@ -108,11 +108,35 @@ export function RagMessageList({ compact = false, empty }: { compact?: boolean; 
   const session = useRagStore(selectActiveSession);
   const ask = useRagStore((s) => s.ask);
   const endRef = useRef<HTMLDivElement>(null);
+  const didMountRef = useRef(false);
   const messages = session?.messages ?? [];
   const lastLen = messages[messages.length - 1]?.content.length ?? 0;
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' });
+    // B1 FIX: Skip scroll on initial mount — prevents document jump when a
+    // persisted RAG session exists in localStorage.
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    // Scroll the nearest scrollable ancestor of the sentinel div, not the document.
+    // This works correctly whether RagMessageList is inside the drawer or the page.
+    const sentinel = endRef.current;
+    if (!sentinel) return;
+
+    // Walk up to find the closest overflow-y-auto / overflow-y-scroll container
+    let el: HTMLElement | null = sentinel.parentElement;
+    while (el) {
+      const style = window.getComputedStyle(el);
+      const overflow = style.overflowY;
+      if (overflow === 'auto' || overflow === 'scroll' || overflow === 'overlay') {
+        el.scrollTop = el.scrollHeight;
+        return;
+      }
+      el = el.parentElement;
+    }
+    // Fallback: scroll the sentinel into view within its container (no document scroll)
+    sentinel.scrollIntoView({ block: 'end', behavior: 'instant' });
   }, [messages.length, lastLen]);
 
   if (messages.length === 0) return <>{empty ?? null}</>;
@@ -121,7 +145,8 @@ export function RagMessageList({ compact = false, empty }: { compact?: boolean; 
       {messages.map((m) => (
         <Bubble key={m.id} m={m} compact={compact} onFollowup={(q) => void ask(q)} />
       ))}
-      <div ref={endRef} />
+      {/* Invisible scroll sentinel — positioned at the end of the message list */}
+      <div ref={endRef} aria-hidden="true" className="h-0 w-full shrink-0" />
     </div>
   );
 }

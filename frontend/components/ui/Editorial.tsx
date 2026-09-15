@@ -14,12 +14,40 @@ import { motion, useReducedMotion } from 'framer-motion';
 /** Fade-up wrapper driven by IntersectionObserver (static under reduced motion). */
 export function Reveal({ children, className = '', delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
   const reduce = useReducedMotion();
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reduce) return;
+
+    // B3 FIX: 1200ms safety timer in case IntersectionObserver doesn't fire
+    const safety = setTimeout(() => setVisible(true), 1200);
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          clearTimeout(safety);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15 } // B3 FIX: amount as threshold, not negative margin
+    );
+    io.observe(el);
+
+    return () => {
+      clearTimeout(safety);
+      io.disconnect();
+    };
+  }, [reduce]);
+
   return (
     <motion.div
+      ref={ref}
       className={className}
       initial={reduce ? false : { opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-10% 0px' }}
+      animate={reduce || visible ? { opacity: 1, y: 0 } : undefined}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay }}
     >
       {children}
@@ -31,13 +59,32 @@ export function Reveal({ children, className = '', delay = 0 }: { children: Reac
 export function Hairline({ className = '' }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [on, setOn] = useState(false);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setOn(true), io.disconnect()), { rootMargin: '-5% 0px' });
+
+    // B3 FIX: 1200ms safety timer
+    const safety = setTimeout(() => setOn(true), 1200);
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setOn(true);
+          clearTimeout(safety);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15 } // B3 FIX: threshold instead of negative rootMargin
+    );
     io.observe(el);
-    return () => io.disconnect();
+
+    return () => {
+      clearTimeout(safety);
+      io.disconnect();
+    };
   }, []);
+
   return <div ref={ref} aria-hidden="true" className={`hairline ${on ? 'hairline-draw' : 'scale-x-0'} ${className}`} />;
 }
 
@@ -82,6 +129,7 @@ export function NumberedList({ items }: { items: { title: string; body: string }
 
 /** Infinite marquee strip separated by ⁄ glyphs. */
 export function Marquee({ text, className = '' }: { text: string; className?: string }) {
+  // B3 FIX: Duplicate track exactly 2× for seamless -50% loop
   const item = (
     <>
       <span className="px-6">{text}</span>
@@ -92,10 +140,15 @@ export function Marquee({ text, className = '' }: { text: string; className?: st
   );
   return (
     <div className={`marquee overflow-hidden border-y border-edge/40 py-4 text-lg text-slate-400 sm:text-xl ${className}`} aria-label={text}>
+      {/* B3 FIX: hover:pause via CSS in globals.css */}
       <div className="marquee-track motion-reduce:animate-none">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <span key={i} className="whitespace-nowrap" aria-hidden={i > 0}>
-            {item}
+        {Array.from({ length: 2 }).map((_, i) => (
+          <span key={i} className="whitespace-nowrap inline-block" aria-hidden={i > 0}>
+            {Array.from({ length: 12 }).map((_, j) => (
+              <span key={j} className="inline-block">
+                {item}
+              </span>
+            ))}
           </span>
         ))}
       </div>
@@ -133,8 +186,9 @@ export function PixelMascot({ kind, size = 40, className = '' }: { kind: keyof t
   const rows = SPRITES[kind];
   const w = rows[0].length;
   const h = rows.length;
+  // B3 FIX: pixel-idle animation via CSS (already defined in globals.css)
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} width={size} height={(size * h) / w} shapeRendering="crispEdges" aria-hidden="true" className={`pixel-idle motion-reduce:animate-none fill-current ${className}`}>
+    <svg viewBox={`0 0 ${w} ${h}`} width={size} height={(size * h) / w} shapeRendering="crispEdges" aria-hidden="true" className={`pixel-idle fill-current ${className}`}>
       {rows.flatMap((r, y) => Array.from(r).map((c, x) => (c === 'X' ? <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" /> : null)))}
     </svg>
   );

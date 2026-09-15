@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Hero } from '@/components/landing/Hero';
 import { LandingIntro } from '@/components/landing/LandingIntro';
 import { RecentArticles } from '@/components/landing/RecentArticles';
@@ -10,6 +10,7 @@ import { Showcase } from '@/components/landing/Showcase';
 import { SplitPreview } from '@/components/landing/SplitPreview';
 import { SystemBlueprint } from '@/components/landing/SystemBlueprint';
 import { Marquee, NumberedList, SectionLabel, Statement, Timeline, Reveal } from '@/components/ui/Editorial';
+import { isIntroActive } from '@/lib/introState';
 
 // Heavy components loaded client-side only to avoid SSR/hydration issues
 const TerminalCarousel = dynamic(() => import('@/components/landing/TerminalCarousel').then((m) => m.TerminalCarousel), { ssr: false });
@@ -60,6 +61,25 @@ function Faq() {
 }
 
 export default function HomePage() {
+  // B1 FIX: Control scroll restoration while intro is active
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('scrollRestoration' in window.history)) return;
+    const wasAuto = window.history.scrollRestoration === 'auto';
+    if (isIntroActive()) {
+      window.history.scrollRestoration = 'manual';
+      const check = setInterval(() => {
+        if (!isIntroActive()) {
+          window.history.scrollRestoration = 'auto';
+          clearInterval(check);
+        }
+      }, 100);
+      return () => {
+        clearInterval(check);
+        if (wasAuto) window.history.scrollRestoration = 'auto';
+      };
+    }
+  }, []);
+
   return (
     <>
       <LandingIntro />

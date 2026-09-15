@@ -110,7 +110,7 @@ export function RAGCopilotDrawer() {
               </div>
 
               <footer className="border-t border-edge/40 px-3 py-3">
-                <RagComposer compact autoFocus />
+                <RagComposer compact autoFocus={false} />
                 {session && session.messages.length > 0 && (
                   <p className="mt-1 truncate px-1 font-mono text-[10px] text-slate-500">session · {session.title}</p>
                 )}

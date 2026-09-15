@@ -32,6 +32,7 @@ export function RagComposer({ compact = false, autoFocus = false }: { compact?: 
           onKeyDown={onKey}
           rows={compact ? 1 : 2}
           autoFocus={autoFocus}
+          autoComplete="off"
           aria-label="Ask the copilot"
           placeholder={compact ? 'Ask about the engine…' : 'Ask about GLFT quotes, PTDF congestion, Rainflow wear, or the live market…'}
           className={`min-w-0 flex-1 resize-none bg-transparent px-2 py-1.5 text-slate-100 placeholder-slate-500 outline-none ${compact ? 'text-xs' : 'text-sm'}`}

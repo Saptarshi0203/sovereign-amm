@@ -5,7 +5,8 @@
  * live micro-price + tick in the corner, Esc / scrim to close, focus moves in.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -18,11 +19,18 @@ export function OverlayMenu({ open, onClose, tabs, currentPath }: { open: boolea
   const tick = useStore((s) => s.tickNumber);
   const live = useStore((s) => s.dataSource === 'live');
   const first = useRef<HTMLAnchorElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // B2 FIX: SSR guard for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
+    // B2 FIX: Lock body scroll when menu is open
     document.body.style.overflow = 'hidden';
     first.current?.focus();
     return () => {
@@ -31,14 +39,16 @@ export function OverlayMenu({ open, onClose, tabs, currentPath }: { open: boolea
     };
   }, [open, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  const content = (
     <AnimatePresence>
       {open && (
         <motion.div
           role="dialog"
           aria-modal="true"
           aria-label="Site menu"
-          className="fixed inset-0 z-[80] bg-canvas text-white"
+          className="fixed inset-0 z-[90] bg-canvas text-white"
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -80,6 +90,9 @@ export function OverlayMenu({ open, onClose, tabs, currentPath }: { open: boolea
       )}
     </AnimatePresence>
   );
+
+  // B2 FIX: Portal to body to escape header's containing block
+  return createPortal(content, document.body);
 }
 
 export default OverlayMenu;

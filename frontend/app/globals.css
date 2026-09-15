@@ -47,6 +47,11 @@
   --flash-new: rgba(2, 132, 199, 0.14);
   --page-glow: radial-gradient(ellipse at 20% 0%, rgba(2, 132, 199, 0.06) 0%, transparent 55%),
                radial-gradient(ellipse at 90% 10%, rgba(124, 58, 237, 0.06) 0%, transparent 50%);
+  /* B3 FIX: Motion tokens */
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --duration-fast: 200ms;
+  --duration-base: 300ms;
+  --duration-slow: 450ms;
 }
 
 .light-scope {
@@ -194,6 +199,15 @@
     @apply bg-slate-500;
   }
 
+  /* Hide scrollbar while keeping scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   input[type="range"] {
     @apply accent-violet-500;
   }
@@ -323,7 +337,6 @@
 .ob-row[data-flash][data-side='bid'] { animation: ob-flash-up 400ms ease-out; }
 .ob-row[data-flash][data-side='ask'] { animation: ob-flash-down 400ms ease-out; }
 .ob-bar { transition: width 300ms ease-out; will-change: width; }
-
 /* §2.4 — every animation has a static fallback. Kept outside Tailwind's layers
    so it outranks utility classes such as .animate-pulse-dot. */
 @media (prefers-reduced-motion: reduce) {
@@ -355,9 +368,21 @@
 .text-muted { color: rgb(var(--t-muted)); }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .marquee-track { display: flex; width: max-content; animation: marquee 48s linear infinite; }
+/* B3 FIX: Pause marquee on hover, static under motion-reduce */
 .marquee:hover .marquee-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+}
 @keyframes pixel-idle { 0%, 49% { transform: translateY(0); } 50%, 100% { transform: translateY(-2px); } }
 .pixel-idle { animation: pixel-idle 1.2s steps(1) infinite; }
+/* B3 FIX: Ring spin for SystemBlueprint dashed circle — CSS only, never driven by tickNumber */
+@keyframes ring-spin { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -1600; } }
+.ring-spin { animation: ring-spin 20s linear infinite; }
+/* motion-reduce: freeze ring and pixel mascot */
+@media (prefers-reduced-motion: reduce) {
+  .ring-spin { animation: none; }
+  .pixel-idle { animation: none; }
+}
 @keyframes hairline-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .hairline-draw { transform-origin: left; animation: hairline-draw .9s cubic-bezier(.22,1,.36,1) both; }
 /* ── Landing intro ────────────────────────────────────────────────────── */

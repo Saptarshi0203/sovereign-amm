@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { setIntroActive } from '@/lib/introState';
 
 const KEY = 'sovereign-intro-seen';
 const TOKENS = ['10 Hz', 'GLFT', 'PTDF', 'SoC', 'L2', 'MW', 'kWh', 'BID', 'ASK'];
@@ -35,17 +36,28 @@ export function LandingIntro() {
   useEffect(() => {
     if (!shouldShow()) return;
     setShow(true);
+    setIntroActive(true);
     const armed = setTimeout(() => setDismissable(true), 1500);
-    const hard = setTimeout(() => setShow(false), 3200);
+    const hard = setTimeout(() => {
+      setShow(false);
+      setIntroActive(false);
+      // B1 FIX: Ensure scroll is at top when intro completes
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }, 3200);
     return () => {
       clearTimeout(armed);
       clearTimeout(hard);
+      setIntroActive(false);
     };
   }, []);
 
   useEffect(() => {
     if (!show || !dismissable) return;
-    const off = () => setShow(false);
+    const off = () => {
+      setShow(false);
+      setIntroActive(false);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
     window.addEventListener('keydown', off);
     window.addEventListener('pointerdown', off);
     return () => {
