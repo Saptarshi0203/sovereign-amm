@@ -97,7 +97,7 @@ def signup(req: SignupRequest):
             raise HTTPException(status_code=400, detail="Area code is required for retailers")
         area = store.get_area(req.area_code)
         if not area:
-            raise HTTPException(status_code=400, detail="Invalid area code")
+            raise HTTPException(status_code=400, detail="Invalid Admin Area Code. Please request the exact code from your local Grid Operator.")
         user_status = "pending"
         area_code = req.area_code
         
@@ -133,7 +133,7 @@ def login(req: LoginRequest, response: Response):
     if not user or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     if user["status"] == "pending":
-        return JSONResponse(status_code=403, content={"detail": "AWAITING_APPROVAL", "message": "Your account is pending verification by the Grid Operator."})
+        return JSONResponse(status_code=403, content={"detail": "AWAITING_APPROVAL", "message": "Your account is pending verification by the Grid Operator.", "area_code": user.get("area_code")})
     if user["status"] == "rejected":
         return JSONResponse(status_code=403, content={"detail": "ACCOUNT_REJECTED"})
     if user["status"] != "approved":

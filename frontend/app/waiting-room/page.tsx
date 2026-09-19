@@ -31,6 +31,10 @@ export default function WaitingRoomPage() {
           setStatus('approved');
           // Clear pending email and prompt to login
           localStorage.removeItem('pending_email');
+          setTimeout(() => {
+            router.push('/');
+            setTimeout(() => openAuth('signin'), 100);
+          }, 2000);
         } else if (data.status === 'rejected') {
           setStatus('rejected');
           localStorage.removeItem('pending_email');
@@ -41,7 +45,7 @@ export default function WaitingRoomPage() {
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 5000);
+    const interval = setInterval(checkStatus, 4000);
     return () => clearInterval(interval);
   }, [router]);
 
@@ -86,10 +90,13 @@ export default function WaitingRoomPage() {
             <p className="text-slate-400 text-sm mb-6">
               Your household account for area <span className="text-emerald-400 font-mono font-bold">{areaCode}</span> has been approved!
             </p>
+            <p className="text-xs text-emerald-400 font-mono mb-4">
+              Redirecting you to login...
+            </p>
             <button
               onClick={() => {
                 router.push('/');
-                openAuth('signin');
+                setTimeout(() => openAuth('signin'), 100);
               }}
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition-colors"
             >

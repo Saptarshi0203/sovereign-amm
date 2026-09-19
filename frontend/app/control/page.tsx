@@ -12,8 +12,10 @@ import { DataInjector } from '@/components/panels/DataInjector';
 import { OrderDesk } from '@/components/panels/OrderDesk';
 import { RiskParams } from '@/components/panels/BatteryMetrics';
 import { PendingUsersPanel } from '@/components/panels/PendingUsersPanel';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Copy, Check } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { useAuthStore } from '@/store/authStore';
+import { useState } from 'react';
 
 const GridTopologySVG = dynamic(
   () => import('@/components/charts/GridTopologySVG').then((m) => m.GridTopologySVG),
@@ -57,6 +59,9 @@ function EmergencyHalt() {
 }
 
 export default function ControlPage() {
+  const user = useAuthStore((s: any) => s.user);
+  const [copied, setCopied] = useState(false);
+
   return (
     <AdminGate>
       <>
@@ -74,6 +79,31 @@ export default function ControlPage() {
           </PageHeader>
 
           <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-12">
+
+            {/* AREA CODE BANNER */}
+            <div className="lg:col-span-12 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="text-emerald-400 font-mono text-sm font-bold uppercase tracking-wider mb-1">
+                  Active Area Code: {user?.area_code || 'N/A'} {user?.area_name ? `(${user.area_name})` : ''}
+                </h3>
+                <p className="text-slate-300 text-sm">
+                  Instruct local households in your microgrid region to enter code <strong className="text-emerald-400 font-mono bg-emerald-500/20 px-1.5 py-0.5 rounded">{user?.area_code || 'N/A'}</strong> during registration.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (user?.area_code) {
+                    navigator.clipboard.writeText(user.area_code);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }
+                }}
+                className="shrink-0 flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copied!' : 'Copy Code'}
+              </button>
+            </div>
 
             {/* 00 — PENDING HOUSEHOLD REQUESTS  (12 cols) */}
             <TerminalPanel label="00 — PENDING HOUSEHOLD REQUESTS" className="lg:col-span-12">
