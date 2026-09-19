@@ -121,6 +121,13 @@ def resolve_role(email: str, stored_role: Optional[str]) -> str:
 
 def token_claims(user: Dict[str, Any]) -> Dict[str, Any]:
     """Claims embedded in every access token: identity, role, wallet and grid scope."""
+    area_name = ""
+    area_code = user.get("area_code")
+    if area_code:
+        area = store.get_area(area_code)
+        if area:
+            area_name = area.get("area_name", "")
+
     return {
         "sub": user["email"],
         "uid": user["id"],
@@ -128,7 +135,8 @@ def token_claims(user: Dict[str, Any]) -> Dict[str, Any]:
         "name": user.get("name") or "",
         "wallet_balance": round(float(user.get("wallet_balance") or 0.0), 2),
         "grid_id": user.get("grid_id") or settings.DEMO_GRID_ID,
-        "area_code": user.get("area_code"),
+        "area_code": area_code,
+        "area_name": area_name,
     }
 
 

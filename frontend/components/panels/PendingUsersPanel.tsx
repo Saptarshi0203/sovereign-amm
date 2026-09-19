@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/live/session';
 import { Check, X, User } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 interface PendingUser {
   id: string;
@@ -15,6 +16,7 @@ interface PendingUser {
 export function PendingUsersPanel() {
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const authUser = useAuthStore((s: any) => s.user);
 
   const fetchUsers = async () => {
     try {
@@ -71,8 +73,14 @@ export function PendingUsersPanel() {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm font-mono text-slate-400">
+    <div className="flex flex-col">
+      <div className="flex justify-between items-center mb-4 px-4 pt-4">
+        <span className="text-sm font-mono text-slate-400">
+          Share your Area Code with local retailers: <strong className="text-emerald-400 px-2 py-1 bg-emerald-500/10 rounded">{(authUser as any)?.area_code || 'Unknown'}</strong>
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm font-mono text-slate-400">
         <thead className="bg-slate-900/50 text-xs uppercase tracking-wider text-slate-500">
           <tr>
             <th className="px-4 py-3 font-medium">Email</th>
@@ -109,6 +117,7 @@ export function PendingUsersPanel() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

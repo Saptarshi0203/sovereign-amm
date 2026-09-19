@@ -258,6 +258,7 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [areaCode, setAreaCode] = useState('');
+  const [cityName, setCityName] = useState('');
 
   const [status, setStatus] = useState<string | null>(null);
 
@@ -271,7 +272,8 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
           password, 
           consumer_no: name,
           role,
-          area_code: role === 'retailer' ? areaCode : undefined
+          area_code: role === 'retailer' ? areaCode : undefined,
+          city_name: role === 'admin' ? cityName : undefined
         }),
         headers: { Authorization: '' },
       });
@@ -381,6 +383,25 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
             placeholder="KOL-2026"
             required
             className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono"
+          />
+        </div>
+      )}
+      {role === 'admin' && (
+        <div className="flex flex-col gap-1.5 animate-slide-in-right">
+          <label
+            className="text-xs text-slate-400 uppercase tracking-wider"
+            htmlFor="signup-city-name"
+          >
+            City / Region Name
+          </label>
+          <input
+            id="signup-city-name"
+            type="text"
+            value={cityName}
+            onChange={(e) => setCityName(e.target.value)}
+            placeholder="Kolkata"
+            required
+            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           />
         </div>
       )}

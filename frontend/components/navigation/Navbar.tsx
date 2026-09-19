@@ -40,6 +40,7 @@ export function Navbar() {
   const pathname = usePathname();
   // The Control tab renders strictly for admin JWTs held in the persisted auth store.
   const isAdmin = useAuthStore((s) => s.isAdmin);
+  const user = useAuthStore((s) => s.user as any);
   // B4 FIX: Primary tabs exclude secondary (which live in overlay only)
   const primaryTabs = navigationTabs.filter((t) => !t.secondary);
   const visibleTabs = primaryTabs.filter((t) => !t.adminOnly || isAdmin);
@@ -72,6 +73,12 @@ export function Navbar() {
             <span aria-hidden="true" className="inline-block w-2.5 h-2.5 rounded-sm bg-brand-gradient shadow-glow-violet" />
             <span>SOVEREIGN-<span className="text-gradient">AMM</span></span>
           </Link>
+
+          {isAdmin && user?.area_code && (
+            <div className="hidden lg:flex items-center ml-2 mr-4 rounded bg-slate-800/50 border border-slate-700/50 px-3 py-1 font-mono text-[11px] font-semibold text-emerald-400">
+              [ GRID AREA: {user.area_code}{user.area_name ? ` - ${user.area_name}` : ''} ] 
+            </div>
+          )}
 
           {/* ── Desktop tabs (hidden on mobile) ───────────────────────────── */}
           <div className="hidden md:flex items-center gap-1">
