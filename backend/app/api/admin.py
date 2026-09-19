@@ -37,9 +37,18 @@ def get_pending_users(admin: Dict[str, Any] = Depends(admin_user)) -> List[Dict[
 
 @router.get("/users")
 def list_users(admin: Dict[str, Any] = Depends(admin_user)):
+    """Return all users in the admin's area code jurisdiction.
+
+    Filters by the admin's area_code from their JWT. Password hashes are
+    stripped before returning over the wire.
+    """
     users = store.list_users()
+    admin_area_code = admin.get("area_code")
     safe_users = []
     for u in users:
+        # Only return users in the admin's area code
+        if admin_area_code and u.get("area_code") != admin_area_code:
+            continue
         u_copy = u.copy()
         u_copy.pop("password_hash", None)
         safe_users.append(u_copy)
@@ -105,6 +114,30 @@ def reject_user(req: ApproveRejectRequest, user_id: str = None, admin: Dict[str,
     )
     
     return {"message": f"User {user['email']} rejected."}
+
+@router.post("/users/{user_id}/revoke")
+def revoke_user(user_id: str, admin: Dict[str, Any] = Depends(admin_user)):
+    """Revoke access for a previously approved user (sets status to 'rejected').
+
+    Used by the Household Directory to suspend accounts that were previously
+    granted grid access.
+    """
+    user = store.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user["status"] == "rejected":
+        raise HTTPException(status_code=400, detail="User access is already revoked")
+
+    store.update_user(user["email"], {"status": "rejected"})
+
+    mock_email_notification(
+        email=user["email"],
+        subject="Sovereign-AMM: Access Revoked",
+        body="Your grid access has been suspended by the Grid Admin. Contact your local operator for details."
+    )
+
+    return {"message": f"User {user['email']} access revoked."}
 
 class RoleRequest(BaseModel):
     role: str
