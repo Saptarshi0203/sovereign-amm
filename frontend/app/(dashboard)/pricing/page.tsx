@@ -1,71 +1,77 @@
 'use client';
-import { useState } from 'react';
+
 import Link from 'next/link';
-import { Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+import { Check, ChevronDown, ArrowRight } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { SectionLabel, Statement, Hairline, Reveal } from '@/components/ui/Editorial';
+import { DataTable } from '@/components/ui/DataTable';
 
 const TIERS = [
   {
     name: 'Community Node',
     price: 'Free',
-    description: 'For prosumers and researchers',
+    sub: 'For prosumers and researchers',
     features: [
       'Basic L2 order book access',
       'Standard micro-prices',
       'Zero-knowledge solvency wallets',
       '10 Hz data feed',
+      'Demo paper wallet',
     ],
-    cta: 'Sign Up for Free',
+    cta: 'Sign up free',
     featured: false,
     contactLink: false,
   },
   {
     name: 'Pro Market Maker',
-    price: '$49/mo',
-    description: 'For algorithmic traders',
+    price: '₹3,999 / mo',
+    sub: 'For algorithmic traders',
     features: [
       'GLFT parameter tuning',
       'API access for algorithmic trading',
       'Rainflow degradation analytics',
       'Priority order routing',
+      'Live settlement stream',
     ],
-    cta: 'Start Pro Trial',
+    cta: 'Start pro trial',
     featured: true,
     contactLink: false,
   },
   {
     name: 'Grid Operator',
     price: 'Custom',
-    description: 'For utilities and grid operators',
+    sub: 'For utilities and grid operators',
     features: [
       'Full DC-OPF solvers',
       'Shapley value settlement',
       'Dedicated vector DB',
       'Custom PTDF topologies',
+      'Self-hosted deployment',
     ],
-    cta: 'Contact Sales',
+    cta: 'Contact sales',
     featured: false,
     contactLink: true,
   },
 ] as const;
 
+const FEATURE_MATRIX_COLS = ['Feature', 'Community', 'Pro', 'Grid Operator'];
+const FEATURE_MATRIX_ROWS = [
+  ['L2 Order Book',     '✓', '✓', '✓'],
+  ['10 Hz Feed',        '✓', '✓', '✓'],
+  ['GLFT Tuning',       '—', '✓', '✓'],
+  ['API Access',        '—', '✓', '✓'],
+  ['Rainflow Analytics','—', '✓', '✓'],
+  ['DC-OPF Solver',     '—', '—', '✓'],
+  ['Shapley Settlement','—', '—', '✓'],
+  ['Self-Hosted',       '—', '—', '✓'],
+];
+
 const FAQ = [
-  {
-    q: 'Is there a free trial?',
-    a: 'Yes — Community Node is permanently free with no credit card required. Pro Market Maker includes a 14-day free trial.',
-  },
-  {
-    q: 'How does 10 Hz pricing work?',
-    a: 'The GLFT market maker updates bid/ask quotes 10 times per second using the current battery SoC, volatility, and order book state. No prediction — pure physics.',
-  },
-  {
-    q: 'What is Rainflow degradation pricing?',
-    a: 'Each trade surcharges the ask by the marginal battery wear cost, computed in real time from the streaming DoD (Depth of Discharge) using the Wöhler fatigue curve.',
-  },
-  {
-    q: 'Can I run this on my own hardware?',
-    a: 'Grid Operator tier includes a self-hosted deployment option. Contact us for hardware requirements and licensing.',
-  },
+  { q: 'Is there a free trial?', a: 'Community Node is permanently free. Pro includes a 14-day trial; no credit card required.' },
+  { q: 'How does 10 Hz pricing work?', a: 'The GLFT market maker updates bid/ask quotes 10 times per second using current battery SoC, volatility, and order book state. No ML — pure physics.' },
+  { q: 'What is Rainflow degradation pricing?', a: 'Each trade surcharges the ask by the marginal battery wear cost, computed from streaming DoD using the Wöhler fatigue curve.' },
+  { q: 'Can I run this on my own hardware?', a: 'Grid Operator tier includes self-hosted deployment. Contact us for hardware requirements and licensing.' },
 ] as const;
 
 export default function PricingPage() {
@@ -73,94 +79,100 @@ export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono mb-2">PRICING</p>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white">
-          Scale Your Energy Alpha.
-        </h1>
-        <p className="text-slate-400 mt-3">Choose Your Node.</p>
+    <div className="mx-auto max-w-[1600px] px-4 py-16 sm:px-6 lg:px-10 lg:py-24">
+
+      {/* Hero statement */}
+      <div className="mb-16">
+        <SectionLabel n="01">Pricing</SectionLabel>
+        <div className="mt-10">
+          <Statement title={<>Scale your energy alpha.<br />Choose your node.</>}>
+            From prosumer to grid operator — one platform, three tiers, zero ML in the pricing path.
+          </Statement>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      {/* Tier columns */}
+      <Hairline className="mb-10" />
+      <div className="grid gap-6 md:grid-cols-3">
         {TIERS.map((tier) => (
-          <div
-            key={tier.name}
-            className={`flex flex-col rounded-xl border p-6 relative ${
-              tier.featured
-                ? 'border-emerald-500 bg-emerald-900/10'
-                : 'border-slate-800 bg-slate-900/60'
-            }`}
-          >
-            {tier.featured && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white text-xs font-mono rounded-full whitespace-nowrap">
-                MOST POPULAR
+          <Reveal key={tier.name}>
+            <div
+              className={`flex h-full flex-col rounded-2xl border p-6 ${
+                tier.featured
+                  ? 'border-telemetry/50 bg-telemetry/5'
+                  : 'border-edge/40 bg-slate-900/40'
+              }`}
+            >
+              {tier.featured && (
+                <p className="mb-3 label-caps text-telemetry">Most popular</p>
+              )}
+              <div className="mb-4">
+                <h2 className="font-display text-xl font-bold text-white">{tier.name}</h2>
+                <p className="mt-1 text-sm text-slate-400">{tier.sub}</p>
               </div>
-            )}
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-white">{tier.name}</h2>
-              <p className="text-xs text-slate-500 mt-0.5">{tier.description}</p>
+              <p className="mb-6 font-mono text-3xl font-bold tabular-nums text-white">{tier.price}</p>
+              <ul className="mb-8 flex flex-1 flex-col gap-2">
+                {tier.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              {tier.contactLink ? (
+                <Link href="/contact" className="btn-ghost text-center">
+                  {tier.cta} <ArrowRight className="ml-1 inline h-4 w-4" aria-hidden="true" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => openAuth('signup')}
+                  className={tier.featured ? 'btn-brand' : 'btn-ghost'}
+                >
+                  {tier.cta} <ArrowRight className="ml-1 inline h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
             </div>
-            <p className="text-3xl font-bold font-mono text-white mb-6">{tier.price}</p>
-            <ul className="flex flex-col gap-2 mb-8 flex-1">
-              {tier.features.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            {tier.contactLink ? (
-              <Link
-                href="/contact"
-                className="w-full py-2.5 text-center text-sm font-semibold rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white transition-colors"
-              >
-                {tier.cta}
-              </Link>
-            ) : (
-              <button
-                onClick={() => openAuth('signup')}
-                className={`w-full py-2.5 text-sm font-semibold rounded-lg transition-colors ${
-                  tier.featured
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                    : 'border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white'
-                }`}
-              >
-                {tier.cta}
-              </button>
-            )}
-          </div>
+          </Reveal>
         ))}
       </div>
 
-      <div>
-        <h2 className="text-xl font-bold text-white mb-6">Frequently Asked Questions</h2>
-        <div className="flex flex-col gap-2">
+      {/* Feature matrix */}
+      <div className="mt-16">
+        <SectionLabel n="02">Feature matrix</SectionLabel>
+        <div className="mt-6">
+          <DataTable
+            columns={FEATURE_MATRIX_COLS}
+            rows={FEATURE_MATRIX_ROWS}
+          />
+        </div>
+      </div>
+
+      {/* FAQ */}
+      <div className="mt-16">
+        <SectionLabel n="03">FAQ</SectionLabel>
+        <div className="mt-6 divide-y divide-edge/40 border-y border-edge/40">
           {FAQ.map((item, i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden"
-            >
+            <div key={item.q}>
               <button
+                type="button"
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-slate-200 hover:text-white transition-colors"
+                aria-expanded={openFaq === i}
+                className="flex w-full items-center justify-between gap-4 py-5 text-left"
               >
-                {item.q}
-                {openFaq === i ? (
-                  <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                )}
+                <span className="font-display text-lg font-bold text-white">{item.q}</span>
+                <ChevronDown
+                  className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${openFaq === i ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+                />
               </button>
               {openFaq === i && (
-                <div className="px-5 pb-4 text-sm text-slate-400 border-t border-slate-800 pt-3">
-                  {item.a}
-                </div>
+                <p className="pb-6 pr-10 text-slate-400">{item.a}</p>
               )}
             </div>
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

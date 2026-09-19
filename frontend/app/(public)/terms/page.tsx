@@ -1,68 +1,81 @@
-import React from "react";
+import { SectionLabel } from '@/components/ui/Editorial';
+
+const SECTIONS = [
+  {
+    title: '1. Agreement to Terms',
+    content: 'By accessing or using Sovereign-AMM, you agree to be bound by these Terms of Service. If you do not agree with all of these terms, you are prohibited from using the site and our services and must discontinue use immediately.',
+  },
+  {
+    title: '2. Intellectual Property Rights',
+    content: 'Unless otherwise indicated, the website and its source code, databases, functionality, software, website designs, audio, video, text, photographs, and graphics are our proprietary property and are protected by applicable intellectual property laws and treaties.',
+  },
+  {
+    title: '3. User Representations',
+    content: 'By using the website, you represent and warrant that:',
+    list: [
+      'All information you submit will be true, accurate, current, and complete.',
+      'You will maintain the accuracy of such information and promptly update it as necessary.',
+      'You have the legal capacity and agree to comply with these Terms of Service.',
+      'You will not access the website through automated or non-human means, unless authorised.',
+      'You will not use the website for any illegal or unauthorised purpose.',
+    ],
+  },
+  {
+    title: '4. Modifications and Interruptions',
+    content: 'We reserve the right to change, modify, or remove the contents of the website at any time or for any reason at our sole discretion without notice. We will not be liable to you or any third party for any modification, suspension, or discontinuance of the website.',
+  },
+  {
+    title: '5. Contact Information',
+    content: null,
+    contact: true,
+  },
+] as const;
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-300 py-16 px-6">
-      <div className="max-w-3xl mx-auto space-y-8">
-        <h1 className="text-4xl font-bold text-white mb-8 border-b border-slate-800 pb-4">
+    <div className="mx-auto max-w-[1600px] px-4 py-16 sm:px-6 lg:px-10">
+      <div className="mx-auto max-w-3xl">
+        <SectionLabel n="Legal">Terms of Service</SectionLabel>
+
+        <h1 className="mt-6 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
           Terms of Service
         </h1>
-        
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">1. Agreement to Terms</h2>
-          <p>
-            By accessing or using Sovereign-AMM, you agree to be bound by these Terms of Service.
-            If you do not agree with all of these terms, you are prohibited from using the site and our services
-            and must discontinue use immediately.
-          </p>
-        </section>
+        <p className="mt-4 text-slate-400">Your rights and responsibilities when using Sovereign-AMM.</p>
 
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">2. Intellectual Property Rights</h2>
-          <p>
-            Unless otherwise indicated, the website and its source code, databases, functionality, software, website designs,
-            audio, video, text, photographs, and graphics are our proprietary property and are protected by applicable intellectual
-            property laws and treaties.
-          </p>
-        </section>
+        <div className="hairline mt-8 mb-10" aria-hidden="true" />
 
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">3. User Representations</h2>
-          <p>
-            By using the website, you represent and warrant that:
-          </p>
-          <ul className="list-disc pl-5 space-y-2 text-slate-400">
-            <li>All information you submit will be true, accurate, current, and complete.</li>
-            <li>You will maintain the accuracy of such information and promptly update it as necessary.</li>
-            <li>You have the legal capacity and agree to comply with these Terms of Service.</li>
-            <li>You will not access the website through automated or non-human means, unless authorized.</li>
-            <li>You will not use the website for any illegal or unauthorized purpose.</li>
-          </ul>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">4. Modifications and Interruptions</h2>
-          <p>
-            We reserve the right to change, modify, or remove the contents of the website at any time or for any reason
-            at our sole discretion without notice. However, we have no obligation to update any information on our website.
-            We will not be liable to you or any third party for any modification, price change, suspension, or discontinuance of the website.
-          </p>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-white">5. Contact Information</h2>
-          <p>
-            In order to resolve a complaint regarding the site or to receive further information regarding use of the site, please contact us at:
-            <br />
-            Email: <a href="mailto:@sovereign-amm.com" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-300">@sovereign-amm.com</a>
-            <br />
-            Phone: +91 99074 18830
-          </p>
-        </section>
-
-        <div className="pt-8 border-t border-slate-800 text-sm text-slate-500">
-          Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+        <div className="flex flex-col gap-10">
+          {SECTIONS.map((s) => (
+            <section key={s.title} aria-label={s.title}>
+              <h2 className="font-display text-xl font-bold text-white mb-3">{s.title}</h2>
+              {s.content && <p className="text-slate-300 leading-relaxed">{s.content}</p>}
+              {'list' in s && s.list && (
+                <ul className="mt-3 space-y-2 pl-4">
+                  {s.list.map((item) => (
+                    <li key={item} className="flex gap-3 text-slate-300">
+                      <span className="mt-1 text-slate-600" aria-hidden="true">—</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {'contact' in s && s.contact && (
+                <p className="text-slate-300">
+                  To resolve a complaint or receive further information, contact us at{' '}
+                  <a href="mailto:@sovereign-amm.com" className="text-telemetry hover:underline underline-offset-4">
+                    @sovereign-amm.com
+                  </a>{' '}
+                  or call +91 99074 18830.
+                </p>
+              )}
+              <div className="hairline mt-8" aria-hidden="true" />
+            </section>
+          ))}
         </div>
+
+        <p className="mt-6 font-mono text-xs text-slate-600">
+          Last updated: September 2026
+        </p>
       </div>
     </div>
   );

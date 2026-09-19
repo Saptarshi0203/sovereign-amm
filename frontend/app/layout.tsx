@@ -1,19 +1,29 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, JetBrains_Mono } from "next/font/google";
+import { Aldrich, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/navigation/Navbar";
 import { Footer } from "@/components/footer/Footer";
 import { MarketClockProvider } from "@/components/providers/MarketClockProvider";
 import { LiveDataProvider } from "@/components/providers/LiveDataProvider";
 import { AuthDrawer } from "@/components/layout/AuthDrawer";
+import { RAGCopilotDrawer } from "@/components/RAGCopilotDrawer";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { PageTransitionWrapper } from "@/components/layout/PageTransitionWrapper";
+import { ScrollProgress } from "@/components/ui/ScrollProgress";
+import { CursorDot } from "@/components/ui/CursorDot";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+const aldrich = Aldrich({
+  weight: ["400"],
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-jetbrains",
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -30,10 +40,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${outfit.variable} ${jetbrains.variable}`}
+      className={`dark ${aldrich.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
-      <body className="bg-sky-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+      <body className="bg-canvas text-slate-100 font-sans antialiased min-h-screen flex flex-col">
         {/* Accessibility: skip-to-main-content link, visible on keyboard focus */}
         <a href="#main-content" className="skip-to-content">
           Skip to main content
@@ -43,14 +53,22 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
             <LiveDataProvider>
             <MarketClockProvider>
+              {/* Global scroll progress hairline (1px, telemetry colour) */}
+              <ScrollProgress />
+              {/* Custom cursor dot (pointer:fine devices only) */}
+              <CursorDot />
+
               <Navbar />
 
               <main id="main-content" className="flex-1">
-                {children}
+                <PageTransitionWrapper>
+                  {children}
+                </PageTransitionWrapper>
               </main>
 
               <Footer />
               <AuthDrawer />
+              <RAGCopilotDrawer />
             </MarketClockProvider>
             </LiveDataProvider>
           </ThemeProvider>

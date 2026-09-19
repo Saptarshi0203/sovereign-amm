@@ -1,26 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 import { useAuthStore } from '@/store/authStore';
 import { AuthButtons } from './AuthButtons';
-import { MobileMenu } from './MobileMenu';
+import { OverlayMenu } from './OverlayMenu';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { DatasetDrawerButton } from '../layout/DatasetDrawer';
 
 /** All top-level navigation destinations. */
-const navigationTabs: { label: string; href: string; adminOnly?: boolean }[] = [
+const navigationTabs: { label: string; href: string; adminOnly?: boolean; secondary?: boolean }[] = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Grid', href: '/grid' },
   { label: 'Battery', href: '/battery' },
   { label: 'Trade', href: '/trade' },
-  { label: 'Control', href: '/control', adminOnly: true },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'About', href: '/about' },
-  { label: 'Contact', href: '/contact' },
+  { label: 'Copilot', href: '/copilot' },
+  { label: 'Control', href: '/control', adminOnly: true }, // Shows in both navbar (when admin) and overlay
+  // B4 FIX: These live in overlay menu only to prevent 1440px collision
+  { label: 'Pricing', href: '/pricing', secondary: true },
+  { label: 'About', href: '/about', secondary: true },
+  { label: 'Contact', href: '/contact', secondary: true },
 ];
 
 /**
@@ -38,15 +40,26 @@ export function Navbar() {
   const pathname = usePathname();
   // The Control tab renders strictly for admin JWTs held in the persisted auth store.
   const isAdmin = useAuthStore((s) => s.isAdmin);
-  const visibleTabs = navigationTabs.filter((t) => !t.adminOnly || isAdmin);
+  // B4 FIX: Primary tabs exclude secondary (which live in overlay only)
+  const primaryTabs = navigationTabs.filter((t) => !t.secondary);
+  const visibleTabs = primaryTabs.filter((t) => !t.adminOnly || isAdmin);
+  // Overlay menu gets all tabs (including secondary)
+  const allTabs = navigationTabs.filter((t) => !t.adminOnly || isAdmin);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 24);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-950/70 backdrop-blur-2xl border-b border-white/5 supports-[backdrop-filter]:bg-slate-950/60">
+    <header className={`sticky top-0 z-50 transition-colors ${scrolled ? 'bg-canvas/80 backdrop-blur-xl border-b border-edge/40' : 'bg-transparent border-b border-transparent'}`}>
       <nav
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
+        className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between"
         aria-label="Main navigation"
       >
         {/* ── Left: Logo ──────────────────────────────────────────────────── */}
@@ -71,10 +84,8 @@ export function Navbar() {
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-violet-500/15 text-white border border-violet-500/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/70 border border-transparent'
+                  className={`px-3 py-2 text-sm font-medium transition-colors border-b ${
+                    isActive ? 'text-white border-white/70' : 'text-slate-400 hover:text-white border-transparent'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -100,33 +111,20 @@ export function Navbar() {
           {/* Auth / user section — demo badge, sign in, or signed-in user */}
           <AuthButtons />
 
-          {/* Hamburger — visible only on mobile */}
           <button
-            className="md:hidden p-2 rounded-md text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-700 hover:text-sky-900 dark:hover:text-white transition-colors"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            type="button"
+            className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[.28em] uppercase text-slate-300 hover:text-white transition-colors"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
             aria-expanded={mobileMenuOpen}
-            aria-controls="mobile-menu"
           >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" aria-hidden="true" />
-            ) : (
-              <Menu className="h-6 w-6" aria-hidden="true" />
-            )}
+            <span className="hidden sm:inline">Menu</span>
+            <Menu className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
       </nav>
 
-      {/* ── Mobile menu dropdown ────────────────────────────────────────────── */}
-      {mobileMenuOpen && (
-        <div id="mobile-menu">
-          <MobileMenu
-            tabs={visibleTabs}
-            currentPath={pathname}
-            onClose={closeMobileMenu}
-          />
-        </div>
-      )}
+      <OverlayMenu open={mobileMenuOpen} onClose={closeMobileMenu} tabs={allTabs} currentPath={pathname} />
     </header>
   );
 }

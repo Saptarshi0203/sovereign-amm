@@ -1,206 +1,208 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { API_BASE } from '@/lib/live/session';
-import { useRouter } from "next/navigation";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PageHeader } from '@/components/ui/PageHeader';
+import { TerminalPanel } from '@/components/ui/TerminalPanel';
+import { SegmentedPill } from '@/components/ui/SegmentedPill';
+import { KeyValue } from '@/components/ui/KeyValue';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Download } from 'lucide-react';
+
+type Tab = 'overview' | 'trades' | 'settlement';
+
+interface DailyPoint { hour: string; import: number; export: number }
+interface Overview {
+  grid_import_kwh: number;
+  solar_export_kwh: number;
+  total_spent: number;
+  total_earned: number;
+  daily_breakdown: DailyPoint[];
+}
+interface Trade {
+  id: string;
+  timestamp: string;
+  status: 'SUCCESS' | 'REJECTED';
+  volume_kw: number;
+  price: number;
+  reason?: string;
+}
+interface Settlement {
+  period: string;
+  total_buys: number;
+  total_sells: number;
+  net_amount: number;
+  masked_account: string;
+}
 
 export default function AccountPage() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "trades" | "settlement">("overview");
-  
-  const [overview, setOverview] = useState<any>(null);
-  const [trades, setTrades] = useState<any[]>([]);
-  const [settlement, setSettlement] = useState<any>(null);
-  
-  const [loading, setLoading] = useState(true);
+  const router                              = useRouter();
+  const [tab, setTab]                       = useState<Tab>('overview');
+  const [overview, setOverview]             = useState<Overview | null>(null);
+  const [trades, setTrades]                 = useState<Trade[]>([]);
+  const [settlement, setSettlement]         = useState<Settlement | null>(null);
+  const [loading, setLoading]               = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [resOverview, resTrades, resSettlement] = await Promise.all([
+        const [resO, resT, resS] = await Promise.all([
           fetch(`${API_BASE}/api/account/overview`),
           fetch(`${API_BASE}/api/account/trades`),
-          fetch(`${API_BASE}/api/account/settlement`)
+          fetch(`${API_BASE}/api/account/settlement`),
         ]);
-
-        if (resOverview.status === 401 || resOverview.status === 403) {
-          router.push("/login");
-          return;
-        }
-
-        setOverview(await resOverview.json());
-        setTrades(await resTrades.json());
-        setSettlement(await resSettlement.json());
-      } catch (e) {
-        console.error(e);
+        if (resO.status === 401 || resO.status === 403) { router.push('/login'); return; }
+        setOverview(await resO.json() as Overview);
+        setTrades(await resT.json() as Trade[]);
+        setSettlement(await resS.json() as Settlement);
+      } catch {
+        // swallow network errors in demo mode
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    void fetchData();
   }, [router]);
 
   const downloadNeft = () => {
-    window.open(`${API_BASE}/api/account/settlement/export-neft`, "_blank");
+    window.open(`${API_BASE}/api/account/settlement/export-neft`, '_blank');
   };
 
-  if (loading) return <div className="p-8 text-textMuted">Loading account data...</div>;
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-10">
+        <p className="font-mono text-sm text-slate-500">Loading account data…</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-outfit font-bold text-textMain">My Account</h1>
-          <p className="text-textMuted mt-2">Manage your energy profile, trading history, and settlement.</p>
-        </div>
-        
-        {/* SIMULATED SETTLEMENT BADGE - Requested by Feature 3 */}
-        <div className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
-          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
-          SIMULATED SETTLEMENT
-        </div>
+    <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-10">
+      <PageHeader
+        label="Account"
+        title="My Account"
+        subtitle="Energy profile · trading history · settlement"
+      >
+        <span className="rounded-full border border-warn/40 bg-warn/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-warn">
+          Simulated settlement
+        </span>
+      </PageHeader>
+
+      <div className="mt-8 flex flex-col gap-6">
+        {/* Tab switcher */}
+        <SegmentedPill
+          options={['overview', 'trades', 'settlement']}
+          value={tab}
+          onChange={(v) => setTab(v as Tab)}
+        />
+
+        {/* Overview */}
+        {tab === 'overview' && overview && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <TerminalPanel label="01 — ENERGY SUMMARY" className="lg:col-span-5">
+              <KeyValue items={[
+                { label: 'Grid import',   value: `${overview.grid_import_kwh} kWh` },
+                { label: 'Solar export',  value: `${overview.solar_export_kwh} kWh` },
+                { label: 'Total spent',   value: `₹${overview.total_spent}` },
+                { label: 'Total earned',  value: `₹${overview.total_earned}` },
+              ]} />
+            </TerminalPanel>
+            <TerminalPanel label="02 — DAILY BREAKDOWN" className="lg:col-span-7">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={overview.daily_breakdown}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis dataKey="hour" stroke="var(--chart-tick)" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                    <YAxis stroke="var(--chart-tick)" tick={{ fontSize: 10, fontFamily: 'monospace' }} />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', borderColor: 'var(--chart-axis)', fontFamily: 'monospace', fontSize: 11 }} />
+                    <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'monospace' }} />
+                    <Bar dataKey="import" name="Import (kWh)" fill="rgba(244,63,94,0.7)" radius={[3,3,0,0]} />
+                    <Bar dataKey="export" name="Export (kWh)" fill="rgba(34,197,94,0.7)" radius={[3,3,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </TerminalPanel>
+          </div>
+        )}
+
+        {/* Trades */}
+        {tab === 'trades' && (
+          <TerminalPanel label="03 — TRADE HISTORY">
+            {trades.length === 0 ? (
+              <EmptyState message="No trades found." />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse font-mono text-xs tabular-nums">
+                  <thead>
+                    <tr className="border-b border-edge/60">
+                      {['Status', 'ID', 'Time', 'Details'].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left font-semibold uppercase tracking-wider text-slate-400">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-edge/30">
+                    {trades.map((t, idx) => (
+                      <tr key={idx} className="transition-colors hover:bg-slate-800/30">
+                        <td className="px-4 py-3">
+                          {t.status === 'SUCCESS'
+                            ? <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">CLEARED</span>
+                            : <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[10px] text-rose-600 dark:text-rose-400">REJECTED</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3 text-slate-300">{t.id}</td>
+                        <td className="px-4 py-3 text-slate-400">
+                          {t.timestamp ? new Date(t.timestamp).toLocaleTimeString('en-IN', { hour12: false }) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-300">
+                          {t.status === 'SUCCESS'
+                            ? `${t.volume_kw.toFixed(2)} kW @ ₹${t.price.toFixed(4)}`
+                            : <span className="text-rose-600 dark:text-rose-400">{t.reason}</span>
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </TerminalPanel>
+        )}
+
+        {/* Settlement */}
+        {tab === 'settlement' && settlement && (
+          <TerminalPanel label="04 — SETTLEMENT STATEMENT" className="max-w-2xl">
+            <h2 className="mb-4 font-display text-lg font-bold text-white">Monthly Settlement</h2>
+            <KeyValue items={[
+              { label: 'Billing period',         value: settlement.period },
+              { label: 'Total energy purchases', value: `₹${settlement.total_buys}` },
+              { label: 'Total energy sales',     value: `₹${settlement.total_sells}` },
+              {
+                label: 'Net settlement',
+                value: (
+                  <span className={settlement.net_amount < 0 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'}>
+                    {settlement.net_amount < 0
+                      ? `Payable: ₹${Math.abs(settlement.net_amount)}`
+                      : `Receivable: ₹${settlement.net_amount}`}
+                  </span>
+                ),
+              },
+              { label: 'Linked account', value: <span className="text-warn">{settlement.masked_account}</span> },
+            ]} />
+            <button
+              type="button"
+              onClick={downloadNeft}
+              className="btn-brand mt-6 inline-flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" /> Export NEFT Payout File
+            </button>
+            <p className="mt-3 font-mono text-[10px] text-slate-600">
+              Simulated CSV payout instruction — NPCI Bulk-NEFT format.
+            </p>
+          </TerminalPanel>
+        )}
       </div>
-
-      {/* Tabs */}
-      <div className="flex space-x-1 bg-surfaceHighlight p-1 rounded-lg w-max">
-        {["overview", "trades", "settlement"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            className={`px-6 py-2 text-sm font-medium rounded-md capitalize transition-colors ${
-              activeTab === tab ? "bg-accent text-bg" : "text-textMuted hover:text-textMain"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* Overview Tab */}
-      {activeTab === "overview" && overview && (
-        <div className="space-y-6 animate-in fade-in">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-surface border border-border p-6 rounded-lg shadow-sm">
-              <h3 className="text-sm text-textMuted uppercase">Grid Import</h3>
-              <p className="text-2xl font-bold mt-2 font-jetbrains">{overview.grid_import_kwh} <span className="text-sm text-textMuted">kWh</span></p>
-            </div>
-            <div className="bg-surface border border-border p-6 rounded-lg shadow-sm">
-              <h3 className="text-sm text-textMuted uppercase">Solar Export</h3>
-              <p className="text-2xl font-bold mt-2 font-jetbrains">{overview.solar_export_kwh} <span className="text-sm text-textMuted">kWh</span></p>
-            </div>
-            <div className="bg-surface border border-border p-6 rounded-lg shadow-sm">
-              <h3 className="text-sm text-textMuted uppercase">Total Spent</h3>
-              <p className="text-2xl font-bold mt-2 font-jetbrains text-red-400">₹{overview.total_spent}</p>
-            </div>
-            <div className="bg-surface border border-border p-6 rounded-lg shadow-sm">
-              <h3 className="text-sm text-textMuted uppercase">Total Earned</h3>
-              <p className="text-2xl font-bold mt-2 font-jetbrains text-green-400">₹{overview.total_earned}</p>
-            </div>
-          </div>
-          
-          <div className="bg-surface border border-border p-6 rounded-lg shadow-sm">
-            <h2 className="text-lg font-bold mb-6 font-outfit">Daily Energy Breakdown</h2>
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={overview.daily_breakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2D2D2D" />
-                  <XAxis dataKey="hour" stroke="#888" />
-                  <YAxis stroke="#888" />
-                  <Tooltip contentStyle={{ backgroundColor: '#1A1A1A', borderColor: '#333' }} />
-                  <Legend />
-                  <Bar dataKey="import" name="Import (kWh)" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="export" name="Export (kWh)" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Trades Tab */}
-      {activeTab === "trades" && (
-        <div className="bg-surface border border-border rounded-lg overflow-hidden animate-in fade-in">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surfaceHighlight text-textMuted text-xs uppercase tracking-wider">
-                <th className="p-4 border-b border-border">Status</th>
-                <th className="p-4 border-b border-border">ID / Time</th>
-                <th className="p-4 border-b border-border">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {trades.length === 0 && (
-                <tr><td colSpan={3} className="p-4 text-center text-textMuted">No trades found.</td></tr>
-              )}
-              {trades.map((t, idx) => (
-                <tr key={idx} className="hover:bg-surfaceHighlight/50">
-                  <td className="p-4">
-                    {t.status === 'SUCCESS' ? (
-                      <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-bold">CLEARED</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full font-bold">REJECTED</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-sm font-jetbrains">
-                    {t.id}<br/>
-                    <span className="text-textMuted font-sans text-xs">{t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : ''}</span>
-                  </td>
-                  <td className="p-4 text-sm">
-                    {t.status === 'SUCCESS' ? (
-                      <span>Volume: <b className="font-jetbrains">{t.volume_kw.toFixed(2)} kW</b> @ <b className="font-jetbrains">₹{t.price.toFixed(4)}</b></span>
-                    ) : (
-                      <span className="text-red-400">{t.reason}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Settlement Tab */}
-      {activeTab === "settlement" && settlement && (
-        <div className="bg-surface border border-border rounded-lg p-8 max-w-2xl animate-in fade-in shadow-sm">
-          <h2 className="text-xl font-bold font-outfit mb-6">Monthly Settlement Statement</h2>
-          
-          <div className="space-y-4 mb-8 text-sm">
-            <div className="flex justify-between pb-2 border-b border-border">
-              <span className="text-textMuted">Billing Period</span>
-              <span className="font-bold">{settlement.period}</span>
-            </div>
-            <div className="flex justify-between pb-2 border-b border-border">
-              <span className="text-textMuted">Total Energy Purchases</span>
-              <span>₹{settlement.total_buys}</span>
-            </div>
-            <div className="flex justify-between pb-2 border-b border-border">
-              <span className="text-textMuted">Total Energy Sales</span>
-              <span>₹{settlement.total_sells}</span>
-            </div>
-            <div className="flex justify-between pb-2 border-b border-border text-lg mt-4">
-              <span className="text-textMuted">Net Settlement Amount</span>
-              <span className={`font-bold font-jetbrains ${settlement.net_amount < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                {settlement.net_amount < 0 ? `Payable: ₹${Math.abs(settlement.net_amount)}` : `Receivable: ₹${settlement.net_amount}`}
-              </span>
-            </div>
-            <div className="flex justify-between pb-2 border-b border-border">
-              <span className="text-textMuted">Linked Bank Account</span>
-              <span className="font-jetbrains text-yellow-400">{settlement.masked_account}</span>
-            </div>
-          </div>
-          
-          <button 
-            onClick={downloadNeft}
-            className="w-full bg-accent text-bg font-bold py-3 rounded-lg hover:bg-accent/90 transition-colors shadow-[0_0_15px_rgba(139,92,246,0.3)]"
-          >
-            Export NPCI Bulk-NEFT Payout File
-          </button>
-          <p className="text-xs text-textMuted mt-4 text-center">
-            *This generates a simulated CSV payout instruction file compliant with Indian DISCOM settlement standards.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

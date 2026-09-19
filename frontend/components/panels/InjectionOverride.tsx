@@ -29,6 +29,8 @@ export function InjectionOverride() {
   const live           = isLive && isAdmin;
   const [error, setError] = useState<string | null>(null);
 
+  const lines          = useStore((s) => s.lines);
+  const ptdf           = useStore((s) => s.ptdf);
   const [selectedBus, setSelectedBus] = useState<string>('BUS-05');
   const [mw, setMw]                   = useState<number>(0);
   const [active, setActive]           = useState<boolean>(false);
@@ -46,6 +48,15 @@ export function InjectionOverride() {
   // Live (admin): the engine applies the injection through its event log and the
   // PTDF flows arrive on the next 1 Hz grid frame. Demo sandbox / non-admin: the
   // local DC power-flow (PTDF · Δp) recolours the topology instantly.
+  const selected = buses.find((b) => b.id === selectedBus);
+  const busIdx = buses.findIndex((b) => b.id === selectedBus);
+  // Lines most sensitive to an injection at this bus (|PTDF| descending)
+  const sensitivities = ptdf
+    .map((row, i) => ({ line: lines[i], k: row[busIdx] ?? 0 }))
+    .filter((x) => x.line)
+    .sort((a, b) => Math.abs(b.k) - Math.abs(a.k))
+    .slice(0, 3);
+
   const inject = () => {
     if (decayRef.current) clearTimeout(decayRef.current);
     setError(null);
@@ -109,9 +120,31 @@ export function InjectionOverride() {
           value={mw}
           onChange={(e) => setMw(parseFloat(e.target.value))}
           aria-label="Injection MW"
-          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500"
+          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-accent-track [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-glow-violet"
         />
       </div>
+
+      {/* §3.4 live PTDF / LMP readout for the selected node */}
+      {selected && (
+        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+          <div className="rounded-lg border border-edge/40 p-2">
+            <p className="text-slate-500">LMP · {selected.id}</p>
+            <p className="text-telemetry text-base font-semibold tabular-nums">₹{selected.lmp.toFixed(3)}</p>
+            <p className="text-slate-500">inj {selected.injectionMW >= 0 ? '+' : ''}{selected.injectionMW.toFixed(2)} MW</p>
+          </div>
+          <div className="rounded-lg border border-edge/40 p-2">
+            <p className="text-slate-500">PTDF · most sensitive lines</p>
+            {sensitivities.map(({ line, k }) => (
+              <p key={line.id} className="flex justify-between tabular-nums">
+                <span className="text-slate-300">{line.id}</span>
+                <span className={k >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>{k >= 0 ? '+' : ''}{k.toFixed(2)}</span>
+                <span className="text-slate-500">{line.utilizationPct}%</span>
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       {/* Action buttons */}
       <div className="flex gap-2">

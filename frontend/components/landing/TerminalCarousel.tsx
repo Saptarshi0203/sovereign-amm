@@ -190,7 +190,7 @@ export function TerminalCarousel() {
     >
       {/* ── Slide surface ─────────────────────────────────────────────── */}
       <div
-        className="rounded-xl border border-sky-200 dark:border-slate-800 hover:border-sky-300 dark:hover:border-slate-700 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm p-5 cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(14,165,233,0.12)] dark:hover:shadow-[0_0_20px_rgba(16,185,129,0.12)]"
+        className="rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/60 backdrop-blur-sm p-5 cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(14,165,233,0.12)] dark:hover:shadow-[0_0_20px_rgba(16,185,129,0.12)]"
         onClick={(e) => handleSlideClick(e, slide.route)}
         role="region"
         aria-label={`Carousel: ${slide.title}`}
@@ -200,8 +200,8 @@ export function TerminalCarousel() {
         {/* ── Header ──────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-1">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{slide.title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">{slide.subtitle}</p>
+            <h3 className="text-sm font-semibold text-white">{slide.title}</h3>
+            <p className="text-xs text-slate-500 mt-0.5">{slide.subtitle}</p>
           </div>
 
           <div className="flex items-center gap-1">
@@ -216,7 +216,7 @@ export function TerminalCarousel() {
               data-carousel-control="true"
               onClick={prev}
               aria-label="Previous slide"
-              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-sky-100 dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -226,7 +226,7 @@ export function TerminalCarousel() {
               data-carousel-control="true"
               onClick={next}
               aria-label="Next slide"
-              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-sky-100 dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             >
               <ChevronRight className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -253,7 +253,7 @@ export function TerminalCarousel() {
               go(i);
             }}
             className={`w-2 h-2 rounded-full transition-colors ${
-              i === current ? 'bg-sky-500 dark:bg-emerald-500' : 'bg-sky-200 dark:bg-slate-600'
+              i === current ? 'bg-emerald-500' : 'bg-slate-600'
             }`}
           />
         ))}

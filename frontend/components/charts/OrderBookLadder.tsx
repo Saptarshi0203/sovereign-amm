@@ -40,16 +40,24 @@ const Row = memo(function Row({ px, sz, cum, pct, side, flash, flashSeq, isAmm, 
   const isBid = side === 'bid';
   return (
     <div
-      className={`ob-row relative grid items-center h-[22px] text-[11px] font-mono tabular-nums select-none ${
-        isBid ? 'grid-cols-[1fr_58px_64px] text-right' : 'grid-cols-[64px_58px_1fr] text-left'
+      // Task 11.1: font-display (Aldrich) for numerics + glow-hover micro-interaction
+      className={`ob-row glow-hover relative grid items-center h-[22px] text-[11px] font-display tabular-nums select-none cursor-default ${
+        isBid
+          ? 'grid-cols-[1fr_58px_64px] text-right hover:shadow-[0_0_8px_rgba(16,185,129,0.30)]'
+          : 'grid-cols-[64px_58px_1fr] text-left hover:shadow-[0_0_8px_rgba(168,85,247,0.30)]'
       } ${isBest ? (isBid ? 'border-t border-emerald-800/40' : 'border-b border-rose-800/40') : ''}`}
       data-flash={flash ?? undefined}
+      data-side={side}
       title={`${isBid ? 'Bid' : 'Ask'} ₹${px.toFixed(4)} · ${sz.toFixed(3)} kWh · cum ${cum.toFixed(2)} kWh${isAmm ? ' · AMM quote' : ''}`}
     >
-      {/* depth bar (mirrored) */}
+      {/* Task 11.2: DepthBar — absolute left:0 top:0 h:100%, CSS variable colours, 300ms width transition */}
       <div
-        className={`ob-bar absolute top-[2px] bottom-[2px] rounded-sm ${isBid ? 'right-0 bg-gradient-to-l from-emerald-500/35 to-emerald-500/5' : 'left-0 bg-gradient-to-r from-rose-500/35 to-rose-500/5'}`}
-        style={{ width: `${Math.max(1.5, pct)}%` }}
+        className="ob-bar absolute top-0 left-0 h-full rounded-sm z-0"
+        style={{
+          width: `${Math.max(1.5, pct)}%`,
+          background: isBid ? 'var(--depth-bar-bid)' : 'var(--depth-bar-ask)',
+          transition: 'width 300ms ease-out',
+        }}
         aria-hidden="true"
       />
       {isBid ? (

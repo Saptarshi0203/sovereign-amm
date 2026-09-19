@@ -2,10 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
-import { StatTile } from '@/components/ui/StatTile';
-import { Panel } from '@/components/ui/Panel';
+import { LiveRibbon } from '@/components/layout/LiveRibbon';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { TerminalPanel } from '@/components/ui/TerminalPanel';
+import { KeyValue } from '@/components/ui/KeyValue';
 import { formatPrice, formatOBI } from '@/lib/utils';
-import { useTickFlash } from '@/lib/hooks/useTickFlash';
 
 const OrderBookLadder = dynamic(
   () => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder),
@@ -20,77 +21,71 @@ const TimeAndSales = dynamic(
   { ssr: false },
 );
 
-/**
- * /depth — L2 Order Book Depth page.
- *
- * Displays a full-width diverging bar chart sourced from the live Zustand
- * `book` slice, four stat tiles (SPREAD, MICRO PRICE, BOOK DEPTH,
- * TOP-5 IMBALANCE), an OBI semicircular gauge, and a rolling time-and-sales
- * tape — all updated at 10 Hz via MarketClockProvider.
- *
- * Requirements: 23.1, 23.2, 23.3, 23.4, 23.5
- */
-export default function DepthPage() {
-  const { microPrice, bestBid, bestAsk, obi, book } = useStore((s) => ({
-    microPrice: s.microPrice,
-    bestBid: s.bestBid,
-    bestAsk: s.bestAsk,
-    obi: s.obi,
-    book: s.book,
-  }));
+/** Four live stat tiles above the book */
+function DepthStats() {
+  const microPrice = useStore((s) => s.microPrice);
+  const bestBid = useStore((s) => s.bestBid);
+  const bestAsk = useStore((s) => s.bestAsk);
+  const obi = useStore((s) => s.obi);
+  const book = useStore((s) => s.book);
 
-  const spread = bestAsk.px - bestBid.px;
-  const bookDepth =
-    book.bids.reduce((acc, l) => acc + l.sz, 0) +
-    book.asks.reduce((acc, l) => acc + l.sz, 0);
-
-  const microFlash = useTickFlash(microPrice);
+  const spread = Math.max(0, bestAsk.px - bestBid.px);
+  const depth =
+    book.bids.reduce((a, l) => a + l.sz, 0) +
+    book.asks.reduce((a, l) => a + l.sz, 0);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-slate-500 font-mono">
-            MICROGRID-KWH · SPOT
-          </p>
-          <h1 className="text-2xl font-bold text-white">L2 Order Book Depth</h1>
+    <KeyValue
+      items={[
+        { label: 'Micro-price', value: `₹${formatPrice(microPrice, 4)} / kWh` },
+        { label: 'Spread', value: `₹${spread.toFixed(4)}` },
+        { label: 'Book depth', value: `${depth.toFixed(1)} kWh` },
+        { label: 'OBI (top-5)', value: formatOBI(obi) },
+      ]}
+    />
+  );
+}
+
+export default function DepthPage() {
+  return (
+    <>
+      <LiveRibbon />
+
+      <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-10">
+        <PageHeader
+          label="04 — DEPTH"
+          title="L2 Order Book Depth"
+          subtitle="Bid / ask depth, OBI, and rolling time-and-sales tape · 10 Hz"
+        >
+          <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            <span className="live-dot" aria-hidden="true" />
+            10 Hz
+          </span>
+        </PageHeader>
+
+        <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-12">
+
+          {/* 01 — STATS  (3 cols) */}
+          <TerminalPanel label="01 — STATS" className="lg:col-span-3">
+            <DepthStats />
+          </TerminalPanel>
+
+          {/* 02 — BID / ASK DEPTH  (9 cols) */}
+          <TerminalPanel label="02 — BID / ASK DEPTH" className="lg:col-span-9">
+            <OrderBookLadder height={480} depth={15} />
+          </TerminalPanel>
+
+          {/* 03 — OBI GAUGE  (4 cols) */}
+          <TerminalPanel label="03 — ORDER IMBALANCE" className="lg:col-span-4">
+            <ObiGauge />
+          </TerminalPanel>
+
+          {/* 04 — TIME & SALES  (8 cols) */}
+          <TerminalPanel label="04 — TIME & SALES" className="lg:col-span-8">
+            <TimeAndSales />
+          </TerminalPanel>
         </div>
-        <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-900/30 border border-emerald-700/50 rounded-full text-xs font-mono text-emerald-600 dark:text-emerald-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          10 Hz
-        </span>
       </div>
-
-      {/* ── Stat tiles ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatTile label="SPREAD" value={spread.toFixed(4)} unit="₹/kWh" />
-        <StatTile
-          label="MICRO PRICE"
-          value={formatPrice(microPrice, 4)}
-          flashClass={microFlash}
-        />
-        <StatTile label="BOOK DEPTH" value={bookDepth.toFixed(1)} unit="kWh" />
-        <StatTile label="TOP-5 IMBALANCE" value={formatOBI(obi)} />
-      </div>
-
-      {/* ── Main depth chart ─────────────────────────────────────────────── */}
-      <Panel className="p-4">
-        <h2 className="text-xs uppercase tracking-widest text-slate-400 mb-3 font-mono">
-          Bid / Ask Depth
-        </h2>
-        <OrderBookLadder height={520} />
-      </Panel>
-
-      {/* ── Bottom row: OBI gauge + Time & Sales ─────────────────────────── */}
-      <div className="grid md:grid-cols-[1fr_2fr] gap-4">
-        <Panel className="p-4">
-          <ObiGauge />
-        </Panel>
-        <Panel className="p-4">
-          <TimeAndSales />
-        </Panel>
-      </div>
-    </main>
+    </>
   );
 }

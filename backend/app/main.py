@@ -14,6 +14,7 @@ from backend.app.api.emergency import router as emergency_router
 from backend.app.api.grid_control import router as grid_control_router
 from backend.app.api.history import router as history_router
 from backend.app.api.orderbook import ACTIVE_STREAMS, router as orderbook_router
+from backend.app.api.rag import router as rag_router
 from backend.app.api.simulation import ensure_sample_dataset, router as simulation_router
 from backend.app.api.trading import router as trading_router
 from backend.app.playback import dataset_store
@@ -85,6 +86,7 @@ app.include_router(account_router)
 app.include_router(admin_router)
 app.include_router(simulation_router)
 app.include_router(trading_router)
+app.include_router(rag_router)
 
 
 @app.get("/", include_in_schema=False)
