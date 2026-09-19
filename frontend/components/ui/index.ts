@@ -26,3 +26,6 @@ export { CursorDot } from './CursorDot';
 
 // Theme toggle (already existed)
 export { ThemeToggle } from './ThemeToggle';
+
+// Logo component
+export { default as Logo, LogoMark } from './Logo';
