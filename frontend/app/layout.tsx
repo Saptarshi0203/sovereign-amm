@@ -31,11 +31,11 @@ export const metadata: Metadata = {
   description:
     "High-frequency limit order book for microgrid energy markets with battery-based algorithmic market making. Real-time GLFT pricing, grid topology visualization, and deterministic settlement.",
   icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
     apple: '/icon.svg',
   },
+  manifest: '/manifest.json',
+  themeColor: '#8b5cf6',
   manifest: '/manifest.json',
   themeColor: '#8b5cf6',
 };

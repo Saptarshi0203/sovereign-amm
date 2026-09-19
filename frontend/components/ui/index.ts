@@ -29,4 +29,3 @@ export { ThemeToggle } from './ThemeToggle';
 
 // Logo component
 export { default as Logo, LogoMark } from './Logo';
-export type { default as LogoProps } from './Logo';
