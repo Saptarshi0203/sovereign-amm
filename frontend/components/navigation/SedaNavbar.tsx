@@ -10,6 +10,7 @@ import { AuthButtons } from './AuthButtons';
 import { SedaMobileDrawer } from './SedaMobileDrawer';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { DatasetDrawerButton } from '../layout/DatasetDrawer';
+import Logo from '../ui/Logo';
 
 /** SEDA-style navigation destinations - clean and minimal */
 const navigationTabs: { label: string; href: string; adminOnly?: boolean }[] = [
@@ -67,14 +68,10 @@ export function SedaNavbar() {
           <div className="flex items-center">
             <Link
               href="/"
-              className="flex items-center gap-2 text-lg font-bold tracking-wider text-slate-900 dark:text-white uppercase font-display transition-colors hover:text-slate-700 dark:hover:text-slate-200"
+              className="flex items-center transition-transform duration-200 hover:scale-95"
               aria-label="Sovereign-AMM home"
             >
-              <span 
-                aria-hidden="true" 
-                className="inline-block w-2.5 h-2.5 rounded-sm bg-gradient-to-r from-violet-500 to-indigo-500 shadow-md" 
-              />
-              <span>SOVEREIGN-<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-indigo-500">AMM</span></span>
+              <Logo variant="full" size="sm" showTagline={false} />
             </Link>
           </div>
 

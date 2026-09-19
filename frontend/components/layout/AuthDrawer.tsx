@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { GoogleLogin } from '@react-oauth/google';
 import { loginWithGoogle, loginWithPassword, apiFetch } from '@/lib/live/session';
+import Logo from '../ui/Logo';
 
 export function AuthDrawer(): React.ReactElement {
   const authDrawerOpen = useStore((s) => s.authDrawerOpen);
@@ -89,17 +90,22 @@ export function AuthDrawer(): React.ReactElement {
         className="w-full sm:w-[420px] h-full bg-slate-900 border-l border-slate-800 flex flex-col overflow-y-auto animate-slide-in-right"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
-          <h2 className="text-lg font-semibold text-white">
-            {authMode === 'signin' ? 'Sign In' : 'Create Account'}
-          </h2>
-          <button
-            onClick={closeAuth}
-            aria-label="Close"
-            className="p-1 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="flex flex-col border-b border-slate-800">
+          <div className="flex items-center justify-center pt-6 pb-4">
+            <Logo variant="mark-only" size="md" />
+          </div>
+          <div className="flex items-center justify-between px-6 pb-5">
+            <h2 className="text-lg font-semibold text-white">
+              {authMode === 'signin' ? 'Sign In' : 'Create Account'}
+            </h2>
+            <button
+              onClick={closeAuth}
+              aria-label="Close"
+              className="p-1 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}

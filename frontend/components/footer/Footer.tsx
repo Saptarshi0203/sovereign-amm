@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Github, Twitter, Linkedin, Mail } from 'lucide-react';
 import { Marquee } from '@/components/ui/Editorial';
+import Logo from '@/components/ui/Logo';
 
 const NAV_COLS = [
   {
@@ -100,10 +101,10 @@ export function Footer() {
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <Link
             href="/"
-            className="font-display text-sm font-bold uppercase tracking-widest text-white"
+            className="transition-transform duration-200 hover:scale-95"
             aria-label="Sovereign-AMM home"
           >
-            SOVEREIGN-<span className="text-gradient">AMM</span>
+            <Logo variant="mark-only" size="sm" />
           </Link>
 
           <p className="font-mono text-[10px] uppercase tracking-wider text-slate-600">

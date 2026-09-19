@@ -8,6 +8,7 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 import { DatasetDrawerButton } from '../layout/DatasetDrawer';
 import { useStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
+import Logo from '../ui/Logo';
 
 interface Tab {
   label: string;
@@ -83,18 +84,23 @@ export function SedaMobileDrawer({ open, onClose, tabs, currentPath }: SedaMobil
             aria-label="Navigation menu"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-edge/40">
-              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
-                Menu
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-2 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
-                aria-label="Close navigation menu"
-              >
-                <X className="h-5 w-5" />
-              </button>
+            <div className="flex flex-col items-center p-4 border-b border-slate-200 dark:border-edge/40">
+              <div className="w-full flex items-center justify-between mb-3">
+                <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
+                  Menu
+                </h2>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-2 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                  aria-label="Close navigation menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex justify-center w-full">
+                <Logo variant="mark-only" size="md" />
+              </div>
             </div>
 
             {/* Navigation Links */}
