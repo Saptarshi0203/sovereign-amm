@@ -27,9 +27,15 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sovereign-AMM | Deterministic Energy Trading",
+  title: "SOVEREIGN-AMM | Solar Energy Trading Platform",
   description:
     "High-frequency limit order book for microgrid energy markets with battery-based algorithmic market making. Real-time GLFT pricing, grid topology visualization, and deterministic settlement.",
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: '/icon.svg',
+  },
+  manifest: '/manifest.json',
+  themeColor: '#8b5cf6',
 };
 
 export default function RootLayout({

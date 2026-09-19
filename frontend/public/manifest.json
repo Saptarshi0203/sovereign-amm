@@ -1,0 +1,18 @@
+{
+  "name": "SOVEREIGN-AMM",
+  "short_name": "Sovereign-AMM",
+  "description": "Solar Energy Trading Platform - Deterministic limit-order-book market for microgrid energy",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#8b5cf6",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}

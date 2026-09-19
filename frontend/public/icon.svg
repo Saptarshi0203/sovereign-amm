@@ -1,0 +1,22 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="topBladeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="bottomBladeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  <!-- Top Curved Blade - Violet gradient -->
+  <path 
+    d="M25 15 Q25 12, 28 12 H75 Q85 12, 88 20 Q90 25, 85 32 L50 65 Q45 70, 38 70 H28 Q18 70, 15 62 Q12 57, 17 50 L25 40 Z" 
+    fill="url(#topBladeGrad)" 
+  />
+  <!-- Bottom Curved Blade - Cyan gradient -->
+  <path 
+    d="M75 85 Q75 88, 72 88 H25 Q15 88, 12 80 Q10 75, 15 68 L50 35 Q55 30, 62 30 H72 Q82 30, 85 38 Q88 43, 83 50 L75 60 Z" 
+    fill="url(#bottomBladeGrad)" 
+  />
+</svg>
