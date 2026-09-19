@@ -62,7 +62,7 @@ export function SedaMobileDrawer({ open, onClose, tabs, currentPath }: SedaMobil
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-40 md:hidden"
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -73,7 +73,7 @@ export function SedaMobileDrawer({ open, onClose, tabs, currentPath }: SedaMobil
           {/* Drawer */}
           <motion.div
             ref={drawerRef}
-            className="fixed right-0 top-0 h-full w-80 max-w-[85vw] bg-white dark:bg-canvas border-l border-slate-200 dark:border-edge/40 shadow-xl z-50 lg:hidden flex flex-col"
+            className="fixed right-0 top-0 h-full w-80 max-w-[85vw] bg-white dark:bg-canvas border-l border-slate-200 dark:border-edge/40 shadow-xl z-50 md:hidden flex flex-col"
             initial={reduce ? false : { x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

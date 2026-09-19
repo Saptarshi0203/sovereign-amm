@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Aldrich, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navigation/Navbar";
+import { SedaNavbar } from "@/components/navigation/SedaNavbar";
 import { Footer } from "@/components/footer/Footer";
 import { MarketClockProvider } from "@/components/providers/MarketClockProvider";
 import { LiveDataProvider } from "@/components/providers/LiveDataProvider";
@@ -58,7 +58,7 @@ export default function RootLayout({
               {/* Custom cursor dot (pointer:fine devices only) */}
               <CursorDot />
 
-              <Navbar />
+              <SedaNavbar />
 
               <main id="main-content" className="flex-1">
                 <PageTransitionWrapper>

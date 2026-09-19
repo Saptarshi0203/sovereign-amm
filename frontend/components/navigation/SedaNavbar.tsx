@@ -79,7 +79,7 @@ export function SedaNavbar() {
           </div>
 
           {/* ── Center: Desktop Navigation (hidden on mobile) ───────────────── */}
-          <div className="hidden lg:flex items-center space-x-1">
+          <div className="hidden md:flex items-center space-x-1">
             {visibleTabs.map((tab) => {
               const isActive =
                 pathname === tab.href ||
@@ -105,12 +105,12 @@ export function SedaNavbar() {
           {/* ── Right: Actions ────────────────────────────────────────────── */}
           <div className="flex items-center gap-3">
             {/* Dataset upload drawer (desktop only) */}
-            <div className="hidden lg:block">
+            <div className="hidden md:block">
               <DatasetDrawerButton />
             </div>
 
             {/* Desktop theme toggle */}
-            <div className="hidden lg:block">
+            <div className="hidden md:block">
               <ThemeToggle />
             </div>
 
@@ -120,7 +120,7 @@ export function SedaNavbar() {
             {/* Mobile menu button */}
             <button
               type="button"
-              className="lg:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
               onClick={() => setMobileDrawerOpen(true)}
               aria-label="Open navigation menu"
               aria-expanded={mobileDrawerOpen}
