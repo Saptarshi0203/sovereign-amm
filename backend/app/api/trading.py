@@ -39,8 +39,8 @@ def _identity(user: Dict[str, Any]) -> tuple[str, str]:
     return str(uid), str(email)
 
 
-def _mark() -> float:
-    ob = engine_facade.orderbook_snapshot(settings.DEMO_GRID_ID)
+def _mark(area_code: str) -> float:
+    ob = engine_facade.orderbook_snapshot(area_code)
     return (ob.get("micro_price") or 0) / MICRO
 
 
@@ -48,7 +48,8 @@ def _mark() -> float:
 @router.get("/api/trade/portfolio", include_in_schema=False)
 def get_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
-    return trading_book.get_or_create(uid, email).as_dict(_mark())
+    area_code = user.get("area_code") or settings.DEMO_GRID_ID
+    return trading_book.get_or_create(uid, email).as_dict(_mark(area_code))
 
 
 @router.post("/api/trading/orders")
@@ -56,7 +57,7 @@ def get_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any
 def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
     trading_book.get_or_create(uid, email)
-    grid = settings.DEMO_GRID_ID
+    grid = user.get("area_code") or settings.DEMO_GRID_ID
     engine_facade.start(grid)
 
     if req.type == "AUTO_CHARGE":
@@ -73,7 +74,7 @@ def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(require_user))
         result = engine_facade.submit_user_order(grid, uid, req.side, req.type, req.qty_kwh, req.limit_price)
         if result.get("rejected") and "order" not in result:
             raise HTTPException(status_code=400, detail=result.get("reason", "Order rejected"))
-    result["portfolio"] = trading_book.get_or_create(uid, email).as_dict(_mark())
+    result["portfolio"] = trading_book.get_or_create(uid, email).as_dict(_mark(grid))
     return result
 
 
@@ -84,7 +85,8 @@ def cancel_order(order_id: str, user: Dict[str, Any] = Depends(require_user)) ->
     order = trading_book.find_order(order_id)
     if order is None or order.user_id != uid:
         raise HTTPException(status_code=404, detail="Order not found")
-    engine_facade.cancel_user_order(settings.DEMO_GRID_ID, order_id)
+    grid = user.get("area_code") or settings.DEMO_GRID_ID
+    engine_facade.cancel_user_order(grid, order_id)
     return {"cancelled": True, "order": order.as_dict()}
 
 
@@ -92,10 +94,11 @@ def cancel_order(order_id: str, user: Dict[str, Any] = Depends(require_user)) ->
 @router.post("/api/trade/reset", include_in_schema=False)
 def reset_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     uid, email = _identity(user)
+    grid = user.get("area_code") or settings.DEMO_GRID_ID
     for o in list(trading_book.get_or_create(uid, email).active_orders()):
-        engine_facade.cancel_user_order(settings.DEMO_GRID_ID, o.order_id)
+        engine_facade.cancel_user_order(grid, o.order_id)
     trading_book.reset(uid)
-    return trading_book.get_or_create(uid, email).as_dict(_mark())
+    return trading_book.get_or_create(uid, email).as_dict(_mark(grid))
 
 
 @router.websocket("/ws/user/{user_id}")
@@ -130,7 +133,8 @@ async def ws_user(websocket: WebSocket, user_id: str):
             if pf.version != last_version or now - last_push > 5.0:
                 last_version = pf.version
                 last_push = now
-                await websocket.send_json({"type": "portfolio", **pf.as_dict(_mark())})
+                grid = payload.get("area_code") or settings.DEMO_GRID_ID
+                await websocket.send_json({"type": "portfolio", **pf.as_dict(_mark(grid))})
             await asyncio.sleep(0.5)
     except (WebSocketDisconnect, RuntimeError, asyncio.CancelledError):
         pass

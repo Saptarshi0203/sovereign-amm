@@ -396,6 +396,7 @@ export interface AuthUser {
   picture?: string;
   demo?: boolean;
   wallet_balance_inr?: number;
+  area_code?: string;
 }
 
 /** Session state machine: anonymous = Demo Mode, user = live, admin = live + control. */

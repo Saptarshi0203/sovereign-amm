@@ -49,14 +49,14 @@ def auth_scope(
     # Anonymous REST reads of the public demo grid are always allowed (static
     # history / snapshots power Demo Mode); everything mutating is guarded by
     # require_user / require_admin, and live WebSockets honour PUBLIC_DEMO.
-    grid_id = request.path_params.get("grid_id")
+    grid_id = request.path_params.get("grid_id") or request.path_params.get("area_code")
     if grid_id is None or grid_id == settings.DEMO_GRID_ID:
         return _guest_payload()
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authorization header")
 
 
 def grid_scope(request: Request, user: Dict[str, Any] = Depends(auth_scope)) -> str:
-    grid_id = request.path_params.get("grid_id")
+    grid_id = request.path_params.get("grid_id") or request.path_params.get("area_code")
     if not grid_id:
         return ""
     if not verify_grid_scope(user, grid_id):

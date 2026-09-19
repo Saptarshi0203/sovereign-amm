@@ -51,4 +51,4 @@ def verify_grid_scope(token_payload: Dict[str, Any], grid_id: str) -> bool:
         return True
     if grid_id == settings.DEMO_GRID_ID:
         return True
-    return token_payload.get("grid_id") == grid_id
+    return token_payload.get("area_code") == grid_id or token_payload.get("grid_id") == grid_id

@@ -128,6 +128,7 @@ def token_claims(user: Dict[str, Any]) -> Dict[str, Any]:
         "name": user.get("name") or "",
         "wallet_balance": round(float(user.get("wallet_balance") or 0.0), 2),
         "grid_id": user.get("grid_id") or settings.DEMO_GRID_ID,
+        "area_code": user.get("area_code"),
     }
 
 

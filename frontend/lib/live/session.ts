@@ -156,20 +156,24 @@ export async function bootstrapSession(): Promise<void> {
 
 // ── Domain calls used by the dashboards ────────────────────────────────────
 
+function getTargetArea(): string {
+  return useAuthStore.getState().user?.area_code || GRID_ID;
+}
+
 export async function fetchHistory(range: string): Promise<import('@/lib/live/snapshots').HistoryRow[]> {
-  return apiFetch(`/history/${GRID_ID}?window=${encodeURIComponent(range)}`);
+  return apiFetch(`/history/${getTargetArea()}?window=${encodeURIComponent(range)}`);
 }
 
 export async function postInjection(busId: string, mw: number): Promise<void> {
-  await apiFetch(`/grid/${GRID_ID}/inject`, { method: 'POST', body: JSON.stringify({ bus_id: busId, injection_mw: mw }) });
+  await apiFetch(`/grid/${getTargetArea()}/inject`, { method: 'POST', body: JSON.stringify({ bus_id: busId, injection_mw: mw }) });
 }
 
 export async function postGridReset(): Promise<void> {
-  await apiFetch(`/grid/${GRID_ID}/reset`, { method: 'POST' });
+  await apiFetch(`/grid/${getTargetArea()}/reset`, { method: 'POST' });
 }
 
 export async function putParameters(patch: Record<string, number>): Promise<Record<string, number>> {
-  return apiFetch(`/grid/${GRID_ID}/parameters`, { method: 'PUT', body: JSON.stringify(patch) });
+  return apiFetch(`/grid/${getTargetArea()}/parameters`, { method: 'PUT', body: JSON.stringify(patch) });
 }
 
 export async function triggerScenario(id: string): Promise<{ message: string; narration: string }> {
@@ -187,20 +191,20 @@ export interface DatasetInjectPayload {
 }
 
 export async function injectDataset(payload: DatasetInjectPayload): Promise<Record<string, unknown>> {
-  return apiFetch('/api/control/inject', { method: 'POST', body: JSON.stringify({ grid_id: GRID_ID, ...payload }) });
+  return apiFetch('/api/control/inject', { method: 'POST', body: JSON.stringify({ grid_id: getTargetArea(), ...payload }) });
 }
 
 export async function injectCsv(file: File, kind: 'ticks' | 'orders', replaceHistory = false): Promise<Record<string, unknown>> {
   const form = new FormData();
   form.append('file', file);
-  form.append('grid_id', GRID_ID);
+  form.append('grid_id', getTargetArea());
   form.append('kind', kind);
   form.append('replace_history', String(replaceHistory));
   return apiFetch('/api/control/inject/csv', { method: 'POST', body: form });
 }
 
 export function historyExportUrl(): string {
-  return `${API_BASE}/history/export/${GRID_ID}`;
+  return `${API_BASE}/history/export/${getTargetArea()}`;
 }
 
 // ── Clock-synced dataset playback ──────────────────────────────────────────
@@ -261,7 +265,7 @@ export function uploadDatasetCsv(file: File, name: string, onProgress: (pct: num
     form.append('name', name || file.name.replace(/\.csv$/i, ''));
     form.append('activate', 'true');
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${API_BASE}/api/simulation/upload-csv`);
+    xhr.open('POST', `${API_BASE}/api/admin/upload-telemetry`);
     xhr.withCredentials = true;
     const token = useStore.getState().jwtToken;
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);

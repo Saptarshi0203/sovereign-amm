@@ -70,11 +70,11 @@ async def _accept(websocket: WebSocket, grid_id: str) -> bool:
     return True
 
 
-@router.websocket("/ws/orderbook/{grid_id}")
-async def ws_orderbook(websocket: WebSocket, grid_id: str):
-    if not await _accept(websocket, grid_id):
+@router.websocket("/ws/orderbook/{area_code}")
+async def ws_orderbook(websocket: WebSocket, area_code: str):
+    if not await _accept(websocket, area_code):
         return
-    await _pump(websocket, engine_facade.stream_orderbook(grid_id, hz=10))
+    await _pump(websocket, engine_facade.stream_orderbook(area_code, hz=10))
 
 
 @router.websocket("/ws/live")
@@ -83,16 +83,16 @@ async def ws_live(websocket: WebSocket):
     await ws_orderbook(websocket, settings.DEMO_GRID_ID)
 
 
-@router.websocket("/orderbook/ws/{grid_id}")
-async def ws_orderbook_alias(websocket: WebSocket, grid_id: str):
-    await ws_orderbook(websocket, grid_id)
+@router.websocket("/orderbook/ws/{area_code}")
+async def ws_orderbook_alias(websocket: WebSocket, area_code: str):
+    await ws_orderbook(websocket, area_code)
 
 
-@router.websocket("/ws/grid/{grid_id}")
-async def ws_grid(websocket: WebSocket, grid_id: str):
-    if not await _accept(websocket, grid_id):
+@router.websocket("/ws/grid/{area_code}")
+async def ws_grid(websocket: WebSocket, area_code: str):
+    if not await _accept(websocket, area_code):
         return
-    await _pump(websocket, engine_facade.stream_grid(grid_id, hz=1))
+    await _pump(websocket, engine_facade.stream_grid(area_code, hz=1))
 
 
 @router.websocket("/ws/stream")
@@ -121,23 +121,23 @@ from fastapi import Depends  # noqa: E402
 from backend.app.api.deps import grid_scope  # noqa: E402
 
 
-@router.get("/api/orderbook/{grid_id}", tags=["orderbook"])
-def get_orderbook(grid_id: str = Depends(grid_scope)) -> Dict[str, Any]:
-    engine_facade.start(grid_id)
-    return engine_facade.orderbook_snapshot(grid_id)
+@router.get("/api/orderbook/{area_code}", tags=["orderbook"])
+def get_orderbook(area_code: str = Depends(grid_scope)) -> Dict[str, Any]:
+    engine_facade.start(area_code)
+    return engine_facade.orderbook_snapshot(area_code)
 
 
-@router.get("/api/grid/{grid_id}", tags=["grid"])
-def get_grid(grid_id: str = Depends(grid_scope)) -> Dict[str, Any]:
-    engine_facade.start(grid_id)
-    return engine_facade.grid_snapshot(grid_id)
+@router.get("/api/grid/{area_code}", tags=["grid"])
+def get_grid(area_code: str = Depends(grid_scope)) -> Dict[str, Any]:
+    engine_facade.start(area_code)
+    return engine_facade.grid_snapshot(area_code)
 
 
-@router.get("/api/grid/{grid_id}/ptdf", tags=["grid"])
-def get_ptdf(grid_id: str = Depends(grid_scope)) -> Dict[str, Any]:
-    snap = engine_facade.grid_snapshot(grid_id)
+@router.get("/api/grid/{area_code}/ptdf", tags=["grid"])
+def get_ptdf(area_code: str = Depends(grid_scope)) -> Dict[str, Any]:
+    snap = engine_facade.grid_snapshot(area_code)
     return {
-        "grid_id": grid_id,
+        "grid_id": area_code,
         "buses": [b["id"] for b in snap["buses"]],
         "lines": [{"id": l["id"], "from_bus": l["from_bus"], "to_bus": l["to_bus"], "capacity_mw": l["capacity_mw"]} for l in snap["lines"]],
         "ptdf": snap["ptdf"],
@@ -145,7 +145,7 @@ def get_ptdf(grid_id: str = Depends(grid_scope)) -> Dict[str, Any]:
     }
 
 
-@router.get("/api/battery/{grid_id}", tags=["battery"])
-def get_battery(grid_id: str = Depends(grid_scope)) -> Dict[str, Any]:
-    engine_facade.start(grid_id)
-    return engine_facade.grid_snapshot(grid_id)["battery"]
+@router.get("/api/battery/{area_code}", tags=["battery"])
+def get_battery(area_code: str = Depends(grid_scope)) -> Dict[str, Any]:
+    engine_facade.start(area_code)
+    return engine_facade.grid_snapshot(area_code)["battery"]

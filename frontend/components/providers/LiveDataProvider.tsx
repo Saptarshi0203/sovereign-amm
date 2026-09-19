@@ -285,8 +285,9 @@ function useSessionBootstrap() {
 
 export function LiveDataProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   useSessionBootstrap();
-  useEngineSocket('orderbook', `/ws/orderbook/${GRID_ID}`);
-  useEngineSocket('grid', `/ws/grid/${GRID_ID}`);
+  const userAreaCode = useAuthStore((s) => s.user?.area_code) || GRID_ID;
+  useEngineSocket('orderbook', `/ws/orderbook/${userAreaCode}`);
+  useEngineSocket('grid', `/ws/grid/${userAreaCode}`);
   useUserSocket();
   useHistoryHydration();
   useDemoPlaybackPolling();
