@@ -118,14 +118,14 @@ export function AuthButtons() {
   return (
     <div className="flex items-center gap-3">
       <span
-        className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-700/40 rounded-md px-2 py-1 whitespace-nowrap"
+        className="hidden md:inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-700/40 rounded-full px-2 py-1 whitespace-nowrap"
         title="Demo Sandbox — fully interactive on the 24 h demo stream with a ₹1,00,000 paper wallet. Sign in for your live regional feed and personal wallet."
       >
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
         DEMO MODE
       </span>
       {GOOGLE_CLIENT_ID ? (
-        <div className="flex flex-col items-end">
+        <div className="hidden flex-col items-end sm:flex">
           <GoogleLogin
             onSuccess={async (cred) => {
               setError(null);
@@ -145,7 +145,13 @@ export function AuthButtons() {
           />
           {error && <span className="text-[10px] text-rose-600 dark:text-rose-400 font-mono mt-0.5">{error}</span>}
         </div>
-      ) : (
+      ) : null}
+      {GOOGLE_CLIENT_ID && (
+        <button onClick={() => openAuth('signin')} className="rounded-full border border-edge/60 px-3 py-1.5 text-xs font-medium text-slate-300 sm:hidden">
+          Sign in
+        </button>
+      )}
+      {!GOOGLE_CLIENT_ID && (
         <button
           onClick={() => openAuth('signin')}
           className="px-3 py-2 text-sm font-medium text-slate-300 border border-slate-600 rounded-md hover:bg-slate-800 hover:text-white transition-colors whitespace-nowrap"

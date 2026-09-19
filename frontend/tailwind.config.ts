@@ -43,6 +43,23 @@ const config: Config = {
           900: "#4c1d95",
           950: "#2e1065",
         },
+        // ── §2 semantic tokens (CSS-variable backed, theme-aware) ───────
+        canvas: "rgb(var(--t-canvas) / <alpha-value>)",
+        panel2: "rgb(var(--t-panel) / <alpha-value>)",
+        ink: "rgb(var(--t-ink) / <alpha-value>)",
+        edge: "rgb(var(--t-edge) / <alpha-value>)",
+        // Primary telemetry accent: electric cyan (dark) / azure (light)
+        telemetry: "rgb(var(--t-telemetry) / <alpha-value>)",
+        muted: "rgb(var(--t-muted) / <alpha-value>)",
+        bid: "rgb(var(--t-bid) / <alpha-value>)",
+        ask: "rgb(var(--t-ask) / <alpha-value>)",
+        warn: "rgb(var(--t-warn) / <alpha-value>)",
+        cyan: {
+          300: "#67e8f9", 400: "#22d3ee", 500: "#00f2fe", 600: "#0891b2", 700: "#0e7490",
+        },
+        azure: {
+          400: "#38bdf8", 500: "#0ea5e9", 600: "#0284c7", 700: "#0369a1",
+        },
         // ── Brand accents ───────────────────────────────────────────────
         violet: {
           50: "#f5f3ff", 100: "#ede9fe", 200: "#ddd6fe", 300: "#c4b5fd", 400: "#a78bfa",
@@ -72,16 +89,20 @@ const config: Config = {
         textMuted: "rgb(var(--c-slate-400) / <alpha-value>)",
       },
       backgroundImage: {
-        "brand-gradient": "linear-gradient(135deg, #7c3aed 0%, #a855f7 45%, #d946ef 100%)",
+        "canvas-radial": "var(--t-canvas-radial)",
+        "card-glow": "linear-gradient(180deg, rgba(139,92,246,0.06) 0%, transparent 45%)",
+        "gradient-edge": "linear-gradient(135deg, rgba(139,92,246,0.7) 0%, rgba(0,242,254,0.35) 50%, rgba(217,70,239,0.6) 100%)",
+        "accent-track": "linear-gradient(90deg, #8b5cf6 0%, #00f2fe 100%)",
+        "brand-gradient": "linear-gradient(135deg, rgb(var(--t-brand-a)) 0%, rgb(var(--t-brand-b)) 100%)",
         "brand-gradient-soft": "linear-gradient(135deg, rgba(124,58,237,0.25) 0%, rgba(217,70,239,0.15) 100%)",
-        "hero-glow": "radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.35) 0%, rgba(139,92,246,0.08) 35%, transparent 70%)",
+        "hero-glow": "radial-gradient(ellipse at 50% 0%, rgba(0,229,255,0.10) 0%, rgba(139,92,246,0.06) 35%, transparent 70%)",
         "grid-dots": "radial-gradient(circle, rgb(var(--c-slate-500)) 1px, transparent 1px)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
-        display: ["var(--font-outfit)", "Outfit", "sans-serif"],
+        sans: ["var(--font-display)", "Aldrich", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Aldrich", "system-ui", "sans-serif"],
         mono: [
-          "var(--font-jetbrains)",
+          "var(--font-mono)",
           "JetBrains Mono",
           "Fira Code",
           "Fira Mono",
@@ -118,6 +139,10 @@ const config: Config = {
         "marquee": "marquee 30s linear infinite",
         "marquee-fast": "marquee 15s linear infinite",
         "slide-in-right": "slideInRight 250ms ease-out",
+        "pulse-dot": "pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "flash-telemetry": "flashTelemetry 150ms ease-out",
+        "dash-flow": "dashFlow 1.2s linear infinite",
+        "rise-in": "riseIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both",
         float: "float 7s ease-in-out infinite",
         "float-slow": "float 11s ease-in-out infinite",
         shimmer: "shimmer 6s linear infinite",
@@ -147,6 +172,22 @@ const config: Config = {
           from: { transform: "translateX(100%)" },
           to: { transform: "translateX(0%)" },
         },
+        pulseDot: {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(16,185,129,0.55)", opacity: "1" },
+          "60%": { boxShadow: "0 0 0 6px rgba(16,185,129,0)", opacity: "0.85" },
+        },
+        flashTelemetry: {
+          "0%": { color: "rgb(var(--t-telemetry))" },
+          "100%": { color: "inherit" },
+        },
+        dashFlow: {
+          from: { strokeDashoffset: "20" },
+          to: { strokeDashoffset: "0" },
+        },
+        riseIn: {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
         float: {
           "0%, 100%": { transform: "translateY(0px) rotate(0deg)" },
           "50%": { transform: "translateY(-14px) rotate(1deg)" },
@@ -164,7 +205,14 @@ const config: Config = {
         carousel: "400px",
       },
       borderRadius: {
-        card: "0.5rem", // Consistent card border radius (8px)
+        card: "1rem",
+      },
+      letterSpacing: {
+        display: "-0.03em",
+        data: "-0.01em",
+      },
+      fontSize: {
+        body: ["15px", { lineHeight: "1.65" }],
       },
     },
   },

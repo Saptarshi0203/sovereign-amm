@@ -30,8 +30,8 @@ function fmtLabel(t: number | undefined): string {
 function ThemeAwareTooltip({ active, payload, label }: TooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white/90 dark:bg-slate-800 border border-sky-200 dark:border-slate-700 rounded-lg p-2 font-mono text-xs text-slate-900 dark:text-slate-200 shadow-sm dark:shadow-none">
-      <div className="text-slate-500 dark:text-slate-400 mb-1">{fmtLabel(label)}</div>
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-2 font-mono text-xs text-slate-200 shadow-sm dark:shadow-none">
+      <div className="text-slate-400 mb-1">{fmtLabel(label)}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ color: p.color }}>
           {p.name}: {p.value.toFixed(p.name === 'SoC %' ? 1 : 4)}
@@ -104,7 +104,7 @@ export function PriceStateChart({ range, showRangeSelector = true, height = 300 
                 type="button"
                 onClick={() => setHistoryRange(r)}
                 className={`px-2 py-0.5 rounded text-[11px] font-mono border transition-colors ${
-                  historyRange === r ? 'border-sky-500 text-sky-700 dark:text-sky-300' : 'border-slate-700 text-slate-500 hover:text-slate-200'
+                  historyRange === r ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-500 hover:text-slate-200'
                 }`}
               >
                 {r}

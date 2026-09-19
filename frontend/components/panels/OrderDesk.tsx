@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { ArrowDownToLine, ArrowUpFromLine, Zap } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { cancelOrder, placeOrder, resetPortfolio, type OrderPayload } from '@/lib/live/session';
 import type { UserOrder } from '@/lib/types';
@@ -17,7 +18,7 @@ function fmtTime(ts: number): string {
 }
 
 const STATUS_COLOR: Record<UserOrder['status'], string> = {
-  OPEN: 'text-sky-600 dark:text-sky-400',
+  OPEN: 'text-sky-400',
   ARMED: 'text-violet-600 dark:text-violet-400',
   FILLED: 'text-emerald-600 dark:text-emerald-400',
   PARTIAL: 'text-amber-600 dark:text-amber-400',
@@ -53,6 +54,7 @@ export function OrderDesk() {
   const demoCancelOrder = useStore((s) => s.demoCancelOrder);
   const demoResetPortfolio = useStore((s) => s.demoResetPortfolio);
   const sandbox = anonymous || !live;
+  const reduce = useReducedMotion();
 
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [type, setType] = useState<OrderType>('MARKET');
@@ -153,18 +155,28 @@ export function OrderDesk() {
           </button>
         </div>
 
-        <div className="flex gap-1 text-xs font-mono">
+        {/* §3.5 segmented toggle with a sliding pill */}
+        <div className="relative flex gap-1 p-1 rounded-xl bg-slate-800/70 border border-edge/40 text-xs font-mono" role="tablist" aria-label="Order type">
           {(['MARKET', 'LIMIT', 'AUTO_CHARGE'] as OrderType[]).map((t) => (
             <button
               key={t}
               type="button"
+              role="tab"
+              aria-selected={type === t}
               onClick={() => {
                 setType(t);
                 if (t === 'AUTO_CHARGE') setSide('BUY');
               }}
-              className={`flex-1 py-1.5 rounded border ${type === t ? 'border-sky-500 text-sky-700 dark:text-sky-300 bg-sky-900/20' : 'border-slate-700 text-slate-400 hover:text-white'}`}
+              className={`relative flex-1 py-1.5 rounded-lg transition-colors ${type === t ? 'text-white' : 'text-slate-400 hover:text-white'}`}
             >
-              {t === 'AUTO_CHARGE' ? 'AUTO-CHARGE' : t}
+              {type === t && (
+                <motion.span
+                  layoutId="order-type-pill"
+                  className="absolute inset-0 rounded-lg bg-violet-500/25 border border-violet-500/40"
+                  transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 32 }}
+                />
+              )}
+              <span className="relative">{t === 'AUTO_CHARGE' ? 'AUTO-CHARGE' : t}</span>
             </button>
           ))}
         </div>
@@ -182,7 +194,7 @@ export function OrderDesk() {
             value={qty}
             onChange={(e) => setQty(parseFloat(e.target.value))}
             aria-label="Quantity kWh"
-            className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-sky-500"
+            className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-accent-track [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-glow-violet"
           />
         </div>
 
@@ -259,6 +271,15 @@ export function OrderDesk() {
             reset
           </button>
         </div>
+        {portfolio && (
+          <div className="flex items-center justify-between rounded-xl border border-edge/40 bg-card-glow px-3 py-2 font-mono">
+            <span className="text-[10px] uppercase tracking-widest text-slate-500">Equity</span>
+            <span className="text-telemetry text-lg font-semibold tabular-nums tracking-data">{inr(portfolio.equity_inr)}</span>
+            <span className={`text-xs tabular-nums ${portfolio.total_pnl_inr >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              {portfolio.total_pnl_inr >= 0 ? '+' : '−'}₹{Math.abs(portfolio.total_pnl_inr).toFixed(2)} PnL
+            </span>
+          </div>
+        )}
         {portfolio ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
             <Stat label="Wallet" value={inr(portfolio.wallet_balance_inr)} />

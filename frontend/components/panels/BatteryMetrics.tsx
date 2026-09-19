@@ -37,7 +37,7 @@ export function PnlMetrics() {
         </div>
         <div>
           <p className="text-xs text-slate-500">Avg Spread</p>
-          <p className="text-sky-600 dark:text-sky-400 font-bold tabular-nums">₹{pnl.avgSpread.toFixed(4)}/kWh</p>
+          <p className="text-sky-400 font-bold tabular-nums">₹{pnl.avgSpread.toFixed(4)}/kWh</p>
         </div>
         <div>
           <p className="text-xs text-slate-500">C_deg (marginal)</p>

@@ -30,7 +30,7 @@ export function DatasetDrawerButton() {
         type="button"
         onClick={() => setOpen(true)}
         className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-mono transition-colors ${
-          live && playback?.active ? 'border-sky-700/60 text-sky-700 dark:text-sky-300 hover:bg-sky-900/20' : 'border-slate-700 text-slate-400 hover:text-white'
+          live && playback?.active ? 'border-sky-700/60 text-sky-300 hover:bg-sky-900/20' : 'border-slate-700 text-slate-400 hover:text-white'
         }`}
         title="Upload a custom 24 h dataset / playback status"
       >

@@ -52,6 +52,18 @@ Sovereign-AMM treats a physical microgrid — 100 homes, rooftop solar, EV charg
 
 ---
 
+### RAG Copilot
+
+`/copilot` (and the floating ✨ drawer on every page) is a retrieval-augmented Lead Microgrid Quant Analyst. Answers fuse a structured knowledge base (7-bus topology, GLFT / OBI / LMP math, Rainflow degradation, platform guides) with the live 10 Hz engine snapshot (micro-price, spread, OBI, SoC, $C_{deg}$, PTDF line loading) and render Markdown + KaTeX with source attribution.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/rag/query` | `{query, include_live_telemetry}` → `{answer, sources, suggested_followups, telemetry}` |
+| `POST /api/rag/stream` | Same input, Server-Sent Events (`meta` → `delta`… → `done`) |
+| `GET /api/rag/questions` | Predefined question chips by pillar |
+
+Set `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) on the backend to generate with an LLM; without a key the copilot returns deterministic, retrieval-grounded answers so the feature works on every deploy.
+
 ## 🚀 Live demo
 
 | | URL |
