@@ -17,11 +17,17 @@ def mock_email_notification(email: str, subject: str, body: str):
 def admin_user(user: Dict[str, Any] = Depends(require_role(["admin"]))):
     return user
 
+@router.get("/pending-users")
 @router.get("/users/pending")
 def get_pending_users(admin: Dict[str, Any] = Depends(admin_user)) -> List[Dict[str, Any]]:
     """Fetch all users currently stuck in the pending queue."""
     users = store.list_users()
-    pending = [u for u in users if u.get("status") == "pending"]
+    admin_area_code = admin.get("area_code")
+    
+    pending = [
+        u for u in users 
+        if u.get("status") == "pending" and (not admin_area_code or u.get("area_code") == admin_area_code)
+    ]
     # Mask password hashes before sending over wire
     for u in pending:
         u.pop("password_hash", None)
@@ -37,13 +43,25 @@ def list_users(admin: Dict[str, Any] = Depends(admin_user)):
         safe_users.append(u_copy)
     return safe_users
 
-class ApproveRequest(BaseModel):
+class ApproveRejectRequest(BaseModel):
+    user_id: str | None = None
+    email: str | None = None
     assigned_bus_id: str = "BUS-02"
 
+def _get_user_by_req(req: ApproveRejectRequest):
+    if req.user_id:
+        return store.get_user_by_id(req.user_id)
+    if req.email:
+        return store.get_user(req.email)
+    return None
+
+@router.post("/approve-user")
 @router.post("/users/{user_id}/approve")
-def approve_user(user_id: str, req: ApproveRequest, admin: Dict[str, Any] = Depends(admin_user)):
+def approve_user(req: ApproveRejectRequest, user_id: str = None, admin: Dict[str, Any] = Depends(admin_user)):
     """Explicitly approve a pending user account."""
-    user = store.get_user_by_id(user_id)
+    if user_id:
+        req.user_id = user_id
+    user = _get_user_by_req(req)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -65,10 +83,13 @@ def approve_user(user_id: str, req: ApproveRequest, admin: Dict[str, Any] = Depe
     
     return {"message": f"User {user['email']} successfully approved."}
 
+@router.post("/reject-user")
 @router.post("/users/{user_id}/reject")
-def reject_user(user_id: str, admin: Dict[str, Any] = Depends(admin_user)):
-    """Reject and delete a pending user account."""
-    user = store.get_user_by_id(user_id)
+def reject_user(req: ApproveRejectRequest, user_id: str = None, admin: Dict[str, Any] = Depends(admin_user)):
+    """Reject a pending user account."""
+    if user_id:
+        req.user_id = user_id
+    user = _get_user_by_req(req)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         

@@ -21,7 +21,7 @@ from backend.app.db.store import DEFAULT_WALLET_INR, store
 
 PUBLIC_FIELDS = (
     "id", "google_id", "email", "name", "picture", "role", "status", "wallet_balance",
-    "energy_inventory_kwh", "avg_cost_inr", "realized_pnl_inr", "savings_inr", "grid_id", "created_at",
+    "energy_inventory_kwh", "avg_cost_inr", "realized_pnl_inr", "savings_inr", "grid_id", "created_at", "area_code",
 )
 
 
@@ -42,6 +42,7 @@ class User:
     wallet_balance: float = DEFAULT_WALLET_INR
     created_at: int = 0
     grid_id: str = settings.DEMO_GRID_ID
+    area_code: Optional[str] = None
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
     # ── construction ───────────────────────────────────────────────────
@@ -59,6 +60,7 @@ class User:
             wallet_balance=float(row.get("wallet_balance") or 0.0),
             created_at=int(row.get("created_at") or 0),
             grid_id=row.get("grid_id") or settings.DEMO_GRID_ID,
+            area_code=row.get("area_code"),
             raw=row,
         )
 
@@ -132,6 +134,7 @@ class User:
             "name": self.name,
             "wallet_balance": round(self.wallet_balance, 2),
             "grid_id": self.grid_id,
+            "area_code": self.area_code,
         }
 
     def to_public(self) -> Dict[str, Any]:
@@ -150,6 +153,7 @@ class User:
                 "wallet_balance_inr": round(self.wallet_balance, 2),
                 "created_at": self.created_at,
                 "grid_id": self.grid_id,
+                "area_code": self.area_code,
             }
         )
         return out

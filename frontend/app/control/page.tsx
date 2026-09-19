@@ -11,6 +11,7 @@ import { DatasetUpload } from '@/components/panels/DatasetUpload';
 import { DataInjector } from '@/components/panels/DataInjector';
 import { OrderDesk } from '@/components/panels/OrderDesk';
 import { RiskParams } from '@/components/panels/BatteryMetrics';
+import { PendingUsersPanel } from '@/components/panels/PendingUsersPanel';
 import { AlertTriangle } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
@@ -73,6 +74,11 @@ export default function ControlPage() {
           </PageHeader>
 
           <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-12">
+
+            {/* 00 — PENDING HOUSEHOLD REQUESTS  (12 cols) */}
+            <TerminalPanel label="00 — PENDING HOUSEHOLD REQUESTS" className="lg:col-span-12">
+              <PendingUsersPanel />
+            </TerminalPanel>
 
             {/* 01 — ORDER DESK  (8 cols) */}
             <TerminalPanel label="01 — ORDER DESK" className="lg:col-span-8">

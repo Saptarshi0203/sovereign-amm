@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { GoogleLogin } from '@react-oauth/google';
@@ -177,6 +178,7 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,7 +189,13 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign in failed';
-      setError(/fetch|network|Failed/i.test(msg) ? 'Backend unreachable — try again in a moment' : msg);
+      if (msg.includes('AWAITING_APPROVAL')) {
+        localStorage.setItem('pending_email', email);
+        router.push('/waiting-room');
+        onSuccess(); // Close drawer
+      } else {
+        setError(/fetch|network|Failed/i.test(msg) ? 'Backend unreachable — try again in a moment' : msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -245,9 +253,11 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 
 // — Sign Up form —
 function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
+  const [role, setRole] = useState<'admin' | 'retailer'>('retailer');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [areaCode, setAreaCode] = useState('');
 
   const [status, setStatus] = useState<string | null>(null);
 
@@ -256,19 +266,51 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
     try {
       await apiFetch('/api/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ email, password, consumer_no: name }),
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          consumer_no: name,
+          role,
+          area_code: role === 'retailer' ? areaCode : undefined
+        }),
         headers: { Authorization: '' },
       });
-      setStatus('Account created — an admin must approve it before you can sign in. Until then the site stays in Demo Mode.');
+      if (role === 'admin') {
+        setStatus('Account created and approved! You may now sign in.');
+      } else {
+        setStatus('Account created — your Grid Operator must approve it before you can sign in. Until then the site stays in Demo Mode.');
+      }
     } catch (err) {
       setStatus(err instanceof Error ? err.message : 'Signup failed.');
     }
-    setTimeout(onSuccess, 1800);
+    setTimeout(onSuccess, 2500);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {status && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">{status}</p>}
+      
+      {/* Role Toggle */}
+      <div className="flex bg-slate-800 rounded-lg p-1 gap-1">
+        <button
+          type="button"
+          onClick={() => setRole('retailer')}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            role === 'retailer' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+          }`}
+        >
+          Household Retailer
+        </button>
+        <button
+          type="button"
+          onClick={() => setRole('admin')}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            role === 'admin' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+          }`}
+        >
+          Grid Admin
+        </button>
+      </div>
       <div className="flex flex-col gap-1.5">
         <label
           className="text-xs text-slate-400 uppercase tracking-wider"
@@ -323,6 +365,25 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
           className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
         />
       </div>
+      {role === 'retailer' && (
+        <div className="flex flex-col gap-1.5 animate-slide-in-right">
+          <label
+            className="text-xs text-slate-400 uppercase tracking-wider"
+            htmlFor="signup-area-code"
+          >
+            Admin Area Code
+          </label>
+          <input
+            id="signup-area-code"
+            type="text"
+            value={areaCode}
+            onChange={(e) => setAreaCode(e.target.value.toUpperCase())}
+            placeholder="KOL-2026"
+            required
+            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono"
+          />
+        </div>
+      )}
       <button
         type="submit"
         className="btn-brand w-full mt-2"

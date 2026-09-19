@@ -54,7 +54,7 @@ USER_COLUMNS = [
     "savings_inr", "bought_kwh", "sold_kwh", "spent_inr", "earned_inr",
     "home_solar_capacity_kw", "grid_id", "consumer_no", "connection_type",
     "sanctioned_load_kw", "solar_kwp", "inverter_rating_kw", "assigned_bus_id",
-    "bank_account_masked", "created_at",
+    "bank_account_masked", "created_at", "area_code",
 ]
 
 NUMERIC_DEFAULTS: Dict[str, float] = {
@@ -95,6 +95,16 @@ class SqliteUserStore:
             try:
                 con.execute(
                     """
+                    CREATE TABLE IF NOT EXISTS microgrid_areas (
+                        area_code TEXT PRIMARY KEY,
+                        area_name TEXT NOT NULL,
+                        admin_email TEXT NOT NULL,
+                        created_at INTEGER
+                    );
+                    """
+                )
+                con.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS users (
                         id TEXT PRIMARY KEY,
                         google_id TEXT,
@@ -122,7 +132,9 @@ class SqliteUserStore:
                         inverter_rating_kw REAL DEFAULT 0.0,
                         assigned_bus_id TEXT,
                         bank_account_masked TEXT DEFAULT 'XXXXXX0000',
-                        created_at INTEGER
+                        created_at INTEGER,
+                        area_code TEXT,
+                        FOREIGN KEY (area_code) REFERENCES microgrid_areas(area_code)
                     );
                     """
                 )
@@ -142,10 +154,12 @@ class SqliteUserStore:
                     """
                 )
                 con.execute("CREATE INDEX IF NOT EXISTS idx_trades_user_ts ON trades(user_id, ts);")
-                # Forward migration for databases created before google_id existed.
+                # Forward migration for databases created before new columns existed.
                 cols = {r[1] for r in con.execute("PRAGMA table_info(users)").fetchall()}
                 if "google_id" not in cols:
                     con.execute("ALTER TABLE users ADD COLUMN google_id TEXT;")
+                if "area_code" not in cols:
+                    con.execute("ALTER TABLE users ADD COLUMN area_code TEXT;")
                 con.commit()
                 self._import_legacy(con)
             finally:
@@ -300,6 +314,35 @@ class SqliteUserStore:
                 con.commit()
             finally:
                 con.close()
+
+    # ── microgrid areas ────────────────────────────────────────────────
+
+    def get_area(self, area_code: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            con = self._con()
+            try:
+                return self._row(con.execute("SELECT * FROM microgrid_areas WHERE area_code = ?", (area_code,)).fetchone())
+            finally:
+                con.close()
+
+    def add_area(self, area_code: str, area_name: str, admin_email: str) -> Dict[str, Any]:
+        record = {
+            "area_code": area_code,
+            "area_name": area_name,
+            "admin_email": admin_email,
+            "created_at": int(time.time() * 1000)
+        }
+        with self._lock:
+            con = self._con()
+            try:
+                con.execute(
+                    "INSERT INTO microgrid_areas (area_code, area_name, admin_email, created_at) VALUES (?, ?, ?, ?)",
+                    (record["area_code"], record["area_name"], record["admin_email"], record["created_at"]),
+                )
+                con.commit()
+            finally:
+                con.close()
+        return record
 
 
 store = SqliteUserStore()
