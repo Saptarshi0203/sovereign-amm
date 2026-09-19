@@ -2,7 +2,9 @@ import os
 import uuid
 from typing import Any, Dict, Optional
 
+import random
 from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Response, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from backend.app.core.auth import (
@@ -28,6 +30,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 class SignupRequest(BaseModel):
     email: str
     password: str
+    role: str = "retailer"
+    area_code: Optional[str] = None
     consumer_no: str = ""
     connection_type: str = "residential"
     sanctioned_load_kw: float = 5.0
@@ -68,13 +72,36 @@ def _set_cookie(response: Response, token: str) -> None:
 def signup(req: SignupRequest):
     if store.get_user(req.email):
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    role = "admin" if req.email.lower() in settings.admin_emails or req.role == "admin" else "retailer"
+    
+    if role == "admin":
+        area_code = req.area_code or f"KOL-{random.randint(1000, 9999)}"
+        if not store.get_area(area_code):
+            store.add_area(area_code, f"{area_code} Grid", req.email)
+        user_status = "approved"
+    else:
+        if not req.area_code:
+            raise HTTPException(status_code=400, detail="Area code is required for retailers")
+        area = store.get_area(req.area_code)
+        if not area:
+            raise HTTPException(status_code=400, detail="Invalid area code")
+        user_status = "pending"
+        area_code = req.area_code
+        
+        # Mock Email Notification
+        print(f"\n[MOCK EMAIL NOTIFICATION] To: {area['admin_email']}")
+        print(f"Subject: [Sovereign-AMM] New Household Approval Request - Area {area_code}")
+        print(f"Body: User {req.email} has requested to join. Please approve in Admin Control Panel.\n")
+
     store.add_user(
         {
             "id": f"user-{uuid.uuid4().hex[:8]}",
             "email": req.email,
             "password_hash": get_password_hash(req.password),
-            "role": resolve_role(req.email, "user"),
-            "status": "approved" if req.email.lower() in settings.admin_emails else "pending",
+            "role": role,
+            "status": user_status,
+            "area_code": area_code,
             "consumer_no": req.consumer_no,
             "connection_type": req.connection_type,
             "sanctioned_load_kw": req.sanctioned_load_kw,
@@ -85,7 +112,7 @@ def signup(req: SignupRequest):
             "grid_id": settings.DEMO_GRID_ID,
         }
     )
-    return {"message": "Signup successful. Waiting for admin approval."}
+    return {"message": "Signup successful."}
 
 
 @router.post("/login")
@@ -93,6 +120,10 @@ def login(req: LoginRequest, response: Response):
     user = store.get_user(req.email)
     if not user or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
+    if user["status"] == "pending":
+        return JSONResponse(status_code=403, content={"detail": "AWAITING_APPROVAL", "message": "Your account is pending verification by the Grid Operator."})
+    if user["status"] == "rejected":
+        return JSONResponse(status_code=403, content={"detail": "ACCOUNT_REJECTED"})
     if user["status"] != "approved":
         raise HTTPException(status_code=403, detail=f"Account is {user['status']}")
     token = create_access_token(token_claims(user))
@@ -161,3 +192,10 @@ def google_login(req: GoogleLoginRequest, response: Response):
 @router.get("/me")
 def get_me(current_user: Dict[str, Any] = Depends(get_current_user)):
     return _public_user(current_user)
+
+@router.get("/status")
+def get_status(email: str):
+    user = store.get_user(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"status": user["status"], "area_code": user.get("area_code")}
