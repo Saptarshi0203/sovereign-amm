@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from typing import List, Dict, Any
+from backend.app.engine_facade import engine_facade
+from backend.app.playback import dataset_store, parse_csv_text
 from backend.app.core.auth import require_role
 from backend.app.db.store import store
 from pydantic import BaseModel
@@ -135,3 +137,37 @@ def reset_password(user_id: str, req: ResetPasswordRequest, admin: Dict[str, Any
     hashed_pwd = get_password_hash(req.new_password)
     store.update_user(user["email"], {"password_hash": hashed_pwd})
     return {"message": "Password reset successfully"}
+
+@router.post("/upload-telemetry")
+async def upload_telemetry(
+    file: UploadFile = File(...),
+    name: str = Form(""),
+    activate: bool = Form(True),
+    admin: Dict[str, Any] = Depends(admin_user),
+) -> Dict[str, Any]:
+    raw = await file.read()
+    if len(raw) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="CSV larger than 50 MB")
+    try:
+        rows, skipped = parse_csv_text(raw.decode("utf-8-sig", errors="replace"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not rows:
+        raise HTTPException(status_code=400, detail="No valid rows in CSV")
+    
+    run_name = name.strip() or (file.filename or "custom").rsplit(".", 1)[0]
+    run_id = dataset_store.save_run(run_name, rows, activate=activate)
+    
+    admin_area_code = admin.get("area_code")
+    if not admin_area_code:
+        raise HTTPException(status_code=400, detail="Admin does not have an assigned area_code")
+
+    if activate:
+        meta = next((r for r in dataset_store.list_runs() if r["run_id"] == run_id), {"name": run_id})
+        dataset_store.set_active(run_id)
+        engine_facade.load_dataset(admin_area_code, run_id, meta["name"], rows)
+        status = engine_facade.get_runtime(admin_area_code).playback.status()
+    else:
+        status = engine_facade.get_runtime(admin_area_code).playback.status()
+
+    return {"run_id": run_id, "name": run_name, "rows": len(rows), "rows_skipped": skipped, "activated": activate, "playback": status}
