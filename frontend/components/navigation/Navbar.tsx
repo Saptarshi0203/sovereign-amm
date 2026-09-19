@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu } from 'lucide-react';
+import { Menu, Copy, Check } from 'lucide-react';
 
 import { useAuthStore } from '@/store/authStore';
 import { AuthButtons } from './AuthButtons';
@@ -48,6 +48,8 @@ export function Navbar() {
   const allTabs = navigationTabs.filter((t) => !t.adminOnly || isAdmin);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 24);
     on();
@@ -75,8 +77,20 @@ export function Navbar() {
           </Link>
 
           {isAdmin && user?.area_code && (
-            <div className="hidden lg:flex items-center ml-2 mr-4 rounded bg-slate-800/50 border border-slate-700/50 px-3 py-1 font-mono text-[11px] font-semibold text-emerald-400">
-              [ GRID AREA: {user.area_code}{user.area_name ? ` - ${user.area_name}` : ''} ] 
+            <div className="hidden lg:flex items-center ml-2 mr-4 rounded-full bg-emerald-500/20 border border-emerald-500/50 px-3 py-1 font-mono text-[11px] font-semibold text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)] gap-2">
+              <span>[ GRID AREA: {user.area_code}{user.area_name ? ` - ${user.area_name}` : ''} ]</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(user.area_code);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="hover:text-white transition-colors flex items-center gap-1"
+                aria-label="Copy Area Code"
+                title="Copy Area Code"
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              </button>
             </div>
           )}
 
