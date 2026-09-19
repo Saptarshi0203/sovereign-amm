@@ -325,6 +325,14 @@ class SqliteUserStore:
             finally:
                 con.close()
 
+    def list_areas(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            con = self._con()
+            try:
+                return [dict(r) for r in con.execute("SELECT * FROM microgrid_areas ORDER BY created_at DESC").fetchall()]
+            finally:
+                con.close()
+
     def add_area(self, area_code: str, area_name: str, admin_email: str) -> Dict[str, Any]:
         record = {
             "area_code": area_code,

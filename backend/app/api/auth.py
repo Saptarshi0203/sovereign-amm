@@ -32,6 +32,7 @@ class SignupRequest(BaseModel):
     password: str
     role: str = "retailer"
     area_code: Optional[str] = None
+    city_name: Optional[str] = None
     consumer_no: str = ""
     connection_type: str = "residential"
     sanctioned_load_kw: float = 5.0
@@ -76,9 +77,20 @@ def signup(req: SignupRequest):
     role = "admin" if req.email.lower() in settings.admin_emails or req.role == "admin" else "retailer"
     
     if role == "admin":
-        area_code = req.area_code or f"KOL-{random.randint(1000, 9999)}"
+        if req.city_name:
+            import re
+            city_name_clean = re.sub(r'[^A-Za-z]', '', req.city_name)
+            city_prefix = (city_name_clean[:3] if city_name_clean else "GRD").upper()
+            existing = [a for a in store.list_areas() if a["area_code"].startswith(city_prefix)]
+            next_index = len(existing) + 1
+            area_code = f"{city_prefix}{str(next_index).zfill(2)}"
+            area_name = req.city_name
+        else:
+            area_code = req.area_code or f"KOL-{random.randint(1000, 9999)}"
+            area_name = f"{area_code} Grid"
+
         if not store.get_area(area_code):
-            store.add_area(area_code, f"{area_code} Grid", req.email)
+            store.add_area(area_code, area_name, req.email)
         user_status = "approved"
     else:
         if not req.area_code:
