@@ -28,6 +28,7 @@ _WINDOWS_MS = {
     "1H": 3600 * 1000,
     "4H": 4 * 3600 * 1000,
     "24H": 24 * 3600 * 1000,
+    "7D": 7 * 24 * 3600 * 1000,
 }
 
 
@@ -75,6 +76,23 @@ class StorageManager:
                 """
             )
             await db.execute("CREATE INDEX IF NOT EXISTS idx_ticks_grid_ts ON ticks(grid_id, ts);")
+            await db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS telemetry_7d (
+                    ts INTEGER,
+                    grid_id TEXT,
+                    day_number INTEGER,
+                    aggregate_load_mw REAL,
+                    aggregate_solar_mw REAL,
+                    best_bid INTEGER,
+                    best_ask INTEGER,
+                    obi REAL,
+                    line_congestion_status TEXT,
+                    PRIMARY KEY (grid_id, ts)
+                );
+                """
+            )
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_telemetry_7d_grid_ts ON telemetry_7d(grid_id, ts);")
             await db.commit()
 
         self._init_duck()
@@ -199,7 +217,7 @@ class StorageManager:
     def query_history(self, grid_id: str, window: str, max_points: int = 2000) -> List[Dict[str, Any]]:
         """
         Historical ticks. 1H/4H return raw ticks (downsampled to ``max_points``),
-        24H/ALL return 1-minute columnar rollups.
+        24H/7D/ALL return columnar rollups (1-min for 24H, 5-min for 7D/ALL).
         """
         now_ms = int(time.time() * 1000)
         window = (window or "24H").upper()
@@ -207,8 +225,9 @@ class StorageManager:
             cutoff = now_ms - _WINDOWS_MS[window]
         else:
             cutoff = 0
-        use_rollup = window in ("24H", "ALL") or window not in _WINDOWS_MS
-        bin_ms = 60_000 if use_rollup else 1
+        use_rollup = window in ("24H", "7D", "ALL") or window not in _WINDOWS_MS
+        # 5-min bins for 7D/ALL (keeps ≤ 2,016 points), 1-min for 24H
+        bin_ms = 300_000 if window in ("7D", "ALL") else (60_000 if use_rollup else 1)
 
         rows: List[Tuple[Any, ...]] = []
         columns = ["t", "micro_price", "soc_pct", "sigma", "c_deg", "n"]
@@ -262,6 +281,74 @@ class StorageManager:
                 con.close()
         except Exception:
             return 0
+
+    def query_telemetry_7d(
+        self, grid_id: str, window: str = "7D", max_points: int = 2000
+    ) -> List[Dict[str, Any]]:
+        """
+        Extended 7-day telemetry with load, solar, bid/ask, OBI, congestion.
+        Joins `ticks` and `telemetry_7d` tables.
+        """
+        now_ms = int(time.time() * 1000)
+        window = (window or "7D").upper()
+        cutoff = now_ms - _WINDOWS_MS.get(window, 7 * 24 * 3600 * 1000)
+        bin_ms = 300_000 if window in ("7D", "ALL") else 60_000
+
+        sql = f"""
+            SELECT
+                CAST(t.ts - (t.ts % {bin_ms}) AS BIGINT) AS ts_bin,
+                avg(t.micro_price) AS micro_price,
+                avg(t.soc_pct) AS soc_pct,
+                avg(t.sigma) AS sigma,
+                avg(t.c_deg) AS c_deg,
+                max(e.day_number) AS day_number,
+                avg(e.aggregate_load_mw) AS aggregate_load_mw,
+                avg(e.aggregate_solar_mw) AS aggregate_solar_mw,
+                avg(e.best_bid) AS best_bid,
+                avg(e.best_ask) AS best_ask,
+                avg(e.obi) AS obi,
+                max(e.line_congestion_status) AS line_congestion_status,
+                count(*) AS n
+            FROM ticks t
+            LEFT JOIN telemetry_7d e ON t.ts = e.ts AND t.grid_id = e.grid_id
+            WHERE t.grid_id = ? AND t.ts >= ?
+            GROUP BY ts_bin
+            ORDER BY ts_bin ASC
+        """
+
+        columns = [
+            "t", "micro_price", "soc_pct", "sigma", "c_deg",
+            "day_number", "aggregate_load_mw", "aggregate_solar_mw",
+            "best_bid", "best_ask", "obi", "line_congestion_status", "n",
+        ]
+        try:
+            con = sqlite3.connect(self.db_path)
+            try:
+                rows = con.execute(sql, (grid_id, cutoff)).fetchall()
+            finally:
+                con.close()
+        except Exception as e:
+            print(f"[STORAGE] telemetry_7d query failed: {e}")
+            rows = []
+
+        records = [dict(zip(columns, r)) for r in rows]
+        if len(records) > max_points:
+            step = len(records) / max_points
+            records = [records[int(i * step)] for i in range(max_points)]
+        for r in records:
+            r["t"] = int(r["t"])
+            r["micro_price"] = float(r["micro_price"] or 0.0)
+            r["soc_pct"] = float(r["soc_pct"] or 0.0)
+            r["sigma"] = float(r["sigma"] or 0.0)
+            r["c_deg"] = float(r["c_deg"] or 0.0)
+            r["day_number"] = int(r["day_number"] or 0)
+            r["aggregate_load_mw"] = float(r["aggregate_load_mw"] or 0.0)
+            r["aggregate_solar_mw"] = float(r["aggregate_solar_mw"] or 0.0)
+            r["best_bid"] = float(r["best_bid"] or 0.0)
+            r["best_ask"] = float(r["best_ask"] or 0.0)
+            r["obi"] = float(r["obi"] or 0.0)
+            r["line_congestion_status"] = str(r["line_congestion_status"] or "CLEAR")
+        return records
 
     async def stream_ticks_csv(self, grid_id: str, start: Optional[int] = None, end: Optional[int] = None) -> AsyncGenerator[str, None]:
         yield "ts,grid_id,micro_price,soc_pct,sigma,c_deg\n"

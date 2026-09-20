@@ -27,14 +27,31 @@ from backend.app.engine_facade import engine_facade
 async def lifespan(app: FastAPI):
     await storage.init_db()
     dataset_store.init()
-    # Demo Mode charts read the static 24 h rollups: (re)seed when the last
-    # 24 h of stored history is sparse (fresh install, or the seed has aged out).
-    if storage.tick_count_since(settings.DEMO_GRID_ID, int(time.time() * 1000) - 24 * 3600 * 1000) < 20_000:
+    # Seed historical data: prefer 7-day high-resolution telemetry when sparse.
+    seven_day_ms = 7 * 24 * 3600 * 1000
+    tick_count_7d = storage.tick_count_since(settings.DEMO_GRID_ID, int(time.time() * 1000) - seven_day_ms)
+    if tick_count_7d < 50_000:
+        try:
+            from simulation.generate_7day_telemetry import seed_7day
+
+            await seed_7day()
+        except Exception as e:
+            print(f"[MAIN] 7-day seeding failed ({e}); trying 24h fallback")
+            # Fallback: seed 24h if the 7-day seeder fails
+            if storage.tick_count_since(settings.DEMO_GRID_ID, int(time.time() * 1000) - 24 * 3600 * 1000) < 20_000:
+                try:
+                    from simulation.seed_history import seed_db
+
+                    await seed_db()
+                except Exception as e2:
+                    print(f"[MAIN] 24h seeding also skipped: {e2}")
+    elif storage.tick_count_since(settings.DEMO_GRID_ID, int(time.time() * 1000) - 24 * 3600 * 1000) < 20_000:
+        # 7-day data exists but recent 24h is sparse — top up with the live seeder
         try:
             from simulation.seed_history import seed_db
 
             await seed_db()
-        except Exception as e:  # keep booting on a seeding failure
+        except Exception as e:
             print(f"[MAIN] history seeding skipped: {e}")
     # One deterministic 10 Hz engine loop for the public demo grid.
     engine_facade.start(settings.DEMO_GRID_ID)

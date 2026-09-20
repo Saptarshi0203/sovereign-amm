@@ -13,14 +13,27 @@ router = APIRouter(prefix="/history", tags=["history"])
 @router.get("/{grid_id}")
 def get_history(
     grid_id: str = Depends(grid_scope),
-    window: str = Query("24H", description="Time window (1H, 4H, 24H, ALL)"),
+    window: str = Query("24H", description="Time window (1H, 4H, 24H, 7D, ALL)"),
     max_points: int = Query(2000, ge=10, le=100_000),
 ) -> List[Dict[str, Any]]:
     """
-    Historical ticks. 24H/ALL use DuckDB 1-minute columnar rollups; 1H/4H return
+    Historical ticks. 24H/7D/ALL use DuckDB columnar rollups; 1H/4H return
     raw ticks (downsampled to ``max_points``).
     """
     return storage.query_history(grid_id, window, max_points=max_points)
+
+
+@router.get("/{grid_id}/telemetry")
+def get_telemetry(
+    grid_id: str = Depends(grid_scope),
+    window: str = Query("7D", description="Time window (1H, 4H, 24H, 7D, ALL)"),
+    max_points: int = Query(2000, ge=10, le=100_000),
+) -> List[Dict[str, Any]]:
+    """
+    Extended 7-day telemetry: load, solar, bid/ask, OBI, congestion status.
+    Joins the `ticks` and `telemetry_7d` tables for the full schema.
+    """
+    return storage.query_telemetry_7d(grid_id, window, max_points=max_points)
 
 
 @router.get("/{grid_id}/meta")

@@ -41,8 +41,8 @@ function ThemeAwareTooltip({ active, payload, label }: TooltipProps) {
   );
 }
 
-type Range = '1H' | '4H' | '24H' | 'ALL';
-const RANGES: Range[] = ['1H', '4H', '24H', 'ALL'];
+type Range = '1H' | '4H' | '24H' | '7D' | 'ALL';
+const RANGES: Range[] = ['1H', '4H', '24H', '7D', 'ALL'];
 
 interface PriceStateChartProps {
   /** Initial range; the chart also exposes a range selector. */
@@ -112,7 +112,7 @@ export function PriceStateChart({ range, showRangeSelector = true, height = 300 
             ))}
           </div>
           <span className="text-[10px] font-mono text-slate-500">
-            {loading ? 'loading…' : `${filtered.length.toLocaleString()} pts${live && (historyRange === '24H' || historyRange === 'ALL') ? ' · 1-min DuckDB rollup' : ''}`}
+            {loading ? 'loading…' : `${filtered.length.toLocaleString()} pts${live && (historyRange === '24H' || historyRange === '7D' || historyRange === 'ALL') ? ` · ${historyRange === '24H' ? '1-min' : '5-min'} DuckDB rollup` : ''}`}
           </span>
         </div>
       )}
