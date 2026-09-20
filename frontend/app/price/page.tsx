@@ -12,9 +12,11 @@ import { Sparkline } from '@/components/ui/Sparkline';
 import { csvDownload } from '@/lib/utils';
 import { Download } from 'lucide-react';
 
+import { ChartSkeleton } from '@/components/charts/ChartSkeleton';
+
 const PriceStateChart = dynamic(
   () => import('@/components/charts/PriceStateChart').then((m) => m.PriceStateChart),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={340} /> }
 );
 
 type Range = '1H' | '4H' | '24H' | '7D' | 'ALL';

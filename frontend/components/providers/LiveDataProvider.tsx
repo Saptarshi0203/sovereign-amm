@@ -64,14 +64,14 @@ function useEngineSocket(feed: FeedName, path: string) {
       const socket = ws;
 
       socket.onopen = () => {
-        if (gen !== generation.id) return;
+        if (gen !== generation.id || closed) return;
         attempt = 0;
         lastFrame = Date.now();
         setFeedConnected(feed, true);
       };
 
       socket.onmessage = (event: MessageEvent) => {
-        if (gen !== generation.id) return;
+        if (gen !== generation.id || closed) return;
         lastFrame = Date.now();
         let parsed: unknown;
         try {
@@ -88,7 +88,7 @@ function useEngineSocket(feed: FeedName, path: string) {
       };
 
       socket.onclose = () => {
-        if (gen !== generation.id) return;
+        if (gen !== generation.id || closed) return;
         setFeedConnected(feed, false);
         scheduleReconnect();
       };
@@ -100,7 +100,8 @@ function useEngineSocket(feed: FeedName, path: string) {
       reconnectTimer = setTimeout(connect, delay);
     };
 
-    connect();
+    // Defer the initial connection slightly to avoid blocking the UI thread during navigation/hydration
+    const initialConnectTimer = setTimeout(connect, 50);
 
     if (feed === 'orderbook') {
       staleTimer = setInterval(() => {
@@ -113,16 +114,22 @@ function useEngineSocket(feed: FeedName, path: string) {
     return () => {
       closed = true;
       generation.id++;
+      clearTimeout(initialConnectTimer);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (staleTimer) clearInterval(staleTimer);
+      
       if (ws) {
+        // Strict teardown
         ws.onopen = null;
         ws.onmessage = null;
         ws.onerror = null;
         ws.onclose = null;
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000, 'unmount');
+        if (ws.readyState === 1 /* OPEN */ || ws.readyState === 0 /* CONNECTING */) {
+          ws.close(1000, 'unmount');
+        }
         ws = null;
       }
+      // Ensure we immediately update state to disconnected
       setFeedConnected(feed, false);
     };
   }, [feed, path, token, sessionReady, authenticated]);
@@ -189,17 +196,21 @@ function useUserSocket() {
       socket.onerror = () => undefined;
     };
 
-    void connect();
+    const initialConnectTimer = setTimeout(() => { void connect(); }, 50);
 
     return () => {
       closed = true;
+      clearTimeout(initialConnectTimer);
       if (timer) clearTimeout(timer);
       if (ws) {
+        // Strict teardown
         ws.onopen = null;
         ws.onmessage = null;
         ws.onclose = null;
         ws.onerror = null;
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000, 'unmount');
+        if (ws.readyState === 1 /* OPEN */ || ws.readyState === 0 /* CONNECTING */) {
+          ws.close(1000, 'unmount');
+        }
         ws = null;
       }
       setPortfolioConnected(false);

@@ -11,13 +11,15 @@ import { FillsTable } from '@/components/panels/FillsTable';
 import { PnlPanel } from '@/components/panels/PnlPanel';
 import { Shield } from 'lucide-react';
 
+import { ChartSkeleton } from '@/components/charts/ChartSkeleton';
+
 const DayProfileChart = dynamic(
   () => import('@/components/charts/DayProfileChart').then((m) => m.DayProfileChart),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 const OrderBookLadder = dynamic(
   () => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={340} /> }
 );
 
 function TradeBadges() {

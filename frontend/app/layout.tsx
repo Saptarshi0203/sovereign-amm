@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { PageTransitionWrapper } from "@/components/layout/PageTransitionWrapper";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
 import { CursorDot } from "@/components/ui/CursorDot";
+import { KeepAlivePing } from "@/components/ui/KeepAlivePing";
 
 const aldrich = Aldrich({
   weight: ["400"],
@@ -63,6 +64,8 @@ export default function RootLayout({
               <ScrollProgress />
               {/* Custom cursor dot (pointer:fine devices only) */}
               <CursorDot />
+              {/* Render.com keep-alive ping */}
+              <KeepAlivePing />
 
               <SedaNavbar />
 
