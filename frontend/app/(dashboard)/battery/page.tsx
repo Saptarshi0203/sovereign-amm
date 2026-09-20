@@ -10,17 +10,19 @@ import { KeyValue } from '@/components/ui/KeyValue';
 import { PnlMetrics, RiskParams } from '@/components/panels/BatteryMetrics';
 import { putParameters } from '@/lib/live/session';
 
+import { ChartSkeleton } from '@/components/charts/ChartSkeleton';
+
 const BatteryGauge = dynamic(
   () => import('@/components/charts/BatteryGauge').then((m) => m.BatteryGauge),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 const RainflowHistogram = dynamic(
   () => import('@/components/charts/RainflowHistogram').then((m) => m.RainflowHistogram),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 const InventoryBoundaryChart = dynamic(
   () => import('@/components/charts/InventoryBoundaryChart').then((m) => m.InventoryBoundaryChart),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 
 /** GLFT parameter breakdown displayed as KeyValue rows */

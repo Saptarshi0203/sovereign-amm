@@ -17,13 +17,15 @@ import { useStore } from '@/lib/store';
 import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';
 
+import { ChartSkeleton } from '@/components/charts/ChartSkeleton';
+
 const GridTopologySVG = dynamic(
   () => import('@/components/charts/GridTopologySVG').then((m) => m.GridTopologySVG),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 const DayProfileChart = dynamic(
   () => import('@/components/charts/DayProfileChart').then((m) => m.DayProfileChart),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 
 function EmergencyHalt() {

@@ -9,21 +9,23 @@ import { SegmentedPill } from '@/components/ui/SegmentedPill';
 import { PnlPanel } from '@/components/panels/PnlPanel';
 import { FillsTable } from '@/components/panels/FillsTable';
 
+import { ChartSkeleton } from '@/components/charts/ChartSkeleton';
+
 const OrderBookLadder = dynamic(
   () => import('@/components/charts/OrderBookLadder').then((m) => m.OrderBookLadder),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={340} /> }
 );
 const PriceStateChart = dynamic(
   () => import('@/components/charts/PriceStateChart').then((m) => m.PriceStateChart),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 const DayProfileChart = dynamic(
   () => import('@/components/charts/DayProfileChart').then((m) => m.DayProfileChart),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 const BatteryGauge = dynamic(
   () => import('@/components/charts/BatteryGauge').then((m) => m.BatteryGauge),
-  { ssr: false },
+  { ssr: false, loading: () => <ChartSkeleton height={320} /> }
 );
 
 function FeedBadge() {
