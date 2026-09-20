@@ -9,10 +9,10 @@ import { LmpPanel } from '@/components/panels/LmpPanel';
 import { InjectionOverride } from '@/components/panels/InjectionOverride';
 import { DatasetUpload } from '@/components/panels/DatasetUpload';
 import { DataInjector } from '@/components/panels/DataInjector';
-import { OrderDesk } from '@/components/panels/OrderDesk';
 import { RiskParams } from '@/components/panels/BatteryMetrics';
 import { PendingUsersPanel } from '@/components/panels/PendingUsersPanel';
-import { AlertTriangle, Copy, Check } from 'lucide-react';
+import { HouseholdDirectory } from '@/components/panels/HouseholdDirectory';
+import { AlertTriangle, Copy, Check, Shield } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';
@@ -54,6 +54,27 @@ function EmergencyHalt() {
           {emergency ? 'Resume trading' : 'Activate emergency halt'}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Compact supervisory notice for the Control Room — reminds admins that
+ * order placement is disabled on their account.
+ */
+function ControlSupervisoryNotice({ areaCode }: { areaCode: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/5 via-slate-900/40 to-slate-900/60 p-6 text-center backdrop-blur-sm">
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/10">
+        <Shield className="h-6 w-6 text-violet-400" />
+      </div>
+      <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-violet-300">
+        Supervisory Mode — Trading Disabled
+      </h3>
+      <p className="max-w-sm text-xs leading-relaxed text-slate-500">
+        Grid Admin accounts operate in monitoring-only mode. Visit the Household Directory
+        below to manage participant accounts for area <strong className="text-violet-300 font-mono">{areaCode || 'N/A'}</strong>.
+      </p>
     </div>
   );
 }
@@ -110,9 +131,9 @@ export default function ControlPage() {
               <PendingUsersPanel />
             </TerminalPanel>
 
-            {/* 01 — ORDER DESK  (8 cols) */}
-            <TerminalPanel label="01 — ORDER DESK" className="lg:col-span-8">
-              <OrderDesk />
+            {/* 01 — SUPERVISORY MODE NOTICE  (8 cols) */}
+            <TerminalPanel label="01 — SUPERVISORY MODE" className="lg:col-span-8">
+              <ControlSupervisoryNotice areaCode={user?.area_code ?? ''} />
             </TerminalPanel>
 
             {/* 02 — EMERGENCY HALT  (4 cols) */}
@@ -154,9 +175,15 @@ export default function ControlPage() {
             <TerminalPanel label="09 — SCENARIOS & INJECTION" className="lg:col-span-6">
               <DataInjector />
             </TerminalPanel>
+
+            {/* 10 — HOUSEHOLD DIRECTORY  (12 cols) */}
+            <TerminalPanel label="10 — HOUSEHOLD DIRECTORY" className="lg:col-span-12">
+              <HouseholdDirectory />
+            </TerminalPanel>
           </div>
         </div>
       </>
     </AdminGate>
   );
 }
+

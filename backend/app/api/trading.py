@@ -55,6 +55,15 @@ def get_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any
 @router.post("/api/trading/orders")
 @router.post("/api/trade/orders", include_in_schema=False)
 def place_order(req: OrderRequest, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
+    # ── Admin trading restriction ──────────────────────────────────────
+    # Grid Admins operate in Supervisory Mode: they monitor the market but
+    # never place orders, preserving market neutrality and preventing
+    # potential price manipulation by the grid operator.
+    if user.get("role") == "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="ADMIN_TRADING_DISABLED: Grid Admins are restricted from executing market orders.",
+        )
     uid, email = _identity(user)
     trading_book.get_or_create(uid, email)
     grid = user.get("area_code") or settings.DEMO_GRID_ID
