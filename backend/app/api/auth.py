@@ -98,13 +98,17 @@ def signup(req: SignupRequest):
             import re
             city_name_clean = re.sub(r'[^A-Za-z]', '', req.city_name)
             city_prefix = (city_name_clean[:3] if city_name_clean else "GRD").upper()
-            existing = [a for a in store.list_areas() if a["area_code"].startswith(city_prefix)]
-            next_index = len(existing) + 1
+            # FIX: renamed to existing_areas to avoid shadowing the `existing` user check above
+            existing_areas = [a for a in store.list_areas() if a["area_code"].startswith(city_prefix)]
+            next_index = len(existing_areas) + 1
             area_code = f"{city_prefix}{str(next_index).zfill(2)}"
             area_name = req.city_name
         else:
             area_code = req.area_code or f"KOL-{random.randint(1000, 9999)}"
             area_name = f"{area_code} Grid"
+
+        # FIX: sanitize admin area_code to ensure consistent casing in DB
+        area_code = area_code.strip().upper()
 
         if not store.get_area(area_code):
             store.add_area(area_code, area_name, req.email)
@@ -112,11 +116,23 @@ def signup(req: SignupRequest):
     else:
         if not req.area_code:
             raise HTTPException(status_code=400, detail="Area code is required for retailers")
-        area = store.get_area(req.area_code)
+
+        # FIX: sanitize retailer-provided area_code — strip whitespace + uppercase
+        # to prevent copy-paste errors from causing lookup failures
+        search_code = req.area_code.strip().upper()
+        area = store.get_area(search_code)
+
         if not area:
-            raise HTTPException(status_code=400, detail="Invalid Admin Area Code. Please request the exact code from your local Grid Operator.")
+            # FIX: return structured JSONResponse instead of bare HTTPException
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "detail": "INVALID_AREA_CODE",
+                    "message": "Area code not found. Please contact your grid admin."
+                }
+            )
         user_status = "pending"
-        area_code = req.area_code
+        area_code = search_code
         
         # Mock Email Notification
         print(f"\n[MOCK EMAIL NOTIFICATION] To: {area['admin_email']}")
@@ -149,8 +165,9 @@ def login(req: LoginRequest, response: Response):
     user = store.get_user(req.email)
     if not user or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
+    # FIX: clean status gates — return only the detail code per specification
     if user["status"] == "pending":
-        return JSONResponse(status_code=403, content={"detail": "AWAITING_APPROVAL", "message": "Your account is pending verification by the Grid Operator.", "area_code": user.get("area_code")})
+        return JSONResponse(status_code=403, content={"detail": "AWAITING_APPROVAL"})
     if user["status"] == "rejected":
         return JSONResponse(status_code=403, content={"detail": "ACCOUNT_REJECTED"})
     if user["status"] != "approved":
