@@ -41,7 +41,7 @@ const NAV_COLS = [
 ] as const;
 
 const SOCIAL = [
-  { name: 'GitHub',   Icon: Github,   href: 'https://github.com/riturajbarman' },
+  { name: 'GitHub',   Icon: Github,   href: 'https://github.com/riturajbarman/sovereign-amm' },
   { name: 'Twitter',  Icon: Twitter,  href: 'https://twitter.com/sovereign_amm' },
   { name: 'LinkedIn', Icon: Linkedin, href: 'https://linkedin.com/company/sovereign-amm' },
   { name: 'Email',    Icon: Mail,     href: 'mailto:@sovereign-amm.com' },
