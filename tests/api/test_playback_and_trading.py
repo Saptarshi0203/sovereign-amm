@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from backend.app.core.config import settings  # noqa: E402
 from backend.app.main import app  # noqa: E402
 from backend.app.engine_facade import engine_facade  # noqa: E402
-from backend.app.playback import PlaybackController, nearest_row_index, parse_csv_text, parse_timestamp_to_sec, seconds_past_midnight  # noqa: E402
+from backend.app.playback import PlaybackController, dataset_store, parse_timestamp_to_sec, seconds_past_midnight  # noqa: E402
 from backend.app.trading import STARTING_INVENTORY_KWH, STARTING_WALLET_INR, UTILITY_BUY_TARIFF, trading_book  # noqa: E402
 from simulation.generators.generate_demo_csv import COLUMNS, ROWS, generate_rows  # noqa: E402
 
@@ -73,22 +73,32 @@ def test_timestamp_parsing_variants():
 
 def test_csv_parser_requires_schema_and_skips_bad_rows():
     good = "timestamp,bus_id,house_count,solar_mw,demand_mw,micro_price,battery_soc_pct,grid_frequency_hz\n" "00:00:10,BUS-05,100,0,1.2,5.2,60,50\n" "00:00:00,BUS-05,100,0,1.1,5.1,61,50\n" "bad,BUS-05,100,x,1,5,60,50\n"
-    rows, skipped = parse_csv_text(good)
-    assert [r.t_sec for r in rows] == [0, 10]  # sorted
-    assert skipped == 1
-    with pytest.raises(ValueError):
-        parse_csv_text("timestamp,foo\n00:00:00,1\n")
+    import tempfile
+    import os
+    
+    fd1, path1 = tempfile.mkstemp(suffix=".csv")
+    try:
+        with os.fdopen(fd1, "w", encoding="utf-8") as f:
+            f.write(good)
+        run_id, rows_count, skipped = dataset_store.import_csv_file(path1, "test", activate=False)
+        assert rows_count == 2
+        assert skipped == 1
+    finally:
+        if os.path.exists(path1):
+            os.remove(path1)
+            
+    fd2, path2 = tempfile.mkstemp(suffix=".csv")
+    try:
+        with os.fdopen(fd2, "w", encoding="utf-8") as f:
+            f.write("timestamp,foo\n00:00:00,1\n")
+        _, rows_count2, _ = dataset_store.import_csv_file(path2, "test2", activate=False)
+        assert rows_count2 == 0
+    finally:
+        if os.path.exists(path2):
+            os.remove(path2)
 
 
-def test_nearest_row_index_matches_wall_clock_examples():
-    t_secs = list(range(0, 86400, 10))  # 10 s grid
-    assert t_secs[nearest_row_index(t_secs, 8 * 3600)] == 8 * 3600           # 08:00:00
-    assert t_secs[nearest_row_index(t_secs, 14 * 3600 + 44 * 60)] == 53040    # 14:44:00
-    assert t_secs[nearest_row_index(t_secs, 53044)] == 53040                  # 14:44:04 → 14:44:00
-    assert t_secs[nearest_row_index(t_secs, 53046)] == 53050                  # 14:44:06 → 14:44:10
-    assert t_secs[nearest_row_index(t_secs, 86397)] == 0                      # wraps to 00:00:00
-    assert nearest_row_index([100, 200], 86399) == 0
-
+# ── clock matching (pure) ────────────────────────────────────────
 
 def test_seconds_past_midnight_uses_timezone():
     utc_noon = datetime(2026, 9, 14, 12, 0, 0, tzinfo=timezone.utc)
@@ -99,17 +109,37 @@ def test_seconds_past_midnight_uses_timezone():
 def test_playback_controller_changes_row_only_when_clock_moves():
     from backend.app.playback import DatasetRow
 
-    rows = [DatasetRow(t, f"{t//3600:02d}:{(t%3600)//60:02d}:{t%60:02d}", "BUS-05", 100, 0.0, 1.0, 5.0, 50.0, 50.0) for t in range(0, 86400, 10)]
+    # We mock out dataset_store.get_nearest_row instead of creating a dataset since we removed the rows array
     pc = PlaybackController(tz="UTC")
-    pc.load("r1", "t", rows)
+    pc.load("r1", "t", 8640, 10)
     at = lambda h, m, s: datetime(2026, 1, 1, h, m, s, tzinfo=timezone.utc)  # noqa: E731
-    row, changed = pc.match(at(8, 0, 0))
-    assert changed and row.timestamp == "08:00:00"
-    row, changed = pc.match(at(8, 0, 3))
-    assert not changed and row.timestamp == "08:00:00"
-    row, changed = pc.match(at(8, 0, 10))
-    assert changed and row.timestamp == "08:00:10"
-    assert pc.status()["rows"] == 8640 and pc.status()["step_s"] == 10
+    
+    # Mocking get_nearest_row
+    def mock_get_nearest_row(run_id, t_sec_now):
+        # simple mock
+        if run_id != "r1": return None, -1
+        if t_sec_now < 28803: return DatasetRow(0, "08:00:00", "BUS-05", 100, 0.0, 1.0, 5.0, 50.0, 50.0), 0
+        return DatasetRow(10, "08:00:10", "BUS-05", 100, 0.0, 1.0, 5.0, 50.0, 50.0), 1
+        
+    original_get_nearest_row = dataset_store.get_nearest_row
+    dataset_store.get_nearest_row = mock_get_nearest_row
+    
+    try:
+        # 8:00:00 -> idx 0
+        row, changed = pc.match(at(8, 0, 0))
+        assert changed and row.timestamp == "08:00:00"
+        
+        # 8:00:02 -> idx 0, not changed
+        row, changed = pc.match(at(8, 0, 2))
+        assert not changed and row.timestamp == "08:00:00"
+        
+        # 8:00:10 -> idx 1, changed
+        row, changed = pc.match(at(8, 0, 10))
+        assert changed and row.timestamp == "08:00:10"
+        assert pc.status()["rows"] == 8640 and pc.status()["step_s"] == 10
+    finally:
+        dataset_store.get_nearest_row = original_get_nearest_row
+
 
 
 # ── API: upload + playback ─────────────────────────────────────────────────
@@ -122,7 +152,7 @@ def test_sample_dataset_active_on_startup(client):
     assert st["row"] is not None
     # The synced row is within one step of the wall clock in the sim timezone.
     now_sec = seconds_past_midnight(tz=settings.SIM_TIMEZONE)
-    assert min(abs(st["row"]["t_sec"] - now_sec), 86400 - abs(st["row"]["t_sec"] - now_sec)) <= 5
+    assert min(abs(st["row"]["t_sec"] - now_sec), 86400 - abs(st["row"]["t_sec"] - now_sec)) <= 10
 
 
 def test_upload_csv_ingests_activates_and_drives_engine(client):

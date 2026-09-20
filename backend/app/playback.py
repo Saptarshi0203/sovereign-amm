@@ -1,19 +1,12 @@
 """
 CSV dataset ingestion + wall-clock synchronised playback.
 
-A *simulation run* is a 24 h microgrid dataset (see
-simulation/generators/generate_demo_csv.py for the schema). Runs are stored in
-SQLite (`simulation_runs`, `simulation_ticks`) and the active run is held in
-memory as a list of rows sorted by seconds-past-midnight.
-
-`PlaybackController.match(now)` maps the wall clock (T_now = h·3600 + m·60 + s
-in the configured timezone) to the nearest dataset row, so at 08:00:00 the
-engine streams the 08:00 row and at 14:44:00 the 14:44 row. The engine loop
-polls it every tick; the row index only changes every ``step_s`` seconds.
+A *simulation run* is a 24 h microgrid dataset. Runs are stored in
+SQLite (`simulation_runs`, `simulation_ticks`) and the active run is tracked in
+memory via PlaybackController which dynamically queries SQLite to stay memory-safe.
 """
 from __future__ import annotations
 
-import bisect
 import csv
 import io
 import os
@@ -22,14 +15,15 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
+import gc
 
 from backend.app.core.config import settings
 
-try:  # optional fast path
+try:
     import duckdb  # type: ignore
-except Exception:  # pragma: no cover
+except Exception:
     duckdb = None  # type: ignore
 
 REQUIRED_COLUMNS = ["timestamp", "solar_mw", "demand_mw", "micro_price", "battery_soc_pct"]
@@ -63,15 +57,7 @@ class DatasetRow:
         }
 
 
-# ── parsing ────────────────────────────────────────────────────────────────
-
-
 def parse_timestamp_to_sec(value: str) -> int:
-    """
-    Accepts 'HH:MM:SS', 'HH:MM', ISO-8601 ('2026-09-14T08:00:00[+05:30]'),
-    'YYYY-MM-DD HH:MM:SS', or raw seconds-past-midnight. Returns seconds past
-    midnight in [0, 86400).
-    """
     v = value.strip()
     if not v:
         raise ValueError("empty timestamp")
@@ -102,61 +88,7 @@ def _coerce_row(raw: Dict[str, Any]) -> DatasetRow:
     )
 
 
-def parse_csv_text(text: str) -> tuple[List[DatasetRow], int]:
-    """
-    Parse CSV text into sorted DatasetRows. Uses DuckDB's CSV reader when
-    available (vectorised type inference), the stdlib csv module otherwise.
-    Returns (rows, skipped_count). Header names are matched case-insensitively.
-    """
-    records: List[Dict[str, Any]] = []
-    if duckdb is not None:
-        try:
-            con = duckdb.connect()
-            con.execute("CREATE TABLE csv_in AS SELECT * FROM read_csv(?, header=true, all_varchar=true)", [_to_tmp(text)])
-            cols = [c[0].strip().lower() for c in con.execute("DESCRIBE csv_in").fetchall()]
-            for tup in con.execute("SELECT * FROM csv_in").fetchall():
-                records.append(dict(zip(cols, tup)))
-            con.close()
-        except Exception:
-            records = []
-    if not records:
-        reader = csv.DictReader(io.StringIO(text))
-        if not reader.fieldnames:
-            raise ValueError("CSV has no header row")
-        for raw in reader:
-            records.append({(k or "").strip().lower(): v for k, v in raw.items()})
-
-    if records:
-        missing = [c for c in REQUIRED_COLUMNS if c not in records[0]]
-        if missing:
-            raise ValueError(f"CSV missing required columns: {', '.join(missing)}")
-
-    rows: List[DatasetRow] = []
-    skipped = 0
-    for rec in records[:MAX_ROWS]:
-        try:
-            rows.append(_coerce_row(rec))
-        except (TypeError, ValueError, KeyError):
-            skipped += 1
-    rows.sort(key=lambda r: r.t_sec)
-    return rows, skipped
-
-
-def _to_tmp(text: str) -> str:
-    import tempfile
-
-    fd, path = tempfile.mkstemp(suffix=".csv", prefix="sovereign-upload-")
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        f.write(text)
-    return path
-
-
-# ── persistence ────────────────────────────────────────────────────────────
-
-
 class DatasetStore:
-    """SQLite persistence for simulation runs (synchronous; called at request time)."""
-
     def __init__(self, db_path: str = settings.DATABASE_PATH):
         self.db_path = db_path
 
@@ -202,30 +134,65 @@ class DatasetStore:
         finally:
             con.close()
 
-    def save_run(self, name: str, rows: List[DatasetRow], activate: bool = True) -> str:
-        if not rows:
-            raise ValueError("dataset has no valid rows")
+    def import_csv_file(self, path: str, name: str, activate: bool = True) -> tuple[str, int, int]:
         run_id = f"run-{uuid.uuid4().hex[:10]}"
-        step = _infer_step(rows)
+        rows_count = 0
+        skipped = 0
         con = self._con()
+        
         try:
+            # We clear out any old run that might be massive to save space if needed, or just insert new
+            if duckdb is not None:
+                dcon = duckdb.connect()
+                res = dcon.execute("SELECT * FROM read_csv(?, header=true, all_varchar=true)", [path])
+                cols = [c[0].strip().lower() for c in res.description]
+                while True:
+                    batch = res.fetchmany(5000)
+                    if not batch:
+                        break
+                    db_rows = []
+                    for tup in batch:
+                        rec = dict(zip(cols, tup))
+                        try:
+                            r = _coerce_row(rec)
+                            db_rows.append((run_id, r.t_sec, r.timestamp, r.bus_id, r.house_count, r.solar_mw, r.demand_mw, r.micro_price, r.battery_soc_pct, r.grid_frequency_hz))
+                            rows_count += 1
+                        except Exception:
+                            skipped += 1
+                    if db_rows:
+                        con.executemany("INSERT OR REPLACE INTO simulation_ticks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", db_rows)
+            else:
+                with open(path, "r", encoding="utf-8-sig") as f:
+                    reader = csv.DictReader(f)
+                    db_rows = []
+                    for raw in reader:
+                        rec = {(k or "").strip().lower(): v for k, v in raw.items()}
+                        try:
+                            r = _coerce_row(rec)
+                            db_rows.append((run_id, r.t_sec, r.timestamp, r.bus_id, r.house_count, r.solar_mw, r.demand_mw, r.micro_price, r.battery_soc_pct, r.grid_frequency_hz))
+                            rows_count += 1
+                        except Exception:
+                            skipped += 1
+                        if len(db_rows) >= 5000:
+                            con.executemany("INSERT OR REPLACE INTO simulation_ticks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", db_rows)
+                            db_rows = []
+                    if db_rows:
+                        con.executemany("INSERT OR REPLACE INTO simulation_ticks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", db_rows)
+
+            step_s = 10
             con.execute(
                 "INSERT INTO simulation_runs (run_id, name, rows, step_s, uploaded_at, active) VALUES (?, ?, ?, ?, ?, 0)",
-                (run_id, name, len(rows), step, int(time.time() * 1000)),
-            )
-            con.executemany(
-                "INSERT OR REPLACE INTO simulation_ticks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [
-                    (run_id, r.t_sec, r.timestamp, r.bus_id, r.house_count, r.solar_mw, r.demand_mw, r.micro_price, r.battery_soc_pct, r.grid_frequency_hz)
-                    for r in rows
-                ],
+                (run_id, name, rows_count, step_s, int(time.time() * 1000)),
             )
             if activate:
-                con.execute("UPDATE simulation_runs SET active = CASE WHEN run_id = ? THEN 1 ELSE 0 END", (run_id,))
+                con.execute("UPDATE simulation_runs SET active = 0")
+                con.execute("UPDATE simulation_runs SET active = 1 WHERE run_id = ?", (run_id,))
             con.commit()
         finally:
             con.close()
-        return run_id
+            gc.collect()
+        
+        return run_id, rows_count, skipped
 
     def set_active(self, run_id: str) -> bool:
         con = self._con()
@@ -233,7 +200,8 @@ class DatasetStore:
             cur = con.execute("SELECT 1 FROM simulation_runs WHERE run_id = ?", (run_id,))
             if cur.fetchone() is None:
                 return False
-            con.execute("UPDATE simulation_runs SET active = CASE WHEN run_id = ? THEN 1 ELSE 0 END", (run_id,))
+            con.execute("UPDATE simulation_runs SET active = 0")
+            con.execute("UPDATE simulation_runs SET active = 1 WHERE run_id = ?", (run_id,))
             con.commit()
             return True
         finally:
@@ -255,54 +223,65 @@ class DatasetStore:
         finally:
             con.close()
 
-    def load_rows(self, run_id: str) -> List[DatasetRow]:
+    def get_run_metadata(self, run_id: str) -> Optional[Dict[str, Any]]:
         con = self._con()
         try:
+            cur = con.execute("SELECT run_id, name, rows, step_s FROM simulation_runs WHERE run_id = ?", (run_id,))
+            r = cur.fetchone()
+            if r:
+                return dict(zip(["run_id", "name", "rows", "step_s"], r))
+            return None
+        finally:
+            con.close()
+
+    def get_nearest_row(self, run_id: str, t_sec_now: int) -> tuple[Optional[DatasetRow], int]:
+        con = self._con()
+        try:
+            # First, check if there's an exact or earlier match
             cur = con.execute(
-                "SELECT t_sec, timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz "
-                "FROM simulation_ticks WHERE run_id = ? ORDER BY t_sec ASC",
-                (run_id,),
+                """SELECT t_sec, timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz
+                   FROM simulation_ticks WHERE run_id = ? AND t_sec <= ? ORDER BY t_sec DESC LIMIT 1""",
+                (run_id, t_sec_now)
+            )
+            r = cur.fetchone()
+            if r:
+                return DatasetRow(*r), r[0]
+            # If wrapped around midnight, get the latest row in the day
+            cur = con.execute(
+                """SELECT t_sec, timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz
+                   FROM simulation_ticks WHERE run_id = ? ORDER BY t_sec DESC LIMIT 1""",
+                (run_id,)
+            )
+            r = cur.fetchone()
+            if r:
+                return DatasetRow(*r), r[0]
+            return None, -1
+        finally:
+            con.close()
+            
+    def get_profile(self, run_id: str, max_points: int) -> List[DatasetRow]:
+        con = self._con()
+        try:
+            cur = con.execute("SELECT COUNT(*) FROM simulation_ticks WHERE run_id = ?", (run_id,))
+            cnt = cur.fetchone()[0]
+            if cnt == 0:
+                return []
+            step = max(1, cnt // max_points)
+            cur = con.execute(
+                """SELECT t_sec, timestamp, bus_id, house_count, solar_mw, demand_mw, micro_price, battery_soc_pct, grid_frequency_hz
+                   FROM (SELECT *, row_number() over (ORDER BY t_sec ASC) as rn FROM simulation_ticks WHERE run_id = ?)
+                   WHERE rn % ? = 0 OR rn = 1
+                   ORDER BY t_sec ASC""",
+                (run_id, step)
             )
             return [DatasetRow(*r) for r in cur.fetchall()]
         finally:
             con.close()
 
 
-def _infer_step(rows: List[DatasetRow]) -> int:
-    if len(rows) < 2:
-        return 10
-    diffs = sorted(b.t_sec - a.t_sec for a, b in zip(rows, rows[1:]) if b.t_sec > a.t_sec)
-    return diffs[len(diffs) // 2] if diffs else 10
-
-
-# ── clock-synchronised controller ──────────────────────────────────────────
-
-
 def seconds_past_midnight(now: Optional[datetime] = None, tz: str = "Asia/Kolkata") -> int:
-    """T_now = hour·3600 + minute·60 + second, in the given timezone."""
     dt = now.astimezone(ZoneInfo(tz)) if now else datetime.now(ZoneInfo(tz))
     return dt.hour * 3600 + dt.minute * 60 + dt.second
-
-
-def nearest_row_index(t_secs: List[int], t_now: int) -> int:
-    """
-    Index of the dataset row whose t_sec is closest to ``t_now`` (ties → the
-    earlier row). Wraps around midnight so 23:59:55 still matches 23:59:50
-    and 00:00:02 matches 00:00:00.
-    """
-    n = len(t_secs)
-    if n == 0:
-        raise ValueError("empty dataset")
-    i = bisect.bisect_left(t_secs, t_now)
-    candidates = []
-    for j in (i - 1, i):
-        if 0 <= j < n:
-            candidates.append((abs(t_secs[j] - t_now), j))
-    # wrap-around candidates
-    candidates.append((abs(t_secs[0] + 86400 - t_now), 0))
-    candidates.append((abs(t_secs[-1] - 86400 - t_now), n - 1))
-    candidates.sort()
-    return candidates[0][1]
 
 
 @dataclass
@@ -310,44 +289,48 @@ class PlaybackController:
     tz: str = settings.SIM_TIMEZONE
     run_id: Optional[str] = None
     name: str = ""
-    rows: List[DatasetRow] = field(default_factory=list)
-    t_secs: List[int] = field(default_factory=list)
+    total_rows: int = 0
     step_s: int = 10
     index: int = -1
     version: int = 0
+    _current_row: Optional[DatasetRow] = None
 
     @property
     def active(self) -> bool:
-        return bool(self.rows)
+        return self.run_id is not None
 
-    def load(self, run_id: str, name: str, rows: List[DatasetRow]) -> None:
+    def load(self, run_id: str, name: str, total_rows: int = 0, step_s: int = 10) -> None:
         self.run_id = run_id
         self.name = name
-        self.rows = rows
-        self.t_secs = [r.t_sec for r in rows]
-        self.step_s = _infer_step(rows)
+        self.total_rows = total_rows
+        self.step_s = step_s
         self.index = -1
         self.version += 1
+        self._current_row = None
 
     def clear(self) -> None:
         self.run_id = None
         self.name = ""
-        self.rows = []
-        self.t_secs = []
+        self.total_rows = 0
         self.index = -1
         self.version += 1
+        self._current_row = None
 
     def match(self, now: Optional[datetime] = None) -> tuple[Optional[DatasetRow], bool]:
-        """Return (row for the current wall clock, changed_since_last_call)."""
-        if not self.rows:
+        if not self.run_id:
             return None, False
-        idx = nearest_row_index(self.t_secs, seconds_past_midnight(now, self.tz))
-        changed = idx != self.index
-        self.index = idx
-        return self.rows[idx], changed
+        t_sec_now = seconds_past_midnight(now, self.tz)
+        row, row_index = dataset_store.get_nearest_row(self.run_id, t_sec_now)
+        if row is None:
+            return None, False
+        changed = row_index != self.index
+        if changed:
+            self.index = row_index
+            self._current_row = row
+        return self._current_row, changed
 
     def current(self) -> Optional[DatasetRow]:
-        return self.rows[self.index] if self.rows and 0 <= self.index < len(self.rows) else None
+        return self._current_row
 
     def synced_clock(self, now: Optional[datetime] = None) -> str:
         dt = now.astimezone(ZoneInfo(self.tz)) if now else datetime.now(ZoneInfo(self.tz))
@@ -362,7 +345,7 @@ class PlaybackController:
             "active": self.active,
             "run_id": self.run_id,
             "name": self.name,
-            "rows": len(self.rows),
+            "rows": self.total_rows,
             "step_s": self.step_s,
             "index": self.index,
             "synced_time": self.synced_clock(),
@@ -373,11 +356,8 @@ class PlaybackController:
         }
 
     def profile(self, max_points: int = 1440) -> List[Dict[str, Any]]:
-        """Downsampled day profile for charts (≤ max_points rows)."""
-        if not self.rows:
+        if not self.run_id:
             return []
-        step = max(1, len(self.rows) // max_points)
-        return [r.as_dict() for r in self.rows[::step]]
-
+        return [r.as_dict() for r in dataset_store.get_profile(self.run_id, max_points)]
 
 dataset_store = DatasetStore()

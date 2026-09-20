@@ -13,6 +13,7 @@ from typing import Any, AsyncGenerator, Dict
 
 import msgpack
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from websockets.exceptions import ConnectionClosed
 
 from backend.app.api.deps import ws_auth_scope
 from backend.app.core.config import settings
@@ -22,6 +23,7 @@ router = APIRouter(tags=["streams"])
 
 #: Number of WebSocket pumps currently streaming (exposed on /health).
 ACTIVE_STREAMS = {"count": 0}
+active_connections = set()
 
 
 async def _watch_disconnect(websocket: WebSocket) -> None:
@@ -34,7 +36,7 @@ async def _watch_disconnect(websocket: WebSocket) -> None:
     try:
         while True:
             await websocket.receive()
-    except (WebSocketDisconnect, RuntimeError, asyncio.CancelledError):
+    except (WebSocketDisconnect, ConnectionClosed, RuntimeError, asyncio.CancelledError):
         pass
 
 
@@ -43,17 +45,22 @@ async def _pump(websocket: WebSocket, gen: AsyncGenerator[Dict[str, Any], None])
     use_msgpack = "msgpack" in (websocket.headers.get("sec-websocket-protocol") or "")
     watcher = asyncio.create_task(_watch_disconnect(websocket))
     ACTIVE_STREAMS["count"] += 1
+    active_connections.add(websocket)
     try:
         async for snapshot in gen:
             if watcher.done():
                 break
-            if use_msgpack:
-                await websocket.send_bytes(msgpack.packb(snapshot, use_bin_type=True))
-            else:
-                await websocket.send_json(snapshot)
-    except (WebSocketDisconnect, RuntimeError, asyncio.CancelledError):
+            try:
+                if use_msgpack:
+                    await asyncio.wait_for(websocket.send_bytes(msgpack.packb(snapshot, use_bin_type=True)), timeout=2.0)
+                else:
+                    await asyncio.wait_for(websocket.send_json(snapshot), timeout=2.0)
+            except asyncio.TimeoutError:
+                break
+    except (WebSocketDisconnect, ConnectionClosed, RuntimeError, asyncio.CancelledError):
         pass
     finally:
+        active_connections.discard(websocket)
         ACTIVE_STREAMS["count"] -= 1
         watcher.cancel()
         await gen.aclose()

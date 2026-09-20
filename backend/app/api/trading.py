@@ -14,6 +14,7 @@ import asyncio
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from websockets.exceptions import ConnectionClosed
 from pydantic import BaseModel, Field
 
 from backend.app.api.deps import require_user, ws_auth_scope
@@ -22,6 +23,7 @@ from backend.app.engine_facade import MICRO, engine_facade
 from backend.app.trading import trading_book
 
 router = APIRouter(tags=["trading"])
+active_connections = set()
 
 
 class OrderRequest(BaseModel):
@@ -113,6 +115,7 @@ def reset_portfolio(user: Dict[str, Any] = Depends(require_user)) -> Dict[str, A
 @router.websocket("/ws/user/{user_id}")
 async def ws_user(websocket: WebSocket, user_id: str):
     await websocket.accept()
+    active_connections.add(websocket)
     try:
         payload = await ws_auth_scope(websocket, settings.DEMO_GRID_ID)
     except Exception:
@@ -130,7 +133,7 @@ async def ws_user(websocket: WebSocket, user_id: str):
         try:
             while True:
                 await websocket.receive()
-        except (WebSocketDisconnect, RuntimeError, asyncio.CancelledError):
+        except (WebSocketDisconnect, ConnectionClosed, RuntimeError, asyncio.CancelledError):
             pass
 
     watcher = asyncio.create_task(watch())
@@ -143,9 +146,13 @@ async def ws_user(websocket: WebSocket, user_id: str):
                 last_version = pf.version
                 last_push = now
                 grid = payload.get("area_code") or settings.DEMO_GRID_ID
-                await websocket.send_json({"type": "portfolio", **pf.as_dict(_mark(grid))})
+                try:
+                    await asyncio.wait_for(websocket.send_json({"type": "portfolio", **pf.as_dict(_mark(grid))}), timeout=2.0)
+                except asyncio.TimeoutError:
+                    break
             await asyncio.sleep(0.5)
-    except (WebSocketDisconnect, RuntimeError, asyncio.CancelledError):
+    except (WebSocketDisconnect, ConnectionClosed, RuntimeError, asyncio.CancelledError):
         pass
     finally:
+        active_connections.discard(websocket)
         watcher.cancel()

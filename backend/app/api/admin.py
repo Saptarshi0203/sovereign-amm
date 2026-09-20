@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from typing import List, Dict, Any
 from backend.app.engine_facade import engine_facade
-from backend.app.playback import dataset_store, parse_csv_text
+from backend.app.playback import dataset_store
+import tempfile
+import os
 from backend.app.core.auth import require_role
 from backend.app.db.store import store
 from pydantic import BaseModel
@@ -178,29 +180,40 @@ async def upload_telemetry(
     activate: bool = Form(True),
     admin: Dict[str, Any] = Depends(admin_user),
 ) -> Dict[str, Any]:
-    raw = await file.read()
-    if len(raw) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="CSV larger than 50 MB")
+    fd, path = tempfile.mkstemp(suffix=".csv")
     try:
-        rows, skipped = parse_csv_text(raw.decode("utf-8-sig", errors="replace"))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    if not rows:
-        raise HTTPException(status_code=400, detail="No valid rows in CSV")
-    
-    run_name = name.strip() or (file.filename or "custom").rsplit(".", 1)[0]
-    run_id = dataset_store.save_run(run_name, rows, activate=activate)
-    
-    admin_area_code = admin.get("area_code")
-    if not admin_area_code:
-        raise HTTPException(status_code=400, detail="Admin does not have an assigned area_code")
+        with os.fdopen(fd, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                f.write(chunk)
+        
+        if os.path.getsize(path) > 50 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="CSV larger than 50 MB")
+        
+        run_name = name.strip() or (file.filename or "custom").rsplit(".", 1)[0]
+        run_id, rows_count, skipped = dataset_store.import_csv_file(path, run_name, activate=activate)
+        
+        if rows_count == 0:
+            raise HTTPException(status_code=400, detail="No valid rows in CSV")
+        
+        admin_area_code = admin.get("area_code")
+        if not admin_area_code:
+            raise HTTPException(status_code=400, detail="Admin does not have an assigned area_code")
 
-    if activate:
-        meta = next((r for r in dataset_store.list_runs() if r["run_id"] == run_id), {"name": run_id})
-        dataset_store.set_active(run_id)
-        engine_facade.load_dataset(admin_area_code, run_id, meta["name"], rows)
-        status = engine_facade.get_runtime(admin_area_code).playback.status()
-    else:
-        status = engine_facade.get_runtime(admin_area_code).playback.status()
+        if activate:
+            meta = dataset_store.get_run_metadata(run_id)
+            dataset_store.set_active(run_id)
+            engine_facade.get_runtime(admin_area_code).playback.load(run_id, meta["name"], meta["rows"], meta["step_s"])
+            engine_facade.get_runtime(admin_area_code).dataset_row = None
+            engine_facade.get_runtime(admin_area_code).dataset_inj[:] = 0.0
+            engine_facade.get_runtime(admin_area_code).simulator.clear_profile()
+            engine_facade.get_runtime(admin_area_code).data_version += 1
+            status = engine_facade.get_runtime(admin_area_code).playback.status()
+        else:
+            status = engine_facade.get_runtime(admin_area_code).playback.status()
 
-    return {"run_id": run_id, "name": run_name, "rows": len(rows), "rows_skipped": skipped, "activated": activate, "playback": status}
+        return {"run_id": run_id, "name": run_name, "rows": rows_count, "rows_skipped": skipped, "activated": activate, "playback": status}
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+        import gc
+        gc.collect()

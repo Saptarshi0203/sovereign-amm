@@ -25,6 +25,7 @@ Usage:
 """
 import asyncio
 import csv
+import gc
 import math
 import os
 import time
@@ -354,9 +355,15 @@ async def seed_7day():
 
     tick_rows: List[Tuple] = []
     telemetry_rows: List[Tuple] = []
-    csv_rows: List[Dict] = []
 
     print(f"[7DAY-SEEDER] Start timestamp: {start_ts} ({time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_ts / 1000))})")
+
+    os.makedirs(os.path.dirname(CSV_OUTPUT_PATH), exist_ok=True)
+    f_csv = open(CSV_OUTPUT_PATH, "w", newline="")
+    csv_writer = csv.DictWriter(f_csv, fieldnames=[
+        "timestamp", "bus_id", "house_count", "solar_mw", "demand_mw", "micro_price", "battery_soc_pct", "grid_frequency_hz"
+    ])
+    csv_writer.writeheader()
 
     async with aiosqlite.connect(DB_PATH) as db:
         for i in range(TOTAL_TICKS):
@@ -438,7 +445,7 @@ async def seed_7day():
             freq_noise = 0.9 * freq_noise + rng.normal(0, 0.004)
             freq = 50.0 - 0.012 * (load - sol) + freq_noise
 
-            csv_rows.append({
+            csv_writer.writerow({
                 "timestamp": timestamp_iso,
                 "bus_id": "BUS-05",
                 "house_count": 100,
@@ -481,10 +488,14 @@ async def seed_7day():
                     telemetry_rows,
                 )
                 await db.commit()
+                f_csv.flush()
                 progress = (i + 1) / TOTAL_TICKS * 100
                 print(f"[7DAY-SEEDER] {i + 1:>6}/{TOTAL_TICKS} ({progress:.1f}%) - Day {day_number} {hour:05.2f}h  SoC={soc_pct:.1f}%  INR {price_inr:.2f}/kWh  [{cong}]")
+                del tick_rows
+                del telemetry_rows
                 tick_rows = []
                 telemetry_rows = []
+                gc.collect()
 
         # Flush remaining
         if tick_rows:
@@ -497,16 +508,9 @@ async def seed_7day():
                 telemetry_rows,
             )
             await db.commit()
+            f_csv.flush()
 
-    # Write CSV output
-    print(f"[7DAY-SEEDER] Writing CSV to {CSV_OUTPUT_PATH}...")
-    os.makedirs(os.path.dirname(CSV_OUTPUT_PATH), exist_ok=True)
-    with open(CSV_OUTPUT_PATH, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=[
-            "timestamp", "bus_id", "house_count", "solar_mw", "demand_mw", "micro_price", "battery_soc_pct", "grid_frequency_hz"
-        ])
-        writer.writeheader()
-        writer.writerows(csv_rows)
+    f_csv.close()
 
     # ── Summary ────────────────────────────────────────────────────────
     print(f"")
