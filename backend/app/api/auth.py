@@ -71,8 +71,25 @@ def _set_cookie(response: Response, token: str) -> None:
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(req: SignupRequest):
-    if store.get_user(req.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
+    existing = store.get_user(req.email)
+    if existing:
+        existing_role = existing.get("role", "retailer")
+        if existing_role == "admin":
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "detail": "CREDENTIALS_EXIST",
+                    "message": "An Admin account with these credentials already exists. Please sign in to manage your microgrid.",
+                },
+            )
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "detail": "CREDENTIALS_EXIST",
+                    "message": f"You are already registered under Admin Area Code: {existing.get('area_code', 'UNKNOWN')}. Please sign in to access your account.",
+                },
+            )
 
     role = "admin" if req.email.lower() in settings.admin_emails or req.role == "admin" else "retailer"
     
