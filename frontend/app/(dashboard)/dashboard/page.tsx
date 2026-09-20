@@ -48,9 +48,9 @@ function RangeSelector() {
   const setRange = useStore((s) => s.setHistoryRange);
   return (
     <SegmentedPill
-      options={['1H', '4H', '24H', 'ALL']}
+      options={['1H', '4H', '24H', '7D', 'ALL']}
       value={range}
-      onChange={(v) => setRange(v as '1H' | '4H' | '24H' | 'ALL')}
+      onChange={(v) => setRange(v as '1H' | '4H' | '24H' | '7D' | 'ALL')}
     />
   );
 }

@@ -17,8 +17,8 @@ const PriceStateChart = dynamic(
   { ssr: false },
 );
 
-type Range = '1H' | '4H' | '24H' | 'ALL';
-const RANGES: Range[] = ['1H', '4H', '24H', 'ALL'];
+type Range = '1H' | '4H' | '24H' | '7D' | 'ALL';
+const RANGES: Range[] = ['1H', '4H', '24H', '7D', 'ALL'];
 
 function StatCard({
   label,

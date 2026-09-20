@@ -216,14 +216,14 @@ export interface StoreState {
   /** Bumped by the backend whenever a dataset is injected. */
   dataVersion: number;
   /** Selected history window for the price chart. */
-  historyRange: '1H' | '4H' | '24H' | 'ALL';
+  historyRange: '1H' | '4H' | '24H' | '7D' | 'ALL';
   historyLoading: boolean;
   /** Number of persisted history points for the grid. */
   historyPoints: number | null;
   applyOrderbookSnapshot(snap: OrderbookSnapshot): void;
   applyGridSnapshot(snap: GridSnapshot): void;
   setHistory(rows: HistoryRow[]): void;
-  setHistoryRange(range: '1H' | '4H' | '24H' | 'ALL'): void;
+  setHistoryRange(range: '1H' | '4H' | '24H' | '7D' | 'ALL'): void;
   setHistoryLoading(loading: boolean): void;
   setFeedConnected(feed: 'orderbook' | 'grid', connected: boolean): void;
 
