@@ -33,7 +33,7 @@
   <a href="#-testing">Testing</a>
 </p>
 
-<img src="docs/screenshots/dashboard.png" alt="Sovereign-AMM trading dashboard" width="100%" />
+<img src="docs/screenshots/dashboard-preview-dark.jpg" alt="Sovereign-AMM Live Dark Mode Dashboard" width="100%" />
 
 </div>
 
