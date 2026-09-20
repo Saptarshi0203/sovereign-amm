@@ -267,36 +267,81 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const [cityName, setCityName] = useState('');
 
   const [status, setStatus] = useState<string | null>(null);
+  const [credentialsError, setCredentialsError] = useState<string | null>(null);
+
+  const openAuth = useStore((s) => s.openAuth);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCredentialsError(null);
+    setStatus(null);
+
     try {
-      await apiFetch('/api/auth/signup', {
+      const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: 'POST',
-        body: JSON.stringify({ 
-          email, 
-          password, 
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
           consumer_no: name,
           role,
           area_code: role === 'retailer' ? areaCode : undefined,
-          city_name: role === 'admin' ? cityName : undefined
+          city_name: role === 'admin' ? cityName : undefined,
         }),
-        headers: { Authorization: '' },
       });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        if (res.status === 400 && body?.detail === 'CREDENTIALS_EXIST') {
+          setCredentialsError(body.message || 'This email is already registered.');
+          return;
+        }
+        const detail = body?.detail ?? body?.message ?? `HTTP ${res.status}`;
+        setStatus(typeof detail === 'string' ? detail : JSON.stringify(detail));
+        return;
+      }
+
       if (role === 'admin') {
         setStatus('Account created and approved! You may now sign in.');
       } else {
         setStatus('Account created — your Grid Operator must approve it before you can sign in. Until then the site stays in Demo Mode.');
       }
+      setTimeout(onSuccess, 2500);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : 'Signup failed.');
     }
-    setTimeout(onSuccess, 2500);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {status && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">{status}</p>}
+      {/* — Credentials-exist error banner (glassmorphic) — */}
+      {credentialsError && (
+        <div
+          className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg flex flex-col gap-2 animate-slide-in-right"
+          role="alert"
+          id="credentials-error-banner"
+        >
+          <p
+            className="text-sm text-rose-400"
+            style={{ fontFamily: "'Aldrich', sans-serif" }}
+          >
+            {credentialsError}
+          </p>
+          <button
+            type="button"
+            onClick={() => openAuth('signin')}
+            className="text-xs font-semibold text-rose-300 hover:text-white transition-colors self-start underline underline-offset-2"
+            style={{ fontFamily: "'Aldrich', sans-serif" }}
+            id="switch-to-signin-btn"
+          >
+            Switch to Sign In →
+          </button>
+        </div>
+      )}
+
+      {status && !credentialsError && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">{status}</p>}
       
       {/* Role Toggle */}
       <div className="flex bg-slate-800 rounded-lg p-1 gap-1">
